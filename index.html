@@ -796,17 +796,14 @@ async function parseFood() {
   thinkEl.innerHTML = `<div class="dots"><span></span><span></span><span></span></div>AI 正在解析…`;
   list.prepend(thinkEl);
   try {
+    const fullPrompt = `運動營養解析引擎。解析食物描述，只返回 JSON：\n{"name":"食物名稱","protein_g":整數,"carbs_g":整數,"fat_g":整數,"kcal":整數}\n以台灣食物為準。多種食物合併一筆，name 用/分隔。務必只返回純 JSON，不要包含任何 markdown 標記。\n\n用戶輸入：${input}`;
+
     const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-3.1-flash-lite:generateContent?key=${API_KEY}`, {
       method:'POST',
-      headers:{
-        'Content-Type':'application/json'
-      },
+      headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({
-        system_instruction: {
-          parts: [{ text: `運動營養解析引擎。解析食物描述，只返回 JSON：\n{"name":"食物名稱","protein_g":整數,"carbs_g":整數,"fat_g":整數,"kcal":整數}\n以台灣食物為準。多種食物合併一筆，name 用/分隔。只返回 JSON。` }]
-        },
-        contents: [{ role: 'user', parts: [{ text: input }] }],
-        generation_config: { response_mime_type: "application/json" }
+        contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
+        generationConfig: { temperature: 0.1 }
       })
     });
     const data = await res.json();
@@ -898,17 +895,14 @@ async function genWorkout() {
   const dayOfWeek = ['日','一','二','三','四','五','六'][new Date().getDay()];
   const memCtx = buildMemoryContext();
   try {
+    const fullPrompt = `你是頂級健美私人教練，絕對理性、科學精準、零廢話。${memCtx}\n用戶資料：肌肉量 ${S.muscle}kg，體脂 ${S.fat_pct}%，目標增肌減脂。今天星期${dayOfWeek}。\n根據以上記憶庫信息（特別注意傷病、偏好、本週計劃），生成今日訓練計劃。\n只返回 JSON：\n{"session_title":"訓練名稱","muscle_groups":"目標肌群","intensity":"High/Medium/Low",\n"exercises":[{"name":"動作中文名","sets":4,"reps":"8-12","weight_kg":80,"muscle":"目標肌群","notes":"技巧要點（10字內）}]}\n6-8 個動作。務必只返回純 JSON，不要包含任何 markdown 標記。\n\n請生成今日訓練計劃。`;
+
     const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-3.1-flash-lite:generateContent?key=${API_KEY}`, {
       method:'POST',
-      headers:{
-        'Content-Type':'application/json'
-      },
+      headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({
-        system_instruction: {
-          parts: [{ text: `你是頂級健美私人教練，絕對理性、科學精準、零廢話。${memCtx}\n用戶資料：肌肉量 ${S.muscle}kg，體脂 ${S.fat_pct}%，目標增肌減脂。今天星期${dayOfWeek}。\n根據以上記憶庫信息（特別注意傷病、偏好、本週計劃），生成今日訓練計劃。\n只返回 JSON：\n{"session_title":"訓練名稱","muscle_groups":"目標肌群","intensity":"High/Medium/Low",\n"exercises":[{"name":"動作中文名","sets":4,"reps":"8-12","weight_kg":80,"muscle":"目標肌群","notes":"技巧要點（10字內）}]}\n6-8 個動作。只返回 JSON。` }]
-        },
-        contents: [{ role: 'user', parts: [{ text: '生成今日訓練計劃。' }] }],
-        generation_config: { response_mime_type: "application/json" }
+        contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
+        generationConfig: { temperature: 0.7 }
       })
     });
     const data = await res.json();
