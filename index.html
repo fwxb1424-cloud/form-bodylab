@@ -796,7 +796,7 @@ async function parseFood() {
   thinkEl.innerHTML = `<div class="dots"><span></span><span></span><span></span></div>AI 正在解析…`;
   list.prepend(thinkEl);
   try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-3.1-flash-lite:generateContent?key=${API_KEY}`, {
       method:'POST',
       headers:{
         'Content-Type':'application/json'
@@ -898,7 +898,7 @@ async function genWorkout() {
   const dayOfWeek = ['日','一','二','三','四','五','六'][new Date().getDay()];
   const memCtx = buildMemoryContext();
   try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-3.1-flash-lite:generateContent?key=${API_KEY}`, {
       method:'POST',
       headers:{
         'Content-Type':'application/json'
