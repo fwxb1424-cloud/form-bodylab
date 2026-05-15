@@ -11,7 +11,6 @@
 <link rel="apple-touch-icon" href="/icon-192.svg">
 <title>FORM — Body Lab</title>
 
-<!-- Supabase SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
 <style>
@@ -241,15 +240,14 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);max-width:43
 </head>
 <body>
 
-<!-- SETUP -->
 <div class="setup" id="setup">
   <div class="setup-logo">FORM · BODY LAB</div>
   <div class="setup-title">首次設定</div>
   <div class="setup-sub">輸入你的 API Keys，只存在此裝置<br>不上傳任何地方</div>
 
   <div class="setup-field">
-    <label class="setup-label">Anthropic API Key</label>
-    <input class="setup-input" type="password" id="in-anthropic" placeholder="sk-ant-api03-..." autocomplete="off" spellcheck="false">
+    <label class="setup-label">Gemini API Key</label>
+    <input class="setup-input" type="password" id="in-anthropic" placeholder="AIzaSy..." autocomplete="off" spellcheck="false">
   </div>
 
   <div class="setup-field">
@@ -265,18 +263,15 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);max-width:43
   <button class="setup-btn" onclick="doSetup()">開始使用 →</button>
   <div class="setup-note">
     Supabase 免費，申請地址：<a href="https://supabase.com" target="_blank">supabase.com</a><br>
-    Anthropic API：<a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>
+    Gemini API：<a href="https://aistudio.google.com/" target="_blank">aistudio.google.com</a>
   </div>
 </div>
 
-<!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<!-- APP -->
 <div class="app hidden" id="app">
   <div class="pages" id="pages">
 
-    <!-- ══ DASHBOARD ══ -->
     <div class="page active" id="pg-dash">
       <div class="ph">
         <div class="ph-label">FORM · Body Lab</div>
@@ -358,7 +353,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);max-width:43
       </div>
     </div>
 
-    <!-- ══ DIET ══ -->
     <div class="page" id="pg-diet">
       <div class="ph">
         <div class="ph-label">AutoLogging</div>
@@ -413,7 +407,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);max-width:43
       </div>
     </div>
 
-    <!-- ══ TRAINING ══ -->
     <div class="page" id="pg-train">
       <div class="ph">
         <div class="ph-label">訓練日誌</div>
@@ -477,7 +470,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);max-width:43
       </div>
     </div>
 
-    <!-- ══ BODY ══ -->
     <div class="page" id="pg-body">
       <div class="ph">
         <div class="ph-label">形體追蹤</div>
@@ -534,7 +526,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);max-width:43
       </div>
     </div>
 
-    <!-- ══ MEMORY ══ -->
     <div class="page" id="pg-mem">
       <div class="ph">
         <div class="ph-label">記憶庫</div>
@@ -569,10 +560,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);max-width:43
       </div>
     </div>
 
-  </div><!-- /pages -->
-
-  <!-- NAV -->
-  <nav class="nav">
+  </div><nav class="nav">
     <button class="nav-btn active" data-p="dash" onclick="goPage('dash')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
         <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
@@ -600,9 +588,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);max-width:43
       </svg>記憶
     </button>
   </nav>
-</div><!-- /app -->
-
-<script>
+</div><script>
 // ══ CONFIG ══
 const PROTEIN_TARGET = 170;
 const CHECK_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="#0e0e0f" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>`;
@@ -645,7 +631,7 @@ function doSetup() {
   const ak = document.getElementById('in-anthropic').value.trim();
   const su = document.getElementById('in-sb-url').value.trim();
   const sk = document.getElementById('in-sb-key').value.trim();
-  if (!ak.startsWith('sk-ant-')) { toast('Anthropic Key 格式不對'); return; }
+  if (!ak) { toast('請輸入 Gemini API Key'); return; }
   if (!su.includes('supabase.co')) { toast('Supabase URL 格式不對'); return; }
   if (!sk) { toast('請輸入 Supabase Key'); return; }
   localStorage.setItem('form_ak', ak);
@@ -810,25 +796,24 @@ async function parseFood() {
   thinkEl.innerHTML = `<div class="dots"><span></span><span></span><span></span></div>AI 正在解析…`;
   list.prepend(thinkEl);
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
       method:'POST',
       headers:{
-        'Content-Type':'application/json',
-        'x-api-key': API_KEY,
-        'anthropic-version':'2023-06-01',
-        'anthropic-dangerous-direct-browser-access':'true'
+        'Content-Type':'application/json'
       },
       body: JSON.stringify({
-        model:'claude-sonnet-4-20250514', max_tokens:400,
-        system:`運動營養解析引擎。解析食物描述，只返回 JSON：
-{"name":"食物名稱","protein_g":整數,"carbs_g":整數,"fat_g":整數,"kcal":整數}
-以台灣食物為準。多種食物合併一筆，name 用/分隔。只返回 JSON。`,
-        messages:[{role:'user',content:input}]
+        systemInstruction: {
+          parts: [{ text: `運動營養解析引擎。解析食物描述，只返回 JSON：\n{"name":"食物名稱","protein_g":整數,"carbs_g":整數,"fat_g":整數,"kcal":整數}\n以台灣食物為準。多種食物合併一筆，name 用/分隔。只返回 JSON。` }]
+        },
+        contents: [{ role: 'user', parts: [{ text: input }] }],
+        generationConfig: { response_mime_type: "application/json" }
       })
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error.message);
-    const parsed = JSON.parse(data.content[0].text.replace(/```json|```/g,'').trim());
+    const resultText = data.candidates[0].content.parts[0].text;
+    const parsed = JSON.parse(resultText.replace(/```json|```/g,'').trim());
+    
     const entry = {...parsed, id:++foodIdCtr, time:nowTime()};
     S.foods.push(entry);
     S.protein += parsed.protein_g||0;
@@ -913,29 +898,24 @@ async function genWorkout() {
   const dayOfWeek = ['日','一','二','三','四','五','六'][new Date().getDay()];
   const memCtx = buildMemoryContext();
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
       method:'POST',
       headers:{
-        'Content-Type':'application/json',
-        'x-api-key': API_KEY,
-        'anthropic-version':'2023-06-01',
-        'anthropic-dangerous-direct-browser-access':'true'
+        'Content-Type':'application/json'
       },
       body: JSON.stringify({
-        model:'claude-sonnet-4-20250514', max_tokens:1400,
-        system:`你是頂級健美私人教練，絕對理性、科學精準、零廢話。${memCtx}
-用戶資料：肌肉量 ${S.muscle}kg，體脂 ${S.fat_pct}%，目標增肌減脂。今天星期${dayOfWeek}。
-根據以上記憶庫信息（特別注意傷病、偏好、本週計劃），生成今日訓練計劃。
-只返回 JSON：
-{"session_title":"訓練名稱","muscle_groups":"目標肌群","intensity":"High/Medium/Low",
-"exercises":[{"name":"動作中文名","sets":4,"reps":"8-12","weight_kg":80,"muscle":"目標肌群","notes":"技巧要點（10字內）}]}
-6-8 個動作。只返回 JSON。`,
-        messages:[{role:'user',content:'生成今日訓練計劃。'}]
+        systemInstruction: {
+          parts: [{ text: `你是頂級健美私人教練，絕對理性、科學精準、零廢話。${memCtx}\n用戶資料：肌肉量 ${S.muscle}kg，體脂 ${S.fat_pct}%，目標增肌減脂。今天星期${dayOfWeek}。\n根據以上記憶庫信息（特別注意傷病、偏好、本週計劃），生成今日訓練計劃。\n只返回 JSON：\n{"session_title":"訓練名稱","muscle_groups":"目標肌群","intensity":"High/Medium/Low",\n"exercises":[{"name":"動作中文名","sets":4,"reps":"8-12","weight_kg":80,"muscle":"目標肌群","notes":"技巧要點（10字內）}]}\n6-8 個動作。只返回 JSON。` }]
+        },
+        contents: [{ role: 'user', parts: [{ text: '生成今日訓練計劃。' }] }],
+        generationConfig: { response_mime_type: "application/json" }
       })
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error.message);
-    const plan = JSON.parse(data.content[0].text.replace(/```json|```/g,'').trim());
+    const resultText = data.candidates[0].content.parts[0].text;
+    const plan = JSON.parse(resultText.replace(/```json|```/g,'').trim());
+    
     workout = plan.exercises.map(e => ({...e, done:false}));
     S.volume = 0;
     document.getElementById('rec-title').textContent = plan.session_title;
