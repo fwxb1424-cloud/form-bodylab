@@ -6,776 +6,886 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="FORM">
-<meta name="theme-color" content="#0A0A0B">
+<meta name="theme-color" content="#080809">
 <link rel="manifest" href="/manifest.json">
-<link rel="apple-touch-icon" href="/icon-192.svg">
 <title>FORM</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/macros.js"></script>
+<script src="/nutrition-ui.js"></script>
 <script src="/ai-provider.js"></script>
 <script src="/db.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Sans:wght@400;500&display=swap');
-
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,400&family=DM+Sans:wght@400;500&display=swap');
 :root{
-  --bg:    #0A0A0B;
-  --bg2:   #111113;
-  --bg3:   #161618;
-  --bg4:   #1C1C1F;
-  --line:  rgba(255,255,255,.06);
-  --line2: rgba(255,255,255,.10);
-  --t1:    #ECEAE5;
-  --t2:    #5C5A57;
-  --t3:    #3A3835;
-  --ac:    #E8FF6B;
-  --ac2:   #C8E040;
-  --wa:    #F59E4A;
-  --da:    #E8554A;
-  --info:  #5B9CF6;
-  --pu:    #9B7EF0;
-  --f1:    'Inter',sans-serif;
-  --f2:    'DM Sans',sans-serif;
-  --r1:    10px;
-  --r2:    14px;
+  --bg:#050506;
+  --s1:rgba(18,18,22,.92);
+  --s2:rgba(24,24,28,.88);
+  --s3:rgba(32,32,38,.85);
+  --s4:rgba(40,40,48,.9);
+  --ln:rgba(255,255,255,.06);
+  --ln2:rgba(255,255,255,.11);
+  --t1:#F4F1EC;
+  --t2:#7A7772;
+  --t3:#454340;
+  --ac:#E2FF5C;
+  --ac-dim:rgba(226,255,92,.12);
+  --ac2:#C8E84A;
+  --wa:#F0A050;
+  --da:#E85858;
+  --info:#6AACFF;
+  --pu:#B49AFF;
+  --f1:'Inter',system-ui,sans-serif;
+  --f2:'DM Sans',system-ui,sans-serif;
+  --r:12px;--r2:16px;--r3:20px;
+  --sh:0 8px 32px rgba(0,0,0,.45);
+  --sh-sm:0 2px 12px rgba(0,0,0,.35);
 }
-
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;overflow:hidden;}
-body{background:var(--bg);color:var(--t1);font-family:var(--f2);max-width:430px;margin:0 auto;display:flex;flex-direction:column;}
+body{
+  background:
+    radial-gradient(ellipse 100% 60% at 50% -15%, rgba(226,255,92,.07), transparent 55%),
+    radial-gradient(ellipse 70% 40% at 100% 30%, rgba(180,154,255,.05), transparent 45%),
+    var(--bg);
+  color:var(--t1);
+  font-family:var(--f2);
+  max-width:430px;
+  margin:0 auto;
+  display:flex;
+  flex-direction:column;
+}
 
-/* ── SETUP ── */
-.setup{position:fixed;inset:0;max-width:430px;margin:0 auto;background:var(--bg);z-index:999;display:flex;flex-direction:column;justify-content:center;padding:32px 24px;overflow-y:auto;}
+/* ─ SETUP ─────────────────────────────────────────── */
+.setup{position:fixed;inset:0;max-width:430px;margin:0 auto;background:var(--bg);z-index:999;display:flex;flex-direction:column;justify-content:center;padding:32px 22px;overflow-y:auto;}
 .setup.off{display:none;}
-.setup-logo{font-family:var(--f1);font-size:11px;font-weight:600;letter-spacing:.2em;color:var(--ac);margin-bottom:10px;}
-.setup-title{font-family:var(--f1);font-size:28px;font-weight:800;letter-spacing:-.04em;margin-bottom:6px;}
-.setup-sub{font-size:13px;color:var(--t2);margin-bottom:28px;line-height:1.6;}
-.sf{margin-bottom:12px;}
-.sf-label{font-family:var(--f1);font-size:10px;font-weight:500;letter-spacing:.12em;color:var(--t2);text-transform:uppercase;display:block;margin-bottom:5px;}
-.sf-label span{color:var(--ac);font-weight:400;}
-.sf input{width:100%;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--r1);padding:13px 14px;color:var(--t1);font-family:var(--f1);font-size:13px;outline:none;-webkit-appearance:none;transition:border-color .15s;}
-.sf input:focus{border-color:rgba(232,255,107,.3);}
+.sl{font-family:var(--f1);font-size:11px;font-weight:600;letter-spacing:.22em;color:var(--ac);margin-bottom:12px;}
+.st{font-family:var(--f1);font-size:26px;font-weight:800;letter-spacing:-.04em;margin-bottom:6px;}
+.ss{font-size:13px;color:var(--t2);margin-bottom:26px;line-height:1.6;}
+.sf{margin-bottom:11px;}
+.sf-l{font-family:var(--f1);font-size:10px;font-weight:500;letter-spacing:.12em;color:var(--t2);text-transform:uppercase;display:block;margin-bottom:4px;}
+.sf-l span{color:var(--ac);}
+.sf input{width:100%;background:var(--s2);border:1px solid var(--ln2);border-radius:var(--r);padding:12px 13px;color:var(--t1);font-family:var(--f1);font-size:13px;outline:none;-webkit-appearance:none;transition:border-color .15s;}
+.sf input:focus{border-color:rgba(222,255,71,.3);}
 .sf input::placeholder{color:var(--t3);}
-.sf-hint{font-size:11px;color:var(--t3);margin-top:4px;}
+.sf-hint{font-size:11px;color:var(--t3);margin-top:3px;}
 .sf-hint a{color:var(--ac);text-decoration:none;}
-.setup-btn{width:100%;margin-top:14px;background:var(--ac);color:#0A0A0B;border:none;border-radius:var(--r1);padding:16px;font-family:var(--f1);font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.01em;}
-.setup-btn:active{background:var(--ac2);}
-.setup-err{font-size:12px;color:var(--da);text-align:center;margin-top:8px;min-height:16px;}
+.s-btn{width:100%;margin-top:12px;background:var(--ac);color:#08090A;border:none;border-radius:var(--r);padding:15px;font-family:var(--f1);font-size:14px;font-weight:700;cursor:pointer;}
+.s-btn:active{background:var(--ac2);}
+.s-err{font-size:12px;color:var(--da);text-align:center;margin-top:7px;min-height:16px;}
 
-/* ── APP SHELL ── */
+/* ─ APP SHELL ─────────────────────────────────────── */
 .app{flex:1;display:flex;flex-direction:column;overflow:hidden;}
 .app.off{display:none;}
 .pages{flex:1;overflow:hidden;position:relative;}
-.page{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:80px;display:none;overscroll-behavior:none;}
+.page{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:78px;display:none;overscroll-behavior:none;}
 .page.on{display:block;}
 
-/* ── NAV ── */
-.nav{height:56px;background:rgba(10,10,11,.96);backdrop-filter:blur(20px);border-top:1px solid var(--line);display:flex;flex-shrink:0;padding-bottom:env(safe-area-inset-bottom,0);}
-.nb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:none;color:var(--t2);cursor:pointer;font-family:var(--f1);font-size:9px;font-weight:500;letter-spacing:.04em;padding:0;transition:color .15s;}
+/* ─ NAV ───────────────────────────────────────────── */
+.nav{
+  height:56px;
+  background:rgba(5,5,6,.94);
+  backdrop-filter:blur(28px) saturate(1.2);
+  border-top:1px solid var(--ln2);
+  display:flex;
+  flex-shrink:0;
+  padding-bottom:env(safe-area-inset-bottom,0);
+  box-shadow:0 -4px 24px rgba(0,0,0,.4);
+}
+.nb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:none;color:var(--t2);cursor:pointer;font-family:var(--f1);font-size:8px;font-weight:500;letter-spacing:.03em;padding:0;transition:color .18s, transform .15s;}
 .nb.on{color:var(--ac);}
+.nb.on svg{filter:drop-shadow(0 0 6px rgba(226,255,92,.35));}
 .nb svg{width:18px;height:18px;stroke-width:1.5;}
 
-/* ── PAGE HEADER ── */
-.ph{padding:52px 20px 16px;}
-.ph-eyebrow{font-family:var(--f1);font-size:10px;font-weight:500;letter-spacing:.14em;color:var(--t2);text-transform:uppercase;margin-bottom:4px;}
-.ph-title{font-family:var(--f1);font-size:26px;font-weight:800;letter-spacing:-.04em;line-height:1;}
-.ph-sub{font-size:12px;color:var(--t2);margin-top:4px;}
+/* ─ PAGE HEADER ───────────────────────────────────── */
+.ph{padding:50px 20px 14px;}
+.ph-ey{font-family:var(--f1);font-size:10px;font-weight:500;letter-spacing:.14em;color:var(--t2);text-transform:uppercase;margin-bottom:3px;}
+.ph-h1{font-family:var(--f1);font-size:25px;font-weight:800;letter-spacing:-.04em;line-height:1.05;}
+.ph-sub{font-size:12px;color:var(--t2);margin-top:4px;font-family:var(--f1);}
 
-/* ── SECTIONS ── */
-.sec{padding:14px 20px 0;}
-.sec-lbl{font-family:var(--f1);font-size:10px;font-weight:500;letter-spacing:.12em;color:var(--t2);text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;}
-.sec-lbl-action{font-family:var(--f1);font-size:10px;font-weight:500;color:var(--ac);text-transform:none;letter-spacing:0;cursor:pointer;background:none;border:none;padding:0;}
+/* ─ SECTIONS ──────────────────────────────────────── */
+.s{padding:12px 20px 0;}
+.slbl{font-family:var(--f1);font-size:10px;font-weight:500;letter-spacing:.12em;color:var(--t2);text-transform:uppercase;margin-bottom:7px;display:flex;align-items:center;justify-content:space-between;}
+.slbl-act{font-size:11px;font-weight:500;color:var(--ac);text-transform:none;letter-spacing:0;cursor:pointer;background:none;border:none;padding:0;}
 
-/* ── CARD ── */
-.card{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r2);padding:14px 15px;}
-.card-inset{background:var(--bg3);border:1px solid var(--line);border-radius:var(--r1);padding:11px 13px;}
-.divider{height:1px;background:var(--line);margin:0;}
+/* ─ CARDS ─────────────────────────────────────────── */
+.card{
+  background:linear-gradient(165deg, rgba(255,255,255,.05) 0%, rgba(255,255,255,.015) 100%);
+  border:1px solid var(--ln2);
+  border-radius:var(--r2);
+  padding:14px 15px;
+  box-shadow:var(--sh-sm);
+  backdrop-filter:blur(12px);
+}
+.inset{background:var(--s3);border:1px solid var(--ln);border-radius:var(--r);padding:11px 13px;}
 
-/* ── PROTEIN RING ── */
-.p-ring-card{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r2);padding:16px;display:flex;align-items:center;gap:16px;}
-.ring-wrap{position:relative;width:78px;height:78px;flex-shrink:0;}
-.ring-wrap svg{transform:rotate(-90deg);}
-.ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
-.ring-pct{font-family:var(--f1);font-size:17px;font-weight:700;color:var(--ac);}
-.ring-sub{font-family:var(--f1);font-size:8px;font-weight:500;letter-spacing:.06em;color:var(--t2);}
-.p-info{flex:1;}
-.p-lbl{font-family:var(--f1);font-size:10px;font-weight:500;letter-spacing:.12em;color:var(--t2);text-transform:uppercase;margin-bottom:3px;}
-.p-val{font-family:var(--f1);font-size:22px;font-weight:700;letter-spacing:-.03em;}
-.p-tgt{font-size:12px;color:var(--t2);margin-top:1px;}
-.p-gap{font-family:var(--f1);font-size:11px;font-weight:500;color:var(--wa);margin-top:5px;}
-.p-gap.ok{color:var(--ac);}
+/* ─ PROFILE & MACRO TARGETS ─────────────────────── */
+.profile-card{
+  background:linear-gradient(145deg, rgba(180,154,255,.08), rgba(255,255,255,.02));
+  border:1px solid rgba(180,154,255,.2);
+  border-radius:var(--r2);
+  padding:14px 15px;
+  box-shadow:var(--sh-sm);
+}
+.profile-card .pf-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
+.profile-card .pf-full{grid-column:1/-1;}
+.macro-targets{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px;
+}
+.mt-cell{
+  background:var(--s3);border:1px solid var(--ln);border-radius:var(--r);
+  padding:10px 6px;text-align:center;
+}
+.mt-cell .mt-v{font-family:var(--f1);font-size:17px;font-weight:700;letter-spacing:-.03em;line-height:1;}
+.mt-cell .mt-l{font-family:var(--f1);font-size:8px;font-weight:500;letter-spacing:.08em;color:var(--t2);text-transform:uppercase;margin-top:4px;}
+.mt-cell.p .mt-v{color:var(--ac);}.mt-cell.c .mt-v{color:var(--info);}
+.mt-cell.f .mt-v{color:var(--wa);}.mt-cell.k .mt-v{color:var(--t1);font-size:14px;}
+.meal-plan-card{
+  background:linear-gradient(160deg, rgba(226,255,92,.04), transparent);
+  border:1px solid rgba(226,255,92,.14);
+  border-radius:var(--r2);
+  padding:14px 15px;
+  margin-top:8px;
+}
+.meal-row{padding:10px 0;border-bottom:1px solid var(--ln);}
+.meal-row:last-child{border-bottom:none;padding-bottom:0;}
+.meal-slot{font-family:var(--f1);font-size:10px;font-weight:600;letter-spacing:.1em;color:var(--ac);text-transform:uppercase;margin-bottom:3px;}
+.meal-items{font-size:13px;font-weight:500;line-height:1.45;}
+.meal-tip{font-size:11px;color:var(--t2);margin-top:3px;line-height:1.4;}
+.pf-save{width:100%;margin-top:12px;background:var(--ac);color:#050506;border:none;border-radius:var(--r);padding:13px;font-family:var(--f1);font-size:13px;font-weight:700;cursor:pointer;}
+.pf-save:active{background:var(--ac2);}
+.tok-collapsed .tok-row{display:none;}
+.tok-toggle{font-family:var(--f1);font-size:10px;color:var(--t3);background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;}
 
-/* ── STAT GRID ── */
-.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-.stat-item{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r1);padding:12px 13px;}
-.stat-lbl{font-family:var(--f1);font-size:9px;font-weight:500;letter-spacing:.1em;color:var(--t2);text-transform:uppercase;margin-bottom:5px;}
-.stat-val{font-family:var(--f1);font-size:20px;font-weight:700;letter-spacing:-.03em;line-height:1;}
-.stat-unit{font-family:var(--f1);font-size:10px;color:var(--t2);margin-top:2px;}
-.stat-item.ac-border{border-color:rgba(232,255,107,.15);}.stat-item.ac-border .stat-val{color:var(--ac);}
-.stat-item.wa-border{border-color:rgba(245,158,74,.15);}.stat-item.wa-border .stat-val{color:var(--wa);}
+/* ─ PROTEIN RING ──────────────────────────────────── */
+.pc{
+  background:linear-gradient(160deg, rgba(226,255,92,.06), rgba(255,255,255,.02));
+  border:1px solid rgba(226,255,92,.12);
+  border-radius:var(--r2);
+  padding:16px;
+  display:flex;
+  align-items:center;
+  gap:15px;
+  box-shadow:var(--sh-sm);
+}
+.rw{position:relative;width:76px;height:76px;flex-shrink:0;}
+.rw svg{transform:rotate(-90deg);}
+.rc{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.rpct{font-family:var(--f1);font-size:16px;font-weight:700;color:var(--ac);}
+.rlb{font-family:var(--f1);font-size:8px;font-weight:500;letter-spacing:.06em;color:var(--t2);}
+.pi{flex:1;}
+.pi-l{font-family:var(--f1);font-size:10px;font-weight:500;letter-spacing:.1em;color:var(--t2);text-transform:uppercase;margin-bottom:3px;}
+.pi-v{font-family:var(--f1);font-size:21px;font-weight:700;letter-spacing:-.03em;}
+.pi-t{font-size:12px;color:var(--t2);margin-top:1px;font-family:var(--f1);}
+.pi-g{font-family:var(--f1);font-size:11px;font-weight:500;color:var(--wa);margin-top:4px;}
+.pi-g.ok{color:var(--ac);}
 
-/* ── MACRO BARS ── */
-.macro-card{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r1);padding:12px 14px;}
-.macro-lbl{font-family:var(--f1);font-size:10px;font-weight:500;letter-spacing:.12em;color:var(--t2);text-transform:uppercase;margin-bottom:9px;display:flex;align-items:center;gap:8px;}
-.carb-day-tag{font-family:var(--f1);font-size:9px;font-weight:500;padding:2px 7px;border-radius:999px;cursor:pointer;}
-.cdt-train{background:rgba(232,255,107,.1);color:var(--ac);}
-.cdt-rest{background:rgba(245,158,74,.1);color:var(--wa);}
-.mbar{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
-.mbar:last-child{margin-bottom:0;}
-.mbar-n{font-family:var(--f1);font-size:10px;font-weight:500;color:var(--t2);width:14px;}
-.mbar-track{flex:1;height:3px;background:rgba(255,255,255,.06);border-radius:999px;overflow:hidden;}
-.mbar-fill{height:100%;border-radius:999px;transition:width .5s ease;}
-.mbar-val{font-family:var(--f1);font-size:10px;font-weight:500;width:72px;text-align:right;}
+/* ─ STAT GRID ─────────────────────────────────────── */
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.si{background:var(--s1);border:1px solid var(--ln);border-radius:var(--r);padding:11px 12px;}
+.si-l{font-family:var(--f1);font-size:9px;font-weight:500;letter-spacing:.1em;color:var(--t2);text-transform:uppercase;margin-bottom:5px;}
+.si-v{font-family:var(--f1);font-size:19px;font-weight:700;letter-spacing:-.03em;line-height:1;}
+.si-u{font-family:var(--f1);font-size:10px;color:var(--t2);margin-top:2px;}
+.si.ac{border-color:rgba(222,255,71,.14);}.si.ac .si-v{color:var(--ac);}
+.si.wa{border-color:rgba(240,150,74,.14);}.si.wa .si-v{color:var(--wa);}
 
-/* ── FOOD INPUT ── */
-.food-box{background:var(--bg2);border:1px solid var(--line2);border-radius:var(--r2);overflow:hidden;}
-.food-box textarea{width:100%;background:transparent;border:none;outline:none;color:var(--t1);font-family:var(--f2);font-size:14px;padding:13px 14px;resize:none;min-height:64px;line-height:1.5;}
-.food-box textarea::placeholder{color:var(--t3);}
-.food-acts{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-top:1px solid var(--line);}
-.food-hint{font-family:var(--f1);font-size:10px;color:var(--t2);}
-.food-btns{display:flex;gap:6px;}
-.icon-btn{background:var(--bg3);border:1px solid var(--line2);border-radius:8px;padding:7px 10px;color:var(--t2);cursor:pointer;display:flex;align-items:center;gap:4px;font-family:var(--f1);font-size:10px;font-weight:500;transition:color .15s;}
-.icon-btn:active{color:var(--ac);}
-.icon-btn svg{width:13px;height:13px;}
+/* ─ MACRO BARS ────────────────────────────────────── */
+.mc{background:var(--s1);border:1px solid var(--ln);border-radius:var(--r);padding:12px 14px;}
+.mc-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;}
+.mc-l{font-family:var(--f1);font-size:10px;font-weight:500;letter-spacing:.12em;color:var(--t2);text-transform:uppercase;}
+.cdt{font-family:var(--f1);font-size:9px;font-weight:500;padding:2px 8px;border-radius:999px;cursor:pointer;border:none;-webkit-user-select:none;}
+.cdt-train{background:rgba(222,255,71,.1);color:var(--ac);}
+.cdt-rest{background:rgba(240,150,74,.1);color:var(--wa);}
+.mb{display:flex;align-items:center;gap:7px;margin-bottom:5px;}
+.mb:last-child{margin-bottom:0;}
+.mb-n{font-family:var(--f1);font-size:10px;font-weight:500;color:var(--t2);width:13px;}
+.mb-t{flex:1;height:3px;background:rgba(255,255,255,.05);border-radius:999px;overflow:hidden;}
+.mb-f{height:100%;border-radius:999px;transition:width .55s ease;}
+.mb-v{font-family:var(--f1);font-size:10px;font-weight:500;width:75px;text-align:right;}
+
+/* ─ FOOD INPUT ────────────────────────────────────── */
+.fb{background:var(--s1);border:1px solid var(--ln2);border-radius:var(--r2);overflow:hidden;}
+.fb textarea{width:100%;background:transparent;border:none;outline:none;color:var(--t1);font-family:var(--f2);font-size:14px;padding:12px 14px;resize:none;min-height:62px;line-height:1.55;}
+.fb textarea::placeholder{color:var(--t3);}
+.fa{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-top:1px solid var(--ln);}
+.fh{font-family:var(--f1);font-size:10px;color:var(--t2);}
+.fbtns{display:flex;gap:5px;}
+.ibtn{background:var(--s3);border:1px solid var(--ln2);border-radius:7px;padding:6px 9px;color:var(--t2);cursor:pointer;display:flex;align-items:center;gap:3px;font-family:var(--f1);font-size:10px;font-weight:500;}
+.ibtn:active{color:var(--ac);}
+.ibtn svg{width:12px;height:12px;}
 #photo-file{display:none;}
-.ac-btn{background:var(--ac);color:#0A0A0B;border:none;border-radius:8px;padding:7px 15px;font-family:var(--f1);font-size:12px;font-weight:700;cursor:pointer;}
-.ac-btn:active{background:var(--ac2);}
-.ac-btn:disabled{opacity:.4;}
+.abtn{background:var(--ac);color:#08090A;border:none;border-radius:7px;padding:6px 14px;font-family:var(--f1);font-size:12px;font-weight:700;cursor:pointer;}
+.abtn:active{background:var(--ac2);}
+.abtn:disabled{opacity:.4;}
 
-/* ── MANUAL FOOD INPUT ── */
-.manual-food-panel{background:var(--bg3);border:1px solid var(--line2);border-radius:var(--r1);padding:12px;margin-top:8px;display:none;}
-.manual-food-panel.on{display:block;}
-.mf-row{display:flex;gap:6px;margin-bottom:6px;}
-.mf-input{flex:1;background:var(--bg4);border:1px solid var(--line);border-radius:8px;padding:8px 10px;color:var(--t1);font-family:var(--f1);font-size:12px;outline:none;-webkit-appearance:none;}
-.mf-input::placeholder{color:var(--t3);}
-.mf-input:focus{border-color:var(--line2);}
-.mf-lbl{font-family:var(--f1);font-size:9px;font-weight:500;letter-spacing:.08em;color:var(--t2);text-transform:uppercase;margin-bottom:3px;}
-.mf-save{width:100%;background:var(--bg4);border:1px solid var(--line2);border-radius:8px;padding:9px;color:var(--t1);font-family:var(--f1);font-size:12px;font-weight:600;cursor:pointer;}
-.mf-save:active{background:rgba(232,255,107,.08);color:var(--ac);}
+/* manual food panel */
+.mfp{background:var(--s2);border:1px solid var(--ln2);border-radius:var(--r);padding:11px 12px;margin-top:7px;display:none;}
+.mfp.on{display:block;}
+.mf-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:5px;margin-bottom:7px;}
+.mf-col{display:flex;flex-direction:column;gap:3px;}
+.mf-lbl{font-family:var(--f1);font-size:9px;font-weight:500;letter-spacing:.08em;color:var(--t2);text-transform:uppercase;}
+.mf-in{background:var(--s4);border:1px solid var(--ln);border-radius:7px;padding:7px 8px;color:var(--t1);font-family:var(--f1);font-size:12px;outline:none;-webkit-appearance:none;width:100%;}
+.mf-in::placeholder{color:var(--t3);}
+.mf-save{width:100%;background:var(--s3);border:1px solid var(--ln2);border-radius:7px;padding:8px;color:var(--t1);font-family:var(--f1);font-size:12px;font-weight:600;cursor:pointer;}
+.mf-save:active{color:var(--ac);}
 
-/* ── FOOD LIST ── */
-.food-list{display:flex;flex-direction:column;gap:1px;background:var(--line);border-radius:var(--r1);overflow:hidden;}
-.food-item{background:var(--bg2);padding:11px 13px;display:flex;align-items:flex-start;gap:9px;animation:fi .18s ease;}
+/* food list */
+.fl{display:flex;flex-direction:column;gap:1px;background:var(--ln);border-radius:var(--r);overflow:hidden;}
+.fi{background:var(--s1);padding:10px 12px;display:flex;align-items:flex-start;gap:8px;animation:fi .18s ease;}
 @keyframes fi{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
-.food-item:first-child{border-radius:var(--r1) var(--r1) 0 0;}
-.food-item:last-child{border-radius:0 0 var(--r1) var(--r1);}
-.food-item:only-child{border-radius:var(--r1);}
-.fi-body{flex:1;}
-.fi-name{font-family:var(--f1);font-size:13px;font-weight:600;}
-.fi-time{font-size:11px;color:var(--t2);margin-top:1px;}
-.fi-pills{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px;}
-.pill{font-family:var(--f1);font-size:10px;font-weight:500;padding:2px 7px;border-radius:999px;}
-.pill-p{background:rgba(232,255,107,.08);color:var(--ac);}
-.pill-c{background:rgba(91,156,246,.08);color:var(--info);}
-.pill-f{background:rgba(245,158,74,.08);color:var(--wa);}
-.pill-k{background:rgba(255,255,255,.04);color:var(--t2);}
-.del-btn{background:none;border:none;color:var(--t3);cursor:pointer;padding:2px;display:flex;flex-shrink:0;}
-.del-btn:active{color:var(--da);}
-.del-btn svg{width:13px;height:13px;stroke-width:2;}
+.fi:first-child{border-radius:var(--r) var(--r) 0 0;}
+.fi:last-child{border-radius:0 0 var(--r) var(--r);}
+.fi:only-child{border-radius:var(--r);}
+.fi-b{flex:1;}
+.fi-n{font-family:var(--f1);font-size:13px;font-weight:600;}
+.fi-t{font-size:11px;color:var(--t2);margin-top:1px;}
+.fi-ps{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;}
+.pill{font-family:var(--f1);font-size:10px;font-weight:500;padding:2px 6px;border-radius:999px;}
+.pp{background:rgba(222,255,71,.07);color:var(--ac);}
+.pc2{background:rgba(90,156,245,.07);color:var(--info);}
+.pf{background:rgba(240,150,74,.07);color:var(--wa);}
+.pk{background:rgba(255,255,255,.04);color:var(--t2);}
+.delbtn{background:none;border:none;color:var(--t3);cursor:pointer;padding:2px;flex-shrink:0;display:flex;}
+.delbtn:active{color:var(--da);}
+.delbtn svg{width:13px;height:13px;stroke-width:2;}
 
-/* ── AI ADVICE BOX ── */
-.advice-box{background:var(--bg3);border:1px solid var(--line);border-radius:var(--r1);padding:12px 13px;margin-top:8px;}
-.advice-input-row{display:flex;gap:6px;}
-.advice-input{flex:1;background:var(--bg4);border:1px solid var(--line);border-radius:8px;padding:8px 10px;color:var(--t1);font-family:var(--f2);font-size:13px;outline:none;-webkit-appearance:none;}
-.advice-input::placeholder{color:var(--t3);}
-.advice-input:focus{border-color:var(--line2);}
-.advice-btn{background:var(--bg4);border:1px solid var(--line2);border-radius:8px;padding:8px 12px;color:var(--t2);font-family:var(--f1);font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap;transition:color .15s;}
-.advice-btn:active{color:var(--ac);}
-.advice-btn:disabled{opacity:.4;}
-.advice-result{margin-top:10px;display:none;}
-.advice-result.on{display:block;}
-.advice-item{font-size:13px;line-height:1.6;color:var(--t1);padding:6px 0;border-bottom:1px solid var(--line);}
-.advice-item:last-child{border-bottom:none;}
-.advice-item::before{content:'·';color:var(--ac);margin-right:6px;font-weight:700;}
-.advice-priority{font-family:var(--f1);font-size:11px;color:var(--t2);margin-top:6px;padding-top:6px;border-top:1px solid var(--line);}
+/* smart gap rec */
+.gap-rec-card{border-radius:var(--r2);padding:14px 15px;}
+.grc-ok{background:rgba(222,255,71,.04);border:1px solid rgba(222,255,71,.12);}
+.grc-warn{background:rgba(240,150,74,.04);border:1px solid rgba(240,150,74,.14);}
+.grc-alert{background:rgba(232,80,80,.04);border:1px solid rgba(232,80,80,.14);}
+.grc-headline{font-family:var(--f1);font-size:14px;font-weight:700;letter-spacing:-.01em;margin-bottom:7px;}
+.grc-suggestion{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--ln);}
+.grc-suggestion:last-of-type{border-bottom:none;}
+.grc-food{font-size:13px;font-weight:500;flex:1;}
+.grc-p{font-family:var(--f1);font-size:11px;font-weight:600;color:var(--ac);}
+.grc-reason{font-size:11px;color:var(--t2);margin-top:1px;}
+.grc-timing{font-family:var(--f1);font-size:11px;color:var(--t2);margin-top:8px;padding-top:8px;border-top:1px solid var(--ln);}
 
-/* ── THINKING ── */
-.thinking{display:flex;align-items:center;gap:7px;padding:10px 12px;background:var(--bg2);border-radius:var(--r1);border:1px solid var(--line);}
-.thinking-txt{font-family:var(--f1);font-size:11px;color:var(--t2);}
-.dots{display:flex;gap:3px;}
-.dots span{width:3px;height:3px;border-radius:50%;background:var(--ac);animation:bk 1.2s ease-in-out infinite;}
+/* advice box */
+.adv-box{background:var(--s2);border:1px solid var(--ln);border-radius:var(--r);padding:11px 12px;margin-top:7px;}
+.adv-row{display:flex;gap:5px;}
+.adv-in{flex:1;background:var(--s4);border:1px solid var(--ln);border-radius:7px;padding:8px 10px;color:var(--t1);font-family:var(--f2);font-size:13px;outline:none;-webkit-appearance:none;}
+.adv-in::placeholder{color:var(--t3);}
+.adv-in:focus{border-color:var(--ln2);}
+.adv-btn{background:var(--s3);border:1px solid var(--ln2);border-radius:7px;padding:8px 12px;color:var(--t2);font-family:var(--f1);font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap;}
+.adv-btn:active{color:var(--ac);}
+.adv-btn:disabled{opacity:.4;}
+.adv-res{margin-top:9px;display:none;}
+.adv-res.on{display:block;}
+.adv-item{font-size:13px;line-height:1.6;padding:5px 0;border-bottom:1px solid var(--ln);}
+.adv-item:last-child{border-bottom:none;}
+.adv-item::before{content:'·';color:var(--ac);margin-right:6px;font-weight:700;}
+.adv-pri{font-family:var(--f1);font-size:11px;color:var(--t2);margin-top:6px;padding-top:6px;border-top:1px solid var(--ln);}
+
+/* thinking */
+.think{display:flex;align-items:center;gap:7px;padding:10px 12px;background:var(--s1);border-radius:var(--r);border:1px solid var(--ln);}
+.think-txt{font-family:var(--f1);font-size:11px;color:var(--t2);}
+.dots span{display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--ac);animation:bk 1.2s ease-in-out infinite;margin-right:2px;}
 .dots span:nth-child(2){animation-delay:.2s;}.dots span:nth-child(3){animation-delay:.4s;}
 @keyframes bk{0%,80%,100%{opacity:.15}40%{opacity:1}}
 
-/* ── SUPPLEMENTS (custom) ── */
-.supp-list{display:flex;flex-direction:column;gap:1px;background:var(--line);border-radius:var(--r1);overflow:hidden;}
-.supp-item{background:var(--bg2);display:flex;align-items:center;gap:10px;padding:11px 13px;cursor:pointer;transition:background .12s;}
-.supp-item.on{background:rgba(232,255,107,.04);}
-.supp-item:first-child{border-radius:var(--r1) var(--r1) 0 0;}
-.supp-item:last-child{border-radius:0 0 var(--r1) var(--r1);}
-.supp-item:only-child{border-radius:var(--r1);}
-.supp-chk{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--t3);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;}
-.supp-item.on .supp-chk{background:var(--ac);border-color:var(--ac);}
-.supp-chk svg{width:10px;height:10px;opacity:0;transition:opacity .13s;}
-.supp-item.on .supp-chk svg{opacity:1;}
-.supp-name{flex:1;font-size:13px;font-weight:500;}
-.supp-dose{font-family:var(--f1);font-size:11px;color:var(--t2);}
-.supp-del{background:none;border:none;color:var(--t3);cursor:pointer;padding:2px;display:flex;margin-left:4px;}
-.supp-del:active{color:var(--da);}
-.supp-del svg{width:12px;height:12px;stroke-width:2;}
-/* add supp */
-.add-supp-row{display:flex;gap:6px;margin-top:8px;}
-.add-supp-name{flex:2;background:var(--bg3);border:1px solid var(--line);border-radius:8px;padding:9px 11px;color:var(--t1);font-family:var(--f2);font-size:13px;outline:none;-webkit-appearance:none;}
-.add-supp-name::placeholder{color:var(--t3);}
-.add-supp-dose{flex:1;background:var(--bg3);border:1px solid var(--line);border-radius:8px;padding:9px 11px;color:var(--t1);font-family:var(--f2);font-size:13px;outline:none;-webkit-appearance:none;}
-.add-supp-dose::placeholder{color:var(--t3);}
-.add-supp-btn{background:var(--bg3);border:1px solid var(--line2);border-radius:8px;padding:9px 13px;color:var(--t1);font-family:var(--f1);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;}
-.add-supp-btn:active{color:var(--ac);}
+/* ─ TRAINING ──────────────────────────────────────── */
+/* muscle selector */
+.muscle-sel-wrap{display:flex;flex-wrap:wrap;gap:6px;}
+.ms-btn{background:var(--s3);border:1px solid var(--ln);border-radius:999px;padding:6px 13px;font-family:var(--f1);font-size:12px;font-weight:500;color:var(--t2);cursor:pointer;-webkit-user-select:none;transition:all .12s;}
+.ms-btn.on{background:rgba(222,255,71,.1);border-color:rgba(222,255,71,.28);color:var(--ac);}
+.ms-btn.rest-btn.on{background:rgba(240,150,74,.1);border-color:rgba(240,150,74,.28);color:var(--wa);}
 
-/* ── TRAINING ── */
-.session-header{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r2);padding:14px 15px;}
-.sh-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
-.sh-title{font-family:var(--f1);font-size:17px;font-weight:700;letter-spacing:-.02em;}
-.sh-date{font-family:var(--f1);font-size:10px;color:var(--t2);}
+/* session header */
+.sh{background:var(--s1);border:1px solid var(--ln);border-radius:var(--r2);padding:13px 14px;}
+.sh-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:5px;}
+.sh-title{font-family:var(--f1);font-size:16px;font-weight:700;letter-spacing:-.02em;flex:1;}
+.sh-badge{font-family:var(--f1);font-size:10px;color:var(--t2);white-space:nowrap;padding-top:2px;}
 .sh-sub{font-size:12px;color:var(--t2);}
-.vol-row{display:flex;gap:0;background:var(--bg3);border-radius:var(--r1);overflow:hidden;}
-.vi{flex:1;padding:11px 13px;border-right:1px solid var(--line);}
+
+/* vol row */
+.vr{display:flex;background:var(--s2);border-radius:var(--r);overflow:hidden;border:1px solid var(--ln);}
+.vi{flex:1;padding:10px 12px;border-right:1px solid var(--ln);}
 .vi:last-child{border-right:none;}
-.vi-lbl{font-family:var(--f1);font-size:9px;font-weight:500;letter-spacing:.1em;color:var(--t2);text-transform:uppercase;margin-bottom:3px;}
-.vi-val{font-family:var(--f1);font-size:17px;font-weight:700;letter-spacing:-.02em;}
-.vi-unit{font-family:var(--f1);font-size:9px;color:var(--t2);}
+.vi-l{font-family:var(--f1);font-size:9px;font-weight:500;letter-spacing:.1em;color:var(--t2);text-transform:uppercase;margin-bottom:2px;}
+.vi-v{font-family:var(--f1);font-size:16px;font-weight:700;letter-spacing:-.02em;}
+.vi-u{font-family:var(--f1);font-size:9px;color:var(--t2);}
 
-/* RPE */
-.rpe-row{display:flex;align-items:center;gap:7px;}
-.rpe-lbl{font-family:var(--f1);font-size:10px;font-weight:500;color:var(--t2);white-space:nowrap;}
-.rpe-btns{display:flex;gap:4px;flex-wrap:wrap;}
-.rb{background:var(--bg3);border:1px solid var(--line);border-radius:6px;padding:5px 7px;font-family:var(--f1);font-size:11px;font-weight:500;color:var(--t2);cursor:pointer;transition:all .1s;-webkit-user-select:none;}
-.rb.on{background:rgba(232,255,107,.1);border-color:rgba(232,255,107,.25);color:var(--ac);}
+/* rpe */
+.rpe-r{display:flex;align-items:center;gap:6px;}
+.rpe-l{font-family:var(--f1);font-size:10px;font-weight:500;color:var(--t2);white-space:nowrap;}
+.rpbtns{display:flex;gap:4px;flex-wrap:wrap;}
+.rb{background:var(--s3);border:1px solid var(--ln);border-radius:6px;padding:5px 7px;font-family:var(--f1);font-size:11px;font-weight:500;color:var(--t2);cursor:pointer;-webkit-user-select:none;transition:all .1s;}
+.rb.on{background:rgba(222,255,71,.1);border-color:rgba(222,255,71,.25);color:var(--ac);}
 
-/* EXERCISES */
-.ex-list{display:flex;flex-direction:column;gap:8px;}
-.ex-card{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r1);overflow:hidden;}
-.ex-card.done{border-color:rgba(232,255,107,.18);}
-.ex-header{display:flex;align-items:center;gap:9px;padding:11px 12px;cursor:pointer;-webkit-user-select:none;}
-.ex-chk{width:19px;height:19px;border-radius:50%;border:1.5px solid var(--t3);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;}
-.ex-card.done .ex-chk{background:var(--ac);border-color:var(--ac);}
-.ex-chk svg{width:10px;height:10px;opacity:0;stroke:#0A0A0B;transition:opacity .13s;}
-.ex-card.done .ex-chk svg{opacity:1;}
-.ex-info{flex:1;}
-.ex-name{font-family:var(--f1);font-size:13px;font-weight:600;}
-.ex-plan{font-family:var(--f1);font-size:11px;color:var(--t2);margin-top:1px;}
-.ex-tags{display:flex;gap:4px;flex-shrink:0;}
-.ex-tag{font-family:var(--f1);font-size:9px;font-weight:500;padding:2px 6px;border-radius:999px;}
-.ex-tag-m{background:rgba(232,255,107,.07);color:var(--ac);}
-.ex-tag-rpe{background:rgba(155,126,240,.07);color:var(--pu);}
+/* exercise cards */
+.exlist{display:flex;flex-direction:column;gap:7px;}
+.exc{background:var(--s1);border:1px solid var(--ln);border-radius:var(--r);overflow:hidden;transition:border-color .15s;}
+.exc.done{border-color:rgba(222,255,71,.18);}
+.exc-hdr{display:flex;align-items:center;gap:9px;padding:11px 12px;cursor:pointer;-webkit-user-select:none;}
+.exc-chk{width:19px;height:19px;border-radius:50%;border:1.5px solid var(--t3);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.exc.done .exc-chk{background:var(--ac);border-color:var(--ac);}
+.exc-chk svg{width:10px;height:10px;opacity:0;stroke:#08090A;transition:opacity .13s;}
+.exc.done .exc-chk svg{opacity:1;}
+.exc-info{flex:1;min-width:0;}
+.exc-name{font-family:var(--f1);font-size:13px;font-weight:600;}
+.exc-plan{font-family:var(--f1);font-size:11px;color:var(--t2);margin-top:1px;}
+.exc-tip{font-size:11px;color:var(--t3);margin-top:1px;}
+.exc-tags{display:flex;gap:4px;flex-shrink:0;}
+.et{font-family:var(--f1);font-size:9px;font-weight:500;padding:2px 6px;border-radius:999px;white-space:nowrap;}
+.et-m{background:rgba(222,255,71,.07);color:var(--ac);}
+.et-r{background:rgba(155,124,238,.07);color:var(--pu);}
+.exc-del{background:none;border:none;color:var(--t3);cursor:pointer;padding:4px;margin-left:2px;display:flex;}
+.exc-del:active{color:var(--da);}
+.exc-del svg{width:13px;height:13px;stroke-width:2;}
 
-/* 多组记录 */
-.sets-panel{padding:0 12px 12px;border-top:1px solid var(--line);}
-.sets-header{display:flex;align-items:center;justify-content:space-between;padding:8px 0 6px;}
-.sets-lbl{font-family:var(--f1);font-size:10px;font-weight:500;letter-spacing:.1em;color:var(--t2);text-transform:uppercase;}
-.add-set-btn{font-family:var(--f1);font-size:10px;font-weight:500;color:var(--ac);background:none;border:none;cursor:pointer;}
-.set-row{display:grid;grid-template-columns:20px 1fr 1fr 1fr 1fr;gap:5px;align-items:center;margin-bottom:5px;}
-.set-num{font-family:var(--f1);font-size:10px;color:var(--t2);text-align:center;}
-.set-lbl-row{display:grid;grid-template-columns:20px 1fr 1fr 1fr 1fr;gap:5px;margin-bottom:4px;}
-.set-col-lbl{font-family:var(--f1);font-size:9px;font-weight:500;letter-spacing:.08em;color:var(--t3);text-transform:uppercase;text-align:center;}
-.set-input{background:var(--bg4);border:1px solid var(--line);border-radius:6px;padding:6px 8px;color:var(--t1);font-family:var(--f1);font-size:12px;font-weight:500;text-align:center;outline:none;-webkit-appearance:none;width:100%;}
-.set-input:focus{border-color:var(--line2);}
-.set-diff{font-family:var(--f1);font-size:10px;text-align:center;}
-.diff-up{color:var(--ac);}
-.diff-dn{color:var(--wa);}
-.diff-eq{color:var(--t2);}
-.ex-notes{font-family:var(--f1);font-size:10px;color:var(--t2);padding:6px 0 0;}
+/* sets panel */
+.sp{padding:0 12px 11px;border-top:1px solid var(--ln);}
+.sp-hdr{display:flex;align-items:center;justify-content:space-between;padding:7px 0 5px;}
+.sp-lbl{font-family:var(--f1);font-size:9px;font-weight:600;letter-spacing:.1em;color:var(--t2);text-transform:uppercase;}
+.sp-add{font-family:var(--f1);font-size:10px;font-weight:500;color:var(--ac);background:none;border:none;cursor:pointer;}
+.sp-col-hdr{display:grid;grid-template-columns:18px 1fr 1fr 1fr 1fr;gap:5px;margin-bottom:4px;}
+.sp-ch{font-family:var(--f1);font-size:9px;font-weight:500;letter-spacing:.07em;color:var(--t3);text-transform:uppercase;text-align:center;}
+.set-row{display:grid;grid-template-columns:18px 1fr 1fr 1fr 1fr;gap:5px;align-items:center;margin-bottom:4px;}
+.set-n{font-family:var(--f1);font-size:10px;color:var(--t2);text-align:center;}
+.set-in{background:var(--s4);border:1px solid var(--ln);border-radius:6px;padding:5px 7px;color:var(--t1);font-family:var(--f1);font-size:12px;font-weight:500;text-align:center;outline:none;-webkit-appearance:none;width:100%;}
+.set-in:focus{border-color:var(--ln2);}
+.set-diff{font-family:var(--f1);font-size:10px;font-weight:500;text-align:center;}
+.d-up{color:var(--ac);}.d-dn{color:var(--wa);}.d-eq{color:var(--t2);}
+.cmp-strip{background:var(--s3);border-radius:var(--r);padding:9px 11px;margin-top:6px;}
+.cmp-r{display:flex;gap:0;}
+.cmp-c{flex:1;}
+.cmp-l{font-family:var(--f1);font-size:9px;font-weight:500;letter-spacing:.08em;color:var(--t2);text-transform:uppercase;margin-bottom:2px;}
+.cmp-v{font-family:var(--f1);font-size:12px;font-weight:600;}
+.cmp-div{width:1px;background:var(--ln);margin:0 11px;}
+.diff-track{flex:1;height:2px;background:var(--s4);border-radius:999px;overflow:hidden;}
+.diff-fill{height:100%;border-radius:999px;}
 
-/* COMPARISON */
-.cmp-strip{background:var(--bg3);border-radius:var(--r1);padding:10px 12px;margin-top:6px;}
-.cmp-row{display:flex;gap:0;}
-.cmp-col{flex:1;}
-.cmp-lbl{font-family:var(--f1);font-size:9px;font-weight:500;letter-spacing:.08em;color:var(--t2);text-transform:uppercase;margin-bottom:3px;}
-.cmp-val{font-family:var(--f1);font-size:12px;font-weight:600;}
-.cmp-divider{width:1px;background:var(--line);margin:0 12px;}
-.diff-bar-wrap{display:flex;align-items:center;gap:6px;margin-top:6px;}
-.diff-bar-track{flex:1;height:2px;background:var(--line);border-radius:999px;overflow:hidden;}
-.diff-bar-fill{height:100%;border-radius:999px;transition:width .4s ease;}
+/* add exercise */
+.add-ex-panel{background:var(--s2);border:1px solid var(--ln2);border-radius:var(--r);padding:11px 12px;margin-top:7px;display:none;}
+.add-ex-panel.on{display:block;}
+.aep-row{display:flex;gap:5px;margin-bottom:5px;flex-wrap:wrap;}
+.aep-in{flex:1;min-width:100px;background:var(--s4);border:1px solid var(--ln);border-radius:7px;padding:8px 10px;color:var(--t1);font-family:var(--f2);font-size:13px;outline:none;-webkit-appearance:none;}
+.aep-in::placeholder{color:var(--t3);}
+.aep-num{width:64px;background:var(--s4);border:1px solid var(--ln);border-radius:7px;padding:8px 10px;color:var(--t1);font-family:var(--f1);font-size:13px;outline:none;-webkit-appearance:none;text-align:center;}
+.aep-save{width:100%;background:var(--s3);border:1px solid var(--ln2);border-radius:7px;padding:9px;color:var(--t1);font-family:var(--f1);font-size:12px;font-weight:600;cursor:pointer;}
+.aep-save:active{color:var(--ac);}
 
-/* GENERAL BUTTONS */
-.ghost-btn{width:100%;background:transparent;border:1px solid var(--line2);border-radius:var(--r1);padding:12px;color:var(--t1);font-family:var(--f1);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;}
-.ghost-btn:active{background:var(--bg3);}
-.ghost-btn svg{width:14px;height:14px;color:var(--ac);}
-.save-btn{width:100%;background:var(--ac);color:#0A0A0B;border:none;border-radius:var(--r1);padding:14px;font-family:var(--f1);font-size:14px;font-weight:700;cursor:pointer;}
+/* general btns */
+.ghost-btn{width:100%;background:transparent;border:1px solid var(--ln2);border-radius:var(--r);padding:12px;color:var(--t1);font-family:var(--f1);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;}
+.ghost-btn:active{background:var(--s2);}
+.ghost-btn svg{width:13px;height:13px;color:var(--ac);}
+.save-btn{width:100%;background:var(--ac);color:#08090A;border:none;border-radius:var(--r);padding:13px;font-family:var(--f1);font-size:14px;font-weight:700;cursor:pointer;}
 .save-btn:active{background:var(--ac2);}
-.notes-in{width:100%;background:var(--bg2);border:1px solid var(--line);border-radius:var(--r1);padding:11px 13px;color:var(--t1);font-family:var(--f2);font-size:13px;outline:none;resize:none;line-height:1.5;transition:border-color .15s;}
-.notes-in:focus{border-color:var(--line2);}
+.ni{background:var(--s3);border:1px solid var(--ln);border-radius:var(--r);padding:8px 10px;color:var(--t1);font-family:var(--f1);font-size:13px;outline:none;-webkit-appearance:none;}
+.ni:focus{border-color:var(--ln2);}
+.notes-in{width:100%;background:var(--s1);border:1px solid var(--ln);border-radius:var(--r);padding:10px 12px;color:var(--t1);font-family:var(--f2);font-size:13px;outline:none;resize:none;line-height:1.5;}
+.notes-in:focus{border-color:var(--ln2);}
 .notes-in::placeholder{color:var(--t3);}
 
-/* PLAN */
-.plan-hero{background:linear-gradient(135deg,rgba(155,126,240,.07),rgba(91,156,246,.04));border:1px solid rgba(155,126,240,.18);border-radius:var(--r2);padding:15px;}
-.plan-hero-empty{border-color:var(--line);}
-.pw-card{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r1);padding:13px;}
-.day-row{display:flex;align-items:center;gap:9px;padding:6px 0;border-bottom:1px solid var(--line);}
+/* ─ PLAN ──────────────────────────────────────────── */
+.plan-hero{border-radius:var(--r2);padding:14px 15px;}
+.ph-active{background:linear-gradient(135deg,rgba(155,124,238,.06),rgba(90,156,245,.03));border:1px solid rgba(155,124,238,.18);}
+.ph-empty{background:var(--s1);border:1px solid var(--ln);}
+.pw-card{background:var(--s1);border:1px solid var(--ln);border-radius:var(--r);padding:12px 13px;}
+.day-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--ln);}
 .day-row:last-child{border-bottom:none;}
-.day-name{font-family:var(--f1);font-size:10px;font-weight:500;color:var(--t2);width:26px;}
+.day-name{font-family:var(--f1);font-size:10px;font-weight:500;color:var(--t2);width:24px;}
 .day-focus{font-size:12px;flex:1;}
 .day-tag{font-family:var(--f1);font-size:9px;font-weight:500;padding:2px 6px;border-radius:999px;}
-.dt-train{background:rgba(232,255,107,.08);color:var(--ac);}
-.dt-rest{background:rgba(255,255,255,.04);color:var(--t2);}
-.ms-row{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--line);}
+.dt-tr{background:rgba(222,255,71,.08);color:var(--ac);}
+.dt-rs{background:rgba(255,255,255,.04);color:var(--t2);}
+.dt-leg{background:rgba(240,150,74,.08);color:var(--wa);}
+.ms-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--ln);}
 .ms-row:last-child{border-bottom:none;}
 .ms-dot{width:6px;height:6px;border-radius:50%;background:var(--pu);flex-shrink:0;}
-.ms-week{font-family:var(--f1);font-size:10px;font-weight:500;color:var(--t2);width:46px;}
-.ms-body{flex:1;}
-.ms-title{font-size:12px;font-weight:600;}
-.ms-sub{font-size:11px;color:var(--t2);margin-top:1px;}
-/* plan form */
-.pf-select{width:100%;background:var(--bg3);border:1px solid var(--line);border-radius:var(--r1);padding:10px 12px;color:var(--t1);font-family:var(--f1);font-size:13px;outline:none;-webkit-appearance:none;margin-bottom:8px;}
+.ms-wk{font-family:var(--f1);font-size:10px;font-weight:500;color:var(--t2);width:44px;}
+.ms-b{flex:1;}
+.ms-t{font-size:12px;font-weight:600;}
+.ms-s{font-size:11px;color:var(--t2);margin-top:1px;}
 .pf-lbl{font-family:var(--f1);font-size:10px;font-weight:500;letter-spacing:.1em;color:var(--t2);text-transform:uppercase;display:block;margin-bottom:4px;}
-.pf-ta{width:100%;background:var(--bg3);border:1px solid var(--line);border-radius:var(--r1);padding:10px 12px;color:var(--t1);font-family:var(--f2);font-size:13px;outline:none;resize:none;margin-bottom:8px;line-height:1.5;}
+.pf-sel{width:100%;background:var(--s3);border:1px solid var(--ln);border-radius:var(--r);padding:10px 11px;color:var(--t1);font-family:var(--f1);font-size:13px;outline:none;-webkit-appearance:none;margin-bottom:8px;}
+.pf-ta{width:100%;background:var(--s3);border:1px solid var(--ln);border-radius:var(--r);padding:10px 11px;color:var(--t1);font-family:var(--f2);font-size:13px;outline:none;resize:none;line-height:1.5;margin-bottom:8px;}
 .pf-ta::placeholder{color:var(--t3);}
-.gen-btn{width:100%;background:rgba(155,126,240,.12);border:1px solid rgba(155,126,240,.22);border-radius:var(--r1);padding:13px;color:var(--t1);font-family:var(--f1);font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;}
-.gen-btn svg{width:15px;height:15px;color:var(--pu);}
-/* compare card */
-.cmp-hist-item{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r1);padding:11px 13px;margin-bottom:6px;}
-.cmp-hist-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;}
-.cmp-hist-date{font-family:var(--f1);font-size:11px;font-weight:500;color:var(--t2);}
-.cmp-hist-pct{font-family:var(--f1);font-size:12px;font-weight:600;}
+.gen-btn{width:100%;background:rgba(155,124,238,.1);border:1px solid rgba(155,124,238,.2);border-radius:var(--r);padding:12px;color:var(--t1);font-family:var(--f1);font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;}
+.gen-btn svg{width:14px;height:14px;color:var(--pu);}
+.cmp-hist{background:var(--s1);border:1px solid var(--ln);border-radius:var(--r);padding:10px 12px;margin-bottom:6px;}
+.ch-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+.ch-date{font-family:var(--f1);font-size:11px;font-weight:500;color:var(--t2);}
+.ch-pct{font-family:var(--f1);font-size:12px;font-weight:600;}
 
-/* BODY */
-.comp-row{display:flex;gap:8px;}
-.cp{flex:1;background:var(--bg3);border:1px solid var(--line);border-radius:var(--r1);padding:11px;text-align:center;}
-.cp-lbl{font-family:var(--f1);font-size:9px;font-weight:500;letter-spacing:.1em;color:var(--t2);text-transform:uppercase;margin-bottom:3px;}
-.cp-val{font-family:var(--f1);font-size:18px;font-weight:700;letter-spacing:-.02em;}
-.cp-unit{font-family:var(--f1);font-size:10px;color:var(--t2);}
-.cp.m .cp-val{color:var(--ac);}.cp.f .cp-val{color:var(--wa);}
-.in-row{display:flex;gap:6px;margin-top:7px;}
-.ni{flex:1;background:var(--bg3);border:1px solid var(--line);border-radius:var(--r1);padding:8px 10px;color:var(--t1);font-family:var(--f1);font-size:13px;outline:none;-webkit-appearance:none;}
-.ni:focus{border-color:var(--line2);}
-.upd-btn{background:var(--bg3);border:1px solid var(--line2);border-radius:var(--r1);padding:8px 13px;color:var(--t1);font-family:var(--f1);font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap;}
+/* ─ BODY ──────────────────────────────────────────── */
+.comp-row{display:flex;gap:7px;}
+.cp{flex:1;background:var(--s3);border:1px solid var(--ln);border-radius:var(--r);padding:10px;text-align:center;}
+.cp-l{font-family:var(--f1);font-size:9px;font-weight:500;letter-spacing:.1em;color:var(--t2);text-transform:uppercase;margin-bottom:3px;}
+.cp-v{font-family:var(--f1);font-size:17px;font-weight:700;letter-spacing:-.02em;}
+.cp-u{font-family:var(--f1);font-size:10px;color:var(--t2);}
+.cp.m .cp-v{color:var(--ac);}.cp.f .cp-v{color:var(--wa);}
+.in-row{display:flex;gap:6px;margin-top:6px;}
+.upd-btn{background:var(--s3);border:1px solid var(--ln2);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-family:var(--f1);font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap;}
 .upd-btn:active{color:var(--ac);}
-/* chart */
-.chart-wrap{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r2);padding:14px;}
-.chart-title{font-family:var(--f1);font-size:13px;font-weight:600;margin-bottom:11px;}
-.chart-legend{display:flex;gap:12px;margin-top:7px;}
-.cl-item{display:flex;align-items:center;gap:4px;font-family:var(--f1);font-size:10px;color:var(--t2);}
-.cl-line{width:12px;height:2px;border-radius:1px;}
-/* measures */
+.chart-wrap{background:var(--s1);border:1px solid var(--ln);border-radius:var(--r2);padding:13px;}
+.chart-title{font-family:var(--f1);font-size:13px;font-weight:600;margin-bottom:10px;}
+.chart-leg{display:flex;gap:12px;margin-top:6px;}
+.cl{display:flex;align-items:center;gap:4px;font-family:var(--f1);font-size:10px;color:var(--t2);}
+.cl-line{width:12px;height:1.5px;border-radius:1px;}
 .mg{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
-.mi{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r1);padding:11px;display:flex;flex-direction:column;gap:5px;}
-.mi-lbl{font-family:var(--f1);font-size:9px;font-weight:500;letter-spacing:.1em;color:var(--t2);text-transform:uppercase;}
+.mi{background:var(--s1);border:1px solid var(--ln);border-radius:var(--r);padding:11px;display:flex;flex-direction:column;gap:5px;}
+.mi-l{font-family:var(--f1);font-size:9px;font-weight:500;letter-spacing:.1em;color:var(--t2);text-transform:uppercase;}
 .mi-vr{display:flex;align-items:baseline;gap:3px;}
 .mi-v{font-family:var(--f1);font-size:17px;font-weight:700;}
 .mi-u{font-family:var(--f1);font-size:10px;color:var(--t2);}
 /* sleep */
-.sleep-slider{width:100%;-webkit-appearance:none;height:3px;border-radius:999px;background:rgba(255,255,255,.08);outline:none;}
-.sleep-slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--ac);cursor:pointer;}
-.sq-btns{display:flex;gap:5px;}
-.sqb{flex:1;background:var(--bg3);border:1px solid var(--line);border-radius:8px;padding:7px;font-family:var(--f1);font-size:11px;font-weight:500;color:var(--t2);cursor:pointer;text-align:center;-webkit-user-select:none;transition:all .12s;}
-.sqb.on{background:rgba(232,255,107,.08);border-color:rgba(232,255,107,.2);color:var(--ac);}
-.sleep-log-item{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--line);}
-.sleep-log-item:last-child{border-bottom:none;}
-.sl-date{font-family:var(--f1);font-size:10px;color:var(--t2);width:50px;}
-.sl-bar-wrap{flex:1;height:3px;background:rgba(255,255,255,.06);border-radius:999px;overflow:hidden;}
-.sl-bar{height:100%;border-radius:999px;background:var(--info);}
-.sl-dur{font-family:var(--f1);font-size:11px;font-weight:500;width:34px;text-align:right;}
+.sleep-sl{width:100%;-webkit-appearance:none;height:3px;border-radius:999px;background:rgba(255,255,255,.07);outline:none;}
+.sleep-sl::-webkit-slider-thumb{-webkit-appearance:none;width:17px;height:17px;border-radius:50%;background:var(--ac);cursor:pointer;}
+.sqb-row{display:flex;gap:5px;}
+.sqb{flex:1;background:var(--s3);border:1px solid var(--ln);border-radius:7px;padding:7px;font-family:var(--f1);font-size:11px;font-weight:500;color:var(--t2);cursor:pointer;text-align:center;-webkit-user-select:none;transition:all .12s;}
+.sqb.on{background:rgba(222,255,71,.07);border-color:rgba(222,255,71,.2);color:var(--ac);}
+.sl-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--ln);}
+.sl-item:last-child{border-bottom:none;}
+.sl-d{font-family:var(--f1);font-size:10px;color:var(--t2);width:48px;}
+.sl-bw{flex:1;height:2px;background:rgba(255,255,255,.06);border-radius:999px;overflow:hidden;}
+.sl-bf{height:100%;background:var(--info);}
+.sl-dur{font-family:var(--f1);font-size:11px;font-weight:500;width:32px;text-align:right;}
+.sl-q{font-family:var(--f1);font-size:10px;color:var(--t2);width:22px;text-align:center;}
 /* strength */
-.str-sel{width:100%;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--r1);color:var(--t1);font-family:var(--f1);font-size:12px;padding:8px 10px;outline:none;-webkit-appearance:none;}
-.str-log-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);}
-.str-log-item:last-child{border-bottom:none;}
-.sl-d2{font-family:var(--f1);font-size:10px;color:var(--t2);width:50px;}
-.sl-e1rm{font-family:var(--f1);font-size:12px;font-weight:600;color:var(--pu);}
-.sl-detail2{font-family:var(--f1);font-size:10px;color:var(--t2);}
+.str-sel{width:100%;background:var(--s3);border:1px solid var(--ln2);border-radius:var(--r);color:var(--t1);font-family:var(--f1);font-size:12px;padding:7px 10px;outline:none;-webkit-appearance:none;}
+.stl-item{display:flex;align-items:center;gap:7px;padding:6px 0;border-bottom:1px solid var(--ln);}
+.stl-item:last-child{border-bottom:none;}
+.stl-d{font-family:var(--f1);font-size:10px;color:var(--t2);width:48px;}
+.stl-e{font-family:var(--f1);font-size:12px;font-weight:600;color:var(--pu);}
+.stl-det{font-family:var(--f1);font-size:10px;color:var(--t2);}
 
-/* MEMORY */
-.mem-list{display:flex;flex-direction:column;gap:1px;background:var(--line);border-radius:var(--r1);overflow:hidden;}
-.mem-item{background:var(--bg2);padding:11px 13px;display:flex;align-items:flex-start;gap:8px;}
-.mem-item:first-child{border-radius:var(--r1) var(--r1) 0 0;}
-.mem-item:last-child{border-radius:0 0 var(--r1) var(--r1);}
-.mem-item:only-child{border-radius:var(--r1);}
+/* supps */
+.supp-list{display:flex;flex-direction:column;gap:1px;background:var(--ln);border-radius:var(--r);overflow:hidden;}
+.si2{background:var(--s1);display:flex;align-items:center;gap:9px;padding:10px 12px;cursor:pointer;}
+.si2.on{background:rgba(222,255,71,.03);}
+.si2:first-child{border-radius:var(--r) var(--r) 0 0;}
+.si2:last-child{border-radius:0 0 var(--r) var(--r);}
+.si2:only-child{border-radius:var(--r);}
+.s-chk{width:17px;height:17px;border-radius:4px;border:1.5px solid var(--t3);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .13s;}
+.si2.on .s-chk{background:var(--ac);border-color:var(--ac);}
+.s-chk svg{width:9px;height:9px;opacity:0;stroke:#08090A;transition:opacity .12s;}
+.si2.on .s-chk svg{opacity:1;}
+.s-name{flex:1;font-size:13px;font-weight:500;}
+.s-dose{font-family:var(--f1);font-size:11px;color:var(--t2);}
+.s-del{background:none;border:none;color:var(--t3);cursor:pointer;padding:2px;display:flex;margin-left:3px;}
+.s-del:active{color:var(--da);}
+.s-del svg{width:12px;height:12px;stroke-width:2;}
+.add-supp-r{display:flex;gap:5px;margin-top:7px;}
+.as-n{flex:2;background:var(--s3);border:1px solid var(--ln);border-radius:7px;padding:8px 10px;color:var(--t1);font-family:var(--f2);font-size:13px;outline:none;-webkit-appearance:none;}
+.as-n::placeholder{color:var(--t3);}
+.as-d{flex:1;background:var(--s3);border:1px solid var(--ln);border-radius:7px;padding:8px 10px;color:var(--t1);font-family:var(--f2);font-size:13px;outline:none;-webkit-appearance:none;}
+.as-d::placeholder{color:var(--t3);}
+.as-btn{background:var(--s3);border:1px solid var(--ln2);border-radius:7px;padding:8px 12px;color:var(--t1);font-family:var(--f1);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;}
+.as-btn:active{color:var(--ac);}
+
+/* memory */
+.mem-list{display:flex;flex-direction:column;gap:1px;background:var(--ln);border-radius:var(--r);overflow:hidden;}
+.mem-i{background:var(--s1);padding:10px 12px;display:flex;align-items:flex-start;gap:8px;}
+.mem-i:first-child{border-radius:var(--r) var(--r) 0 0;}
+.mem-i:last-child{border-radius:0 0 var(--r) var(--r);}
+.mem-i:only-child{border-radius:var(--r);}
 .mt{font-family:var(--f1);font-size:9px;font-weight:500;letter-spacing:.08em;padding:2px 6px;border-radius:999px;flex-shrink:0;margin-top:1px;}
-.mt-perm{background:rgba(155,126,240,.1);color:var(--pu);}
-.mt-mid{background:rgba(91,156,246,.1);color:var(--info);}
-.mt-short{background:rgba(245,158,74,.1);color:var(--wa);}
-.mt-day{background:rgba(232,80,74,.1);color:var(--da);}
-.mem-body{flex:1;}
-.mem-txt{font-size:13px;line-height:1.5;}
-.mem-meta{font-family:var(--f1);font-size:10px;color:var(--t2);margin-top:2px;}
-.mem-del{background:none;border:none;color:var(--t3);cursor:pointer;padding:2px;}
+.mt-p{background:rgba(155,124,238,.1);color:var(--pu);}
+.mt-m{background:rgba(90,156,245,.1);color:var(--info);}
+.mt-s{background:rgba(240,150,74,.1);color:var(--wa);}
+.mt-d{background:rgba(232,80,80,.1);color:var(--da);}
+.mem-b{flex:1;}
+.mem-t{font-size:13px;line-height:1.5;}
+.mem-m{font-family:var(--f1);font-size:10px;color:var(--t2);margin-top:2px;}
+.mem-del{background:none;border:none;color:var(--t3);cursor:pointer;padding:2px;display:flex;}
 .mem-del svg{width:12px;height:12px;stroke-width:2;}
 .mem-del:active{color:var(--da);}
-.mem-box{background:var(--bg2);border:1px solid var(--line2);border-radius:var(--r2);overflow:hidden;}
-.mem-box textarea{width:100%;background:transparent;border:none;outline:none;color:var(--t1);font-family:var(--f2);font-size:13px;padding:11px 13px;resize:none;min-height:58px;line-height:1.5;}
+.mem-box{background:var(--s1);border:1px solid var(--ln2);border-radius:var(--r2);overflow:hidden;}
+.mem-box textarea{width:100%;background:transparent;border:none;outline:none;color:var(--t1);font-family:var(--f2);font-size:13px;padding:11px 13px;resize:none;min-height:56px;line-height:1.5;}
 .mem-box textarea::placeholder{color:var(--t3);}
-.mem-acts{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-top:1px solid var(--line);}
-.tier-sel{background:var(--bg3);border:1px solid var(--line2);border-radius:7px;color:var(--t1);font-family:var(--f1);font-size:11px;font-weight:500;padding:5px 8px;outline:none;-webkit-appearance:none;cursor:pointer;}
-.mem-save-btn{background:var(--ac);color:#0A0A0B;border:none;border-radius:7px;padding:6px 13px;font-family:var(--f1);font-size:12px;font-weight:700;cursor:pointer;}
-.mem-save-btn:disabled{opacity:.4;}
+.mem-acts{display:flex;align-items:center;justify-content:space-between;padding:6px 9px;border-top:1px solid var(--ln);}
+.tier-sel{background:var(--s3);border:1px solid var(--ln2);border-radius:6px;color:var(--t1);font-family:var(--f1);font-size:11px;font-weight:500;padding:5px 8px;outline:none;-webkit-appearance:none;cursor:pointer;}
+.mem-sbtn{background:var(--ac);color:#08090A;border:none;border-radius:6px;padding:5px 12px;font-family:var(--f1);font-size:12px;font-weight:700;cursor:pointer;}
+.mem-sbtn:disabled{opacity:.4;}
 
-/* ANALYSIS */
-.ana-btn{width:100%;background:rgba(155,126,240,.08);border:1px solid rgba(155,126,240,.18);border-radius:var(--r1);padding:13px;color:var(--t1);font-family:var(--f1);font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;}
-.ana-btn svg{width:14px;height:14px;color:var(--pu);}
-.insight{padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;line-height:1.55;}
+/* review */
+.rev-period-sel{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;}
+.rps{background:var(--s3);border:1px solid var(--ln);border-radius:999px;padding:5px 12px;font-family:var(--f1);font-size:11px;font-weight:500;color:var(--t2);cursor:pointer;-webkit-user-select:none;transition:all .12s;}
+.rps.on{background:rgba(222,255,71,.1);border-color:rgba(222,255,71,.25);color:var(--ac);}
+.rev-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px;}
+.rev-item{background:var(--s3);border-radius:var(--r);padding:9px 10px;}
+.rev-lbl{font-family:var(--f1);font-size:9px;font-weight:500;letter-spacing:.08em;color:var(--t2);text-transform:uppercase;margin-bottom:2px;}
+.rev-val{font-family:var(--f1);font-size:14px;font-weight:700;}
+.rev-sub{font-family:var(--f1);font-size:10px;color:var(--t2);margin-top:1px;}
+.insight{padding:7px 0;border-bottom:1px solid var(--ln);font-size:13px;line-height:1.55;}
 .insight:last-child{border-bottom:none;}
 .insight::before{content:'·';margin-right:6px;font-weight:700;}
-.insight.risk::before{color:var(--da);}
-.insight.rec::before{color:var(--info);}
-.insight.train::before{color:var(--ac);}
+.ins-hi::before{color:var(--ac);}
+.ins-is::before{color:var(--wa);}
+.ins-rc::before{color:var(--info);}
 
-/* TOKEN */
-.tok-row{display:flex;gap:8px;}
-.tok-item{flex:1;background:var(--bg3);border:1px solid var(--line);border-radius:var(--r1);padding:10px 12px;}
-.tok-lbl{font-family:var(--f1);font-size:9px;font-weight:500;letter-spacing:.08em;color:var(--t2);text-transform:uppercase;margin-bottom:3px;}
-.tok-val{font-family:var(--f1);font-size:14px;font-weight:700;}
-.tok-val.ac{color:var(--ac);}
-
-/* TOAST */
-.toast{position:fixed;bottom:66px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--bg3);border:1px solid var(--line2);border-radius:10px;padding:8px 16px;font-family:var(--f1);font-size:12px;font-weight:500;color:var(--t1);opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;white-space:nowrap;z-index:300;}
-.toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
-
-/* TIME CONTEXT */
-.tc-tag{font-family:var(--f1);font-size:10px;font-weight:500;padding:3px 9px;border-radius:999px;display:inline-block;margin-bottom:8px;}
-.tc-morning{background:rgba(91,156,246,.1);color:var(--info);}
-.tc-evening{background:rgba(232,255,107,.08);color:var(--ac);}
-.tc-night{background:rgba(155,126,240,.1);color:var(--pu);}
-.tc-day{background:rgba(255,255,255,.04);color:var(--t2);}
-
-/* MISC */
-.empty{font-family:var(--f1);font-size:12px;color:var(--t2);text-align:center;padding:18px 0;}
-.reset-lnk{background:none;border:none;color:var(--t3);font-family:var(--f1);font-size:10px;cursor:pointer;text-decoration:underline;}
-.db-badge{font-family:var(--f1);font-size:10px;font-weight:500;color:var(--t2);display:inline-flex;align-items:center;gap:4px;}
-.db-dot{width:4px;height:4px;border-radius:50%;background:var(--ac);}
-
-/* ── SMART STATUS CARD ── */
-.smart-card{border-radius:var(--r2);padding:15px 16px;margin:14px 20px 0;position:relative;overflow:hidden;}
-.sc-alert{background:rgba(232,80,74,.06);border:1px solid rgba(232,80,74,.2);}
-.sc-warn{background:rgba(245,158,74,.06);border:1px solid rgba(245,158,74,.18);}
-.sc-ok{background:rgba(232,255,107,.04);border:1px solid rgba(232,255,107,.14);}
-.sc-celebrate{background:rgba(155,126,240,.07);border:1px solid rgba(155,126,240,.22);}
-.sc-report{background:var(--bg2);border:1px solid var(--line);}
-.sc-type{font-family:var(--f1);font-size:9px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;margin-bottom:5px;}
+/* smart card */
+.sc{border-radius:var(--r2);padding:14px 15px;position:relative;overflow:hidden;}
+.sc-ok{background:rgba(222,255,71,.03);border:1px solid rgba(222,255,71,.12);}
+.sc-warn{background:rgba(240,150,74,.04);border:1px solid rgba(240,150,74,.14);}
+.sc-alert{background:rgba(232,80,80,.04);border:1px solid rgba(232,80,80,.16);}
+.sc-cel{background:rgba(155,124,238,.05);border:1px solid rgba(155,124,238,.18);}
+.sc-rep{background:var(--s1);border:1px solid var(--ln);}
+.sc-ey{font-family:var(--f1);font-size:9px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;margin-bottom:4px;}
 .sc-title{font-family:var(--f1);font-size:15px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px;}
 .sc-body{font-size:12px;line-height:1.7;color:var(--t2);}
-.sc-body strong{font-weight:600;}
-.sc-items{display:flex;flex-direction:column;gap:4px;margin-top:8px;}
-.sc-item{display:flex;align-items:flex-start;gap:6px;font-size:12px;line-height:1.5;}
-.sc-item-dot{width:4px;height:4px;border-radius:50%;flex-shrink:0;margin-top:6px;}
-.sc-dismiss{position:absolute;top:10px;right:12px;background:none;border:none;color:var(--t3);cursor:pointer;font-size:16px;padding:2px;}
-.report-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px;}
-.rg-item{background:var(--bg3);border-radius:var(--r1);padding:9px 10px;}
-.rg-lbl{font-family:var(--f1);font-size:9px;font-weight:500;letter-spacing:.08em;color:var(--t2);text-transform:uppercase;margin-bottom:3px;}
-.rg-val{font-family:var(--f1);font-size:14px;font-weight:700;letter-spacing:-.02em;}
-.rg-sub{font-family:var(--f1);font-size:10px;color:var(--t2);margin-top:1px;}
-.week-bars{display:flex;align-items:flex-end;gap:4px;height:40px;margin-top:10px;}
-.week-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;}
-.week-bar{width:100%;border-radius:3px 3px 0 0;min-height:3px;}
-.week-bar-lbl{font-family:var(--f1);font-size:9px;color:var(--t2);}
+.sc-body strong{color:var(--t1);font-weight:600;}
+.sc-x{position:absolute;top:10px;right:11px;background:none;border:none;color:var(--t3);cursor:pointer;font-size:15px;line-height:1;padding:2px;}
+.sc-x:active{color:var(--t2);}
+.rep-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:9px;}
+.rg-i{background:var(--s3);border-radius:var(--r);padding:8px 9px;}
+.rg-l{font-family:var(--f1);font-size:9px;font-weight:500;letter-spacing:.08em;color:var(--t2);text-transform:uppercase;margin-bottom:2px;}
+.rg-v{font-family:var(--f1);font-size:13px;font-weight:700;}
+.rg-s{font-family:var(--f1);font-size:10px;color:var(--t2);margin-top:1px;}
+.sc-items{display:flex;flex-direction:column;gap:3px;margin-top:7px;}
+.sc-item{display:flex;align-items:flex-start;gap:5px;font-size:12px;line-height:1.5;}
+.sc-dot{width:4px;height:4px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+.week-bars{display:flex;align-items:flex-end;gap:3px;height:38px;margin-top:9px;}
+.wb-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;}
+.wb{width:100%;border-radius:2px 2px 0 0;min-height:3px;}
+.wb-l{font-family:var(--f1);font-size:9px;color:var(--t2);}
+
+/* token */
+.tok-row{display:flex;gap:6px;}
+.tok-i{flex:1;background:var(--s2);border:1px solid var(--ln);border-radius:var(--r);padding:9px 11px;}
+.tok-l{font-family:var(--f1);font-size:9px;font-weight:500;letter-spacing:.08em;color:var(--t2);text-transform:uppercase;margin-bottom:2px;}
+.tok-v{font-family:var(--f1);font-size:13px;font-weight:700;}
+.tok-v.ac{color:var(--ac);}
+
+/* toast */
+.toast{position:fixed;bottom:63px;left:50%;transform:translateX(-50%) translateY(9px);background:var(--s2);border:1px solid var(--ln2);border-radius:9px;padding:8px 15px;font-family:var(--f1);font-size:12px;font-weight:500;color:var(--t1);opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;white-space:nowrap;z-index:300;}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* tc tag */
+.tc-tag{font-family:var(--f1);font-size:10px;font-weight:500;padding:3px 9px;border-radius:999px;display:inline-block;margin-bottom:7px;}
+.tc-m{background:rgba(90,156,245,.1);color:var(--info);}
+.tc-e{background:rgba(222,255,71,.08);color:var(--ac);}
+.tc-n{background:rgba(155,124,238,.1);color:var(--pu);}
+.tc-d{background:rgba(255,255,255,.04);color:var(--t2);}
+
+.empty{font-family:var(--f1);font-size:12px;color:var(--t2);text-align:center;padding:16px 0;}
+.rl{background:none;border:none;color:var(--t3);font-family:var(--f1);font-size:10px;cursor:pointer;text-decoration:underline;}
 </style>
 </head>
 <body>
 
 <!-- SETUP -->
 <div class="setup" id="setup">
-  <div class="setup-logo">FORM</div>
-  <div class="setup-title">首次设置</div>
-  <div class="setup-sub">Keys 只存在此设备，不上传任何服务器</div>
+  <div class="sl">FORM</div>
+  <div class="st">首次设置</div>
+  <div class="ss">Keys 只存在此设备，不上传任何服务器</div>
   <div class="sf">
-    <span class="sf-label">DeepSeek API Key <span>（主力）</span></span>
-    <input type="password" id="in-ds" placeholder="sk-xxxxxxxxxxxxxxxx" autocomplete="off" spellcheck="false">
-    <div class="sf-hint"><a href="https://platform.deepseek.com" target="_blank">platform.deepseek.com</a> · 支付宝充值 · 10元可用数月</div>
+    <span class="sf-l">DeepSeek API Key <span>（主力）</span></span>
+    <input type="password" id="in-ds" placeholder="sk-xxxxxxxx" autocomplete="off" spellcheck="false">
+    <div class="sf-hint"><a href="https://platform.deepseek.com" target="_blank">platform.deepseek.com</a> · 支付宝充值 · 10元用数月</div>
   </div>
   <div class="sf">
-    <span class="sf-label">Gemini API Key <span>（拍照识别 · 免费）</span></span>
+    <span class="sf-l">Gemini API Key <span>（拍照识别 · 免费）</span></span>
     <input type="password" id="in-gm" placeholder="AIzaSy…" autocomplete="off" spellcheck="false">
-    <div class="sf-hint"><a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a> · Google 账号直接申请</div>
+    <div class="sf-hint"><a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a> · Google账号直接申请</div>
   </div>
   <div class="sf">
-    <span class="sf-label">Supabase Project URL</span>
+    <span class="sf-l">Supabase Project URL</span>
     <input type="text" id="in-su" placeholder="https://xxxx.supabase.co" autocomplete="off" spellcheck="false">
+    <div class="sf-hint">Supabase Dashboard → Settings → API → Project URL</div>
   </div>
   <div class="sf">
-    <span class="sf-label">Supabase Anon Key</span>
+    <span class="sf-l">Supabase Anon Key</span>
     <input type="password" id="in-sk" placeholder="eyJhbGci…" autocomplete="off" spellcheck="false">
-    <div class="sf-hint">Supabase Dashboard → Settings → API → anon public key</div>
+    <div class="sf-hint">Settings → API → anon public key</div>
   </div>
-  <button class="setup-btn" id="s-btn" onclick="doSetup()">开始使用 →</button>
-  <div class="setup-err" id="s-err"></div>
+  <button class="s-btn" id="s-btn" onclick="doSetup()">开始使用 →</button>
+  <div class="s-err" id="s-err"></div>
 </div>
 
 <div class="toast" id="toast"></div>
 
-<!-- APP -->
 <div class="app off" id="app">
   <div class="pages">
 
     <!-- ══ 概况 ══ -->
     <div class="page on" id="pg-dash">
-      <div class="ph"><div class="ph-eyebrow">FORM · Body Lab</div><div class="ph-title">今日概况</div><div class="ph-sub" id="dash-date"></div></div>
-      <div id="smart-card-wrap"></div>
-      <div class="sec"><div class="sec-lbl">蛋白质追踪</div>
-        <div class="p-ring-card">
-          <div class="ring-wrap">
-            <svg width="78" height="78" viewBox="0 0 78 78"><circle cx="39" cy="39" r="31" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5.5"/><circle id="ring-fill" cx="39" cy="39" r="31" fill="none" stroke="#E8FF6B" stroke-width="5.5" stroke-linecap="round" stroke-dasharray="195" stroke-dashoffset="195" style="transition:stroke-dashoffset .9s ease"/></svg>
-            <div class="ring-center"><div class="ring-pct" id="ring-pct">0%</div><div class="ring-sub">达成</div></div>
+      <div class="ph"><div class="ph-ey">FORM · Body Lab</div><div class="ph-h1">今日概况</div><div class="ph-sub" id="dash-date"></div></div>
+      <div id="sc-wrap"></div>
+      <div class="s"><div class="slbl">蛋白质</div>
+        <div class="pc">
+          <div class="rw">
+            <svg width="76" height="76" viewBox="0 0 76 76"><circle cx="38" cy="38" r="30" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="5"/><circle id="ring-fill" cx="38" cy="38" r="30" fill="none" stroke="#E2FF5C" stroke-width="5" stroke-linecap="round" stroke-dasharray="188" stroke-dashoffset="188" style="transition:stroke-dashoffset .9s ease"/></svg>
+            <div class="rc"><div class="rpct" id="ring-pct">0%</div><div class="rlb">达成</div></div>
           </div>
-          <div class="p-info">
-            <div class="p-lbl">蛋白质</div>
-            <div class="p-val"><span id="dash-p">0</span>g</div>
-            <div class="p-tgt">目标 <span id="dash-ptgt">170</span>g / 天</div>
-            <div class="p-gap" id="dash-gap">⚠ 缺口 170g</div>
+          <div class="pi">
+            <div class="pi-l">蛋白质摄入</div>
+            <div class="pi-v"><span id="dash-p">0</span>g</div>
+            <div class="pi-t">蛋白 <span id="dash-ptgt">—</span>g · 热量 <span id="dash-kcal-tgt">—</span></div>
+            <div class="pi-g" id="dash-gap">⚠ 缺口 170g</div>
           </div>
         </div>
       </div>
-      <div class="sec" style="margin-top:8px"><div class="sec-lbl">基准线</div>
-        <div class="stat-grid">
-          <div class="stat-item ac-border"><div class="stat-lbl">肌肉量</div><div class="stat-val" id="d-muscle">40.4</div><div class="stat-unit">kg</div></div>
-          <div class="stat-item wa-border"><div class="stat-lbl">体脂率</div><div class="stat-val" id="d-fat">17.8</div><div class="stat-unit">%</div></div>
-        </div>
+      <div class="s" style="margin-top:7px"><div class="slbl">基准线</div>
+        <div class="sg"><div class="si ac"><div class="si-l">肌肉量</div><div class="si-v" id="d-muscle">40.4</div><div class="si-u">kg</div></div><div class="si wa"><div class="si-l">体脂率</div><div class="si-v" id="d-fat">17.8</div><div class="si-u">%</div></div></div>
       </div>
-      <div class="sec" style="margin-top:8px"><div class="sec-lbl">今日快照</div>
-        <div class="stat-grid">
-          <div class="stat-item"><div class="stat-lbl">热量</div><div class="stat-val" id="d-kcal" style="font-size:18px">0</div><div class="stat-unit">kcal</div></div>
-          <div class="stat-item"><div class="stat-lbl">训练容量</div><div class="stat-val" id="d-vol" style="font-size:18px">0</div><div class="stat-unit">kg·reps</div></div>
-        </div>
+      <div class="s" style="margin-top:7px"><div class="slbl">今日快照</div>
+        <div class="sg"><div class="si"><div class="si-l">热量</div><div class="si-v" id="d-kcal" style="font-size:17px">0</div><div class="si-u">kcal</div></div><div class="si"><div class="si-l">训练容量</div><div class="si-v" id="d-vol" style="font-size:17px">0</div><div class="si-u">kg·reps</div></div></div>
       </div>
-      <div class="sec" style="margin-top:8px"><div class="sec-lbl">API 用量</div>
-        <div class="tok-row">
-          <div class="tok-item"><div class="tok-lbl">今日费用</div><div class="tok-val ac" id="tok-today">¥0.000</div></div>
-          <div class="tok-item"><div class="tok-lbl">本月累计</div><div class="tok-val" id="tok-month">¥0.00</div></div>
-          <div class="tok-item"><div class="tok-lbl">总计</div><div class="tok-val" id="tok-total">¥0.00</div></div>
-        </div>
+      <div class="s" style="margin-top:7px"><div class="slbl">今日补强建议</div><div id="gap-rec-wrap"><div class="think" style="margin:0"><div class="dots"><span></span><span></span><span></span></div><span class="think-txt">计算中…</span></div></div></div>
+      <div class="s" style="margin-top:7px"><div class="slbl">API 用量</div>
+        <div class="tok-row"><div class="tok-i"><div class="tok-l">今日</div><div class="tok-v ac" id="tok-today">¥0.000</div></div><div class="tok-i"><div class="tok-l">本月</div><div class="tok-v" id="tok-month">¥0.00</div></div><div class="tok-i"><div class="tok-l">总计</div><div class="tok-v" id="tok-total">¥0.00</div></div></div>
       </div>
-      <div class="sec" style="margin-top:8px"><div class="sec-lbl">补强建议</div>
-        <div class="card" style="border-color:rgba(245,158,74,.12)">
-          <div style="font-family:var(--f1);font-size:10px;font-weight:500;color:var(--t2);margin-bottom:5px">核算</div>
-          <div id="gap-rec" style="font-size:13px;line-height:1.65">前往「饮食」页面开始今日记录</div>
-        </div>
-      </div>
-      <div class="sec" style="margin-top:8px"><div class="sec-lbl">补剂打卡</div><div id="dash-supps"></div></div>
-      <div class="sec" style="margin-top:10px;padding-bottom:4px;text-align:center"><button class="reset-lnk" onclick="resetSetup()">重设 API Keys</button></div>
+      <div class="s" style="margin-top:7px"><div class="slbl">补剂打卡</div><div id="dash-supps"></div></div>
+      <div class="s" style="margin-top:8px;padding-bottom:4px;text-align:center"><button class="rl" onclick="resetSetup()">重设 API Keys</button></div>
     </div>
 
     <!-- ══ 饮食 ══ -->
     <div class="page" id="pg-diet">
-      <div class="ph"><div class="ph-eyebrow">饮食记录</div><div class="ph-title">今日摄入</div><div class="ph-sub">描述或拍照 → 自动解析</div></div>
-      <div class="sec" style="margin-top:12px">
-        <div id="tc-tag-wrap"></div>
-        <div class="food-box">
-          <textarea id="food-input" placeholder="例：吃了 300g 去皮鸡腿肉、2个水煮蛋、一碗米饭…" rows="3"></textarea>
-          <div class="food-acts">
-            <span class="food-hint">点 × 撤回 · 支持拍照</span>
-            <div class="food-btns">
-              <button class="icon-btn" onclick="toggleManual()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>精确</button>
-              <label class="icon-btn" for="photo-file"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>拍照</label>
+      <div class="ph"><div class="ph-ey">饮食记录</div><div class="ph-h1">今日摄入</div><div class="ph-sub">描述 / 拍照 / 精确输入</div></div>
+      <div class="s" style="margin-top:12px">
+        <div id="tc-wrap"></div>
+        <div class="fb">
+          <textarea id="food-input" placeholder="例：300g 去皮鸡腿肉、2个水煮蛋、一碗米饭…" rows="3"></textarea>
+          <div class="fa">
+            <span class="fh">点 × 撤回 · 拍照识别</span>
+            <div class="fbtns">
+              <button class="ibtn" onclick="toggleManual()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>精确</button>
+              <label class="ibtn" for="photo-file"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>拍照</label>
               <input type="file" id="photo-file" accept="image/*" capture="environment" onchange="handlePhoto(event)">
-              <button class="ac-btn" id="parse-btn" onclick="parseFood()">解析</button>
+              <button class="abtn" id="parse-btn" onclick="parseFood()">解析</button>
             </div>
           </div>
         </div>
-        <!-- 精确输入面板 -->
-        <div class="manual-food-panel" id="manual-panel">
-          <div class="mf-row">
-            <div style="flex:2"><div class="mf-lbl">食物名称</div><input class="mf-input" type="text" id="mf-name" placeholder="去皮鸡腿肉"></div>
-          </div>
-          <div class="mf-row">
-            <div style="flex:1"><div class="mf-lbl">蛋白质g</div><input class="mf-input" type="number" id="mf-p" placeholder="0"></div>
-            <div style="flex:1"><div class="mf-lbl">碳水g</div><input class="mf-input" type="number" id="mf-c" placeholder="0"></div>
-            <div style="flex:1"><div class="mf-lbl">脂肪g</div><input class="mf-input" type="number" id="mf-f" placeholder="0"></div>
-            <div style="flex:1"><div class="mf-lbl">热量kcal</div><input class="mf-input" type="number" id="mf-k" placeholder="0"></div>
+        <div class="mfp" id="mfp">
+          <div class="mf-grid">
+            <div class="mf-col"><div class="mf-lbl">食物名称</div><input class="mf-in" type="text" id="mf-name" placeholder="去皮鸡腿肉" style="width:100%"></div>
+            <div class="mf-col"><div class="mf-lbl">蛋白质g</div><input class="mf-in" type="number" id="mf-p" placeholder="0"></div>
+            <div class="mf-col"><div class="mf-lbl">碳水g</div><input class="mf-in" type="number" id="mf-c" placeholder="0"></div>
+            <div class="mf-col"><div class="mf-lbl">脂肪g</div><input class="mf-in" type="number" id="mf-f" placeholder="0"></div>
+            <div class="mf-col"><div class="mf-lbl">热量</div><input class="mf-in" type="number" id="mf-k" placeholder="自动"></div>
           </div>
           <button class="mf-save" onclick="addManualFood()">添加记录</button>
         </div>
       </div>
-      <div class="sec" style="margin-top:8px">
-        <div id="carb-badge-wrap"></div>
-        <div class="macro-card">
-          <div class="macro-lbl">今日宏量素</div>
-          <div class="mbar"><div class="mbar-n" style="color:var(--ac)">P</div><div class="mbar-track"><div class="mbar-fill" id="bar-p" style="background:var(--ac);width:0%"></div></div><div class="mbar-val" id="val-p" style="color:var(--ac)">0 / 170g</div></div>
-          <div class="mbar"><div class="mbar-n" style="color:var(--info)">C</div><div class="mbar-track"><div class="mbar-fill" id="bar-c" style="background:var(--info);width:0%"></div></div><div class="mbar-val" id="val-c" style="color:var(--info)">0g</div></div>
-          <div class="mbar"><div class="mbar-n" style="color:var(--wa)">F</div><div class="mbar-track"><div class="mbar-fill" id="bar-f" style="background:var(--wa);width:0%"></div></div><div class="mbar-val" id="val-f" style="color:var(--wa)">0g</div></div>
-          <div class="mbar"><div class="mbar-n" style="color:var(--t2)">E</div><div class="mbar-track"><div class="mbar-fill" id="bar-e" style="background:rgba(255,255,255,.15);width:0%"></div></div><div class="mbar-val" id="val-e" style="color:var(--t2)">0 kcal</div></div>
+      <div class="s" style="margin-top:7px">
+        <div class="mc">
+          <div class="mc-h">
+            <span class="mc-l">今日宏量素</span>
+            <button class="cdt" id="carb-btn" onclick="toggleTrainDay()">训练日</button>
+          </div>
+          <div class="mb"><div class="mb-n" style="color:var(--ac)">P</div><div class="mb-t"><div class="mb-f" id="bar-p" style="background:var(--ac);width:0%"></div></div><div class="mb-v" id="val-p" style="color:var(--ac)">0 / 170g</div></div>
+          <div class="mb"><div class="mb-n" style="color:var(--info)">C</div><div class="mb-t"><div class="mb-f" id="bar-c" style="background:var(--info);width:0%"></div></div><div class="mb-v" id="val-c" style="color:var(--info)">0g</div></div>
+          <div class="mb"><div class="mb-n" style="color:var(--wa)">F</div><div class="mb-t"><div class="mb-f" id="bar-f" style="background:var(--wa);width:0%"></div></div><div class="mb-v" id="val-f" style="color:var(--wa)">0g</div></div>
+          <div class="mb"><div class="mb-n" style="color:var(--t2)">E</div><div class="mb-t"><div class="mb-f" id="bar-e" style="background:rgba(255,255,255,.14);width:0%"></div></div><div class="mb-v" id="val-e" style="color:var(--t2)">0 kcal</div></div>
         </div>
       </div>
-      <div class="sec" style="margin-top:8px">
-        <div class="sec-lbl">今日记录 <span id="food-cnt" style="color:var(--t2);font-weight:400;text-transform:none;letter-spacing:0"></span></div>
+      <div class="s" style="margin-top:7px">
+        <div class="slbl">今日记录 <span id="food-cnt" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t2)"></span></div>
         <div id="food-list"><div class="empty">暂无记录</div></div>
       </div>
-      <!-- 饮食建议 -->
-      <div class="sec" style="margin-top:8px;padding-bottom:4px">
-        <div class="sec-lbl">饮食建议</div>
-        <div class="advice-box">
-          <div class="advice-input-row">
-            <input class="advice-input" id="diet-advice-input" placeholder="问：今天还缺什么营养？怎么补？…">
-            <button class="advice-btn" id="diet-advice-btn" onclick="askAdvice('diet')">问</button>
-          </div>
-          <div class="advice-result" id="diet-advice-result"></div>
+      <div class="s" style="margin-top:7px;padding-bottom:4px">
+        <div class="slbl">饮食建议</div>
+        <div class="adv-box">
+          <div class="adv-row"><input class="adv-in" id="diet-adv-in" placeholder="问：今天还缺什么？怎么搭配补强？…"><button class="adv-btn" id="diet-adv-btn" onclick="askAdvice('diet')">问</button></div>
+          <div class="adv-res" id="diet-adv-res"></div>
         </div>
       </div>
     </div>
 
     <!-- ══ 训练 ══ -->
     <div class="page" id="pg-train">
-      <div class="ph"><div class="ph-eyebrow">训练日志</div><div class="ph-title">今日训练</div><div class="ph-sub" id="train-date"></div></div>
-      <div class="sec" style="margin-top:12px">
-        <div class="sec-lbl">今日疲劳度 RPE</div>
-        <div class="rpe-row"><span class="rpe-lbl">RPE</span><div class="rpe-btns" id="rpe-btns"></div></div>
-      </div>
-      <div class="sec" style="margin-top:8px">
-        <div class="vol-row">
-          <div class="vi"><div class="vi-lbl">完成</div><div class="vi-val"><span id="done-cnt">0</span><span class="vi-unit"> / <span id="total-cnt">0</span></span></div></div>
-          <div class="vi"><div class="vi-lbl">容量</div><div class="vi-val" id="vol-val">0<span class="vi-unit"> kg·r</span></div></div>
-          <div class="vi"><div class="vi-lbl">目标肌群</div><div class="vi-val" id="muscle-grp" style="font-size:12px;font-weight:700">—</div></div>
+      <div class="ph"><div class="ph-ey">训练日志</div><div class="ph-h1">今日训练</div><div class="ph-sub" id="train-date"></div></div>
+
+      <!-- 肌群选择器 -->
+      <div class="s" style="margin-top:12px">
+        <div class="slbl">今天练什么？</div>
+        <div class="muscle-sel-wrap" id="muscle-sel">
+          <!-- rendered by JS -->
         </div>
       </div>
-      <div class="sec" style="margin-top:8px">
-        <div class="session-header" id="session-header">
-          <div class="sh-top"><span class="sh-title" id="sh-title">生成今日计划中…</span><span class="db-badge"><span class="db-dot"></span><span id="train-badge"></span></span></div>
-          <div class="sh-sub" id="sh-sub">读取周期计划与状态</div>
+
+      <!-- RPE -->
+      <div class="s" style="margin-top:8px">
+        <div class="slbl">今日 RPE（主观疲劳）</div>
+        <div class="rpe-r"><span class="rpe-l">RPE</span><div class="rpbtns" id="rpe-btns"></div></div>
+      </div>
+
+      <!-- vol summary -->
+      <div class="s" style="margin-top:8px">
+        <div class="vr">
+          <div class="vi"><div class="vi-l">完成</div><div class="vi-v"><span id="done-cnt">0</span><span class="vi-u"> / <span id="total-cnt">0</span></span></div></div>
+          <div class="vi"><div class="vi-l">容量</div><div class="vi-v" id="vol-val">0<span class="vi-u"> kg·r</span></div></div>
+          <div class="vi"><div class="vi-l">时长</div><div class="vi-v" id="est-dur" style="font-size:13px;font-weight:600">—</div></div>
         </div>
       </div>
-      <div class="sec" style="margin-top:8px">
-        <div class="sec-lbl">动作清单 <span style="color:var(--t2);font-weight:400;text-transform:none;letter-spacing:0">（点击展开记录每组数据）</span></div>
-        <div class="ex-list" id="ex-list"><div class="thinking"><div class="dots"><span></span><span></span><span></span></div><span class="thinking-txt">正在生成…</span></div></div>
+
+      <!-- session header -->
+      <div class="s" style="margin-top:8px">
+        <div class="sh">
+          <div class="sh-top"><span class="sh-title" id="sh-title">选择今日训练部位后生成</span><span class="sh-badge" id="train-badge"></span></div>
+          <div class="sh-sub" id="sh-sub">选择肌群 → 点击生成 → 自由调整</div>
+        </div>
       </div>
-      <div class="sec" style="margin-top:8px">
+
+      <!-- custom request -->
+      <div class="s" style="margin-top:7px">
+        <div class="slbl">特别要求 <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t2)">（可选）</span></div>
+        <input type="text" id="custom-req" class="ni" style="width:100%" placeholder="例：多加一个飞鸟、不要深蹲用腿举代替…">
+      </div>
+
+      <!-- gen button -->
+      <div class="s" style="margin-top:7px">
         <button class="ghost-btn" onclick="genWorkout()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
-          重新生成（读取最新计划）
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          生成今日训练方案
         </button>
       </div>
-      <div class="sec" style="margin-top:8px"><div class="sec-lbl">训后感受</div><textarea class="notes-in" id="session-notes" rows="3" placeholder="泵感、关节感受、中枢疲劳评分…"></textarea></div>
-      <div class="sec" style="margin-top:7px">
-        <div class="sec-lbl">计划 vs 实际</div>
-        <div id="comparison-list"><div class="empty">完成动作后自动生成对比</div></div>
-      </div>
-      <!-- 训练建议 -->
-      <div class="sec" style="margin-top:8px">
-        <div class="sec-lbl">训练建议</div>
-        <div class="advice-box">
-          <div class="advice-input-row">
-            <input class="advice-input" id="train-advice-input" placeholder="问：今天练什么合适？某动作怎么做？…">
-            <button class="advice-btn" id="train-advice-btn" onclick="askAdvice('workout')">问</button>
+
+      <!-- exercise list -->
+      <div class="s" style="margin-top:8px">
+        <div class="slbl">动作清单 <button class="slbl-act" onclick="toggleAddEx()">+ 添加动作</button></div>
+        <!-- add exercise panel -->
+        <div class="add-ex-panel" id="aep">
+          <div class="aep-row">
+            <input class="aep-in" type="text" id="aep-name" placeholder="动作名称（如：哑铃侧平举）">
+            <input class="aep-num" type="number" id="aep-sets" placeholder="组" value="4">
+            <input class="aep-in" type="text" id="aep-reps" placeholder="次数（如8-12）" style="min-width:80px">
+            <input class="aep-num" type="number" id="aep-kg" placeholder="kg" value="20">
           </div>
-          <div class="advice-result" id="train-advice-result"></div>
+          <button class="aep-save" onclick="addExercise()">添加到清单</button>
+        </div>
+        <div class="exlist" id="ex-list"><div class="think"><div class="dots"><span></span><span></span><span></span></div><span class="think-txt">选择肌群后生成动作方案</span></div></div>
+      </div>
+
+      <!-- 计划 vs 实际 -->
+      <div class="s" style="margin-top:7px">
+        <div class="slbl">计划 vs 实际</div>
+        <div id="cmp-list"><div class="empty">完成动作后自动生成对比</div></div>
+      </div>
+
+      <!-- notes -->
+      <div class="s" style="margin-top:7px"><div class="slbl">训后感受</div><textarea class="notes-in" id="session-notes" rows="3" placeholder="泵感、关节感受、中枢疲劳…"></textarea></div>
+
+      <!-- advice -->
+      <div class="s" style="margin-top:7px">
+        <div class="slbl">训练建议</div>
+        <div class="adv-box">
+          <div class="adv-row"><input class="adv-in" id="train-adv-in" placeholder="问：这个动作重量合适吗？今天加量可以吗？…"><button class="adv-btn" id="train-adv-btn" onclick="askAdvice('workout')">问</button></div>
+          <div class="adv-res" id="train-adv-res"></div>
         </div>
       </div>
-      <div class="sec" style="margin-top:8px;padding-bottom:4px"><button class="save-btn" onclick="saveSession()">记录今日训练 ✓</button></div>
+
+      <div class="s" style="margin-top:8px;padding-bottom:4px"><button class="save-btn" onclick="saveSession()">记录今日训练 ✓</button></div>
     </div>
 
     <!-- ══ 计划 ══ -->
     <div class="page" id="pg-plan">
-      <div class="ph"><div class="ph-eyebrow">长线规划</div><div class="ph-title">训练计划</div><div class="ph-sub">周期目标 → 每周重点 → 每日灵活执行</div></div>
-      <div class="sec" style="margin-top:12px"><div class="sec-lbl">当前计划</div><div class="plan-hero plan-hero-empty" id="plan-hero"><div style="font-size:13px;color:var(--t2)">暂无计划，在下方生成或手动输入</div></div></div>
-      <div class="sec" style="margin-top:8px" id="week-focus-sec"><div class="sec-lbl">本周结构</div><div class="pw-card" id="week-card"><div class="empty">生成计划后显示</div></div></div>
-      <div class="sec" style="margin-top:8px" id="milestones-sec"><div class="sec-lbl">里程碑</div><div class="card" id="milestones-card"><div class="empty">生成计划后显示</div></div></div>
-      <div class="sec" style="margin-top:8px">
-        <div class="sec-lbl">生成新计划</div>
+      <div class="ph"><div class="ph-ey">长线规划</div><div class="ph-h1">训练计划</div><div class="ph-sub">大周期 → 每周结构 → 每日灵活</div></div>
+      <div class="s" style="margin-top:12px"><div class="slbl">当前计划</div><div class="plan-hero ph-empty" id="plan-hero"><div style="font-size:13px;color:var(--t2)">暂无计划，在下方生成或手动输入</div></div></div>
+      <div class="s" style="margin-top:8px"><div class="slbl">每周训练结构</div><div class="pw-card" id="week-card"><div class="empty">生成计划后显示</div></div></div>
+      <div class="s" style="margin-top:8px"><div class="slbl">里程碑</div><div class="card" id="ms-card"><div class="empty">生成计划后显示</div></div></div>
+      <div class="s" style="margin-top:8px">
+        <div class="slbl">生成新周期计划</div>
         <div class="card">
           <label class="pf-lbl">核心目标</label>
-          <select class="pf-select" id="pf-goal"><option>增肌减脂（Recomp）</option><option>纯增肌（Bulk）</option><option>减脂保肌（Cut）</option><option>力量提升</option></select>
+          <select class="pf-sel" id="pf-goal"><option>增肌减脂（Recomp）</option><option>纯增肌（Bulk）</option><option>减脂保肌（Cut）</option><option>力量提升</option></select>
           <label class="pf-lbl">周期长度</label>
-          <select class="pf-select" id="pf-weeks"><option value="8">8 周</option><option value="10">10 周</option><option value="12" selected>12 周</option><option value="16">16 周</option></select>
-          <label class="pf-lbl">每周训练天数</label>
-          <select class="pf-select" id="pf-days"><option value="3">3 天</option><option value="4" selected>4 天</option><option value="5">5 天</option><option value="6">6 天</option></select>
+          <select class="pf-sel" id="pf-wks"><option value="8">8 周</option><option value="10">10 周</option><option value="12" selected>12 周</option><option value="16">16 周</option></select>
           <label class="pf-lbl">特殊限制（伤病/偏好，可空）</label>
-          <textarea class="pf-ta" id="pf-restrictions" rows="2" placeholder="例：左肩有问题，回避过头推举"></textarea>
-          <button class="gen-btn" onclick="genPlan()">
+          <textarea class="pf-ta" id="pf-res" rows="2" placeholder="例：左肩有问题，避免过头推举"></textarea>
+          <button class="gen-btn" id="gen-plan-btn" onclick="genPlan()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             AI 生成周期计划
           </button>
         </div>
       </div>
-      <!-- 手动输入计划 -->
-      <div class="sec" style="margin-top:8px">
-        <div class="sec-lbl">手动输入 <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t2)">（自己写计划）</span></div>
+      <div class="s" style="margin-top:8px">
+        <div class="slbl">手动输入计划</div>
         <div class="card">
-          <textarea class="pf-ta" id="manual-plan-input" rows="5" placeholder="例：第1-4周：推拉腿分化，每周4天&#10;重点：臥推从80kg起，每周加2.5kg&#10;每日碳水：训练日280g，休息日150g…"></textarea>
+          <textarea class="pf-ta" id="manual-plan" rows="5" placeholder="自由描述你的计划，例：&#10;周一胸+三头，周二背+二头，周三肩&#10;每周五练，腿月2次安排在周六&#10;臥推目标：12周内从80kg推到95kg"></textarea>
           <button class="ghost-btn" style="margin-top:0" onclick="saveManualPlan()">保存手动计划</button>
         </div>
       </div>
-      <!-- 计划建议 -->
-      <div class="sec" style="margin-top:8px">
-        <div class="sec-lbl">计划建议</div>
-        <div class="advice-box">
-          <div class="advice-input-row">
-            <input class="advice-input" id="plan-advice-input" placeholder="问：我的计划合理吗？下周要调整什么？…">
-            <button class="advice-btn" id="plan-advice-btn" onclick="askAdvice('plan')">问</button>
-          </div>
-          <div class="advice-result" id="plan-advice-result"></div>
+      <div class="s" style="margin-top:8px">
+        <div class="slbl">计划建议</div>
+        <div class="adv-box">
+          <div class="adv-row"><input class="adv-in" id="plan-adv-in" placeholder="问：我的分化合理吗？下周应该调整什么？…"><button class="adv-btn" id="plan-adv-btn" onclick="askAdvice('plan')">问</button></div>
+          <div class="adv-res" id="plan-adv-res"></div>
         </div>
       </div>
-      <div class="sec" style="margin-top:8px;padding-bottom:4px">
-        <div class="sec-lbl">近期训练对比</div>
-        <div id="recent-comparisons"><div class="empty">完成训练记录后显示</div></div>
+      <div class="s" style="margin-top:8px;padding-bottom:4px">
+        <div class="slbl">近期训练对比</div>
+        <div id="recent-cmp"><div class="empty">完成训练记录后显示</div></div>
       </div>
     </div>
 
     <!-- ══ 形体 ══ -->
     <div class="page" id="pg-body">
-      <div class="ph"><div class="ph-eyebrow">形体追踪</div><div class="ph-title">身体数据</div><div class="ph-sub">围度 · 成分 · 睡眠 · 力量</div></div>
-      <div class="sec" style="margin-top:12px"><div class="sec-lbl">成分</div>
-        <div class="comp-row"><div class="cp m"><div class="cp-lbl">肌肉量</div><div class="cp-val" id="muscle-val">40.4</div><div class="cp-unit">kg</div></div><div class="cp f"><div class="cp-lbl">体脂率</div><div class="cp-val" id="fat-val">17.8</div><div class="cp-unit">%</div></div></div>
-        <div class="in-row"><input type="number" step="0.1" placeholder="肌肉量 kg" id="in-muscle" class="ni"><input type="number" step="0.1" placeholder="体脂 %" id="in-fat" class="ni"><button class="upd-btn" onclick="updateComp()">更新</button></div>
+      <div class="ph"><div class="ph-ey">形体追踪</div><div class="ph-h1">身体数据</div><div class="ph-sub">围度 · 成分 · 睡眠 · 力量</div></div>
+      <div class="s" style="margin-top:12px"><div class="slbl">成分</div>
+        <div class="comp-row"><div class="cp m"><div class="cp-l">肌肉量</div><div class="cp-v" id="muscle-val">40.4</div><div class="cp-u">kg</div></div><div class="cp f"><div class="cp-l">体脂率</div><div class="cp-v" id="fat-val">17.8</div><div class="cp-u">%</div></div></div>
+        <div class="in-row"><input type="number" step="0.1" placeholder="肌肉量 kg" id="in-muscle" class="ni" style="flex:1"><input type="number" step="0.1" placeholder="体脂 %" id="in-fat" class="ni" style="flex:1"><button class="upd-btn" onclick="updateComp()">更新</button></div>
       </div>
-      <div class="sec" style="margin-top:8px">
+      <div class="s" style="margin-top:8px">
         <div class="chart-wrap">
           <div class="chart-title">成分进化轨迹</div>
-          <div style="width:100%;height:105px"><svg id="trend-svg" width="100%" height="105" viewBox="0 0 340 105" preserveAspectRatio="none"></svg></div>
-          <div class="chart-legend"><div class="cl-item"><div class="cl-line" style="background:var(--ac)"></div>肌肉量</div><div class="cl-item"><div class="cl-line" style="background:var(--wa);"></div>体脂</div></div>
+          <div style="width:100%;height:100px"><svg id="trend-svg" width="100%" height="100" viewBox="0 0 340 100" preserveAspectRatio="none"></svg></div>
+          <div class="chart-leg"><div class="cl"><div class="cl-line" style="background:var(--ac)"></div>肌肉量</div><div class="cl"><div class="cl-line" style="background:var(--wa);"></div>体脂</div></div>
         </div>
       </div>
-      <div class="sec" style="margin-top:8px">
+      <div class="s" style="margin-top:8px">
         <div class="chart-wrap">
-          <div class="chart-title" style="display:flex;align-items:center;gap:8px">
-            力量趋势（E1RM）
-            <select class="str-sel" id="str-sel" onchange="loadStrengthChart()" style="flex:1;margin:0">
-              <option>臥推</option><option>深蹲</option><option>硬举</option><option>过头推举</option><option>划船</option>
-            </select>
-            <button class="upd-btn" onclick="toggleStrEntry()">记录</button>
-          </div>
-          <div style="width:100%;height:90px;margin-top:10px"><svg id="str-svg" width="100%" height="90" viewBox="0 0 300 90" preserveAspectRatio="none"></svg></div>
-          <div id="str-entry-row" style="display:none;gap:6px;margin-top:8px;flex-wrap:nowrap" class="in-row">
-            <input type="number" step="0.5" placeholder="重量 kg" id="str-w" class="ni" style="font-size:12px;padding:7px 9px">
-            <input type="number" placeholder="次数" id="str-r" class="ni" style="font-size:12px;padding:7px 9px">
+          <div class="chart-title" style="display:flex;align-items:center;gap:7px">力量趋势 E1RM<select class="str-sel" id="str-sel" onchange="loadStrChart()" style="flex:1;margin:0;font-size:12px;padding:5px 8px"><option>臥推</option><option>深蹲</option><option>硬举</option><option>过头推举</option><option>划船</option></select><button class="upd-btn" onclick="toggleStrEntry()" style="font-size:11px">记录</button></div>
+          <div style="width:100%;height:85px;margin-top:9px"><svg id="str-svg" width="100%" height="85" viewBox="0 0 300 85" preserveAspectRatio="none"></svg></div>
+          <div id="str-entry-row" style="display:none;gap:5px;margin-top:7px" class="in-row">
+            <input type="number" step="0.5" placeholder="重量 kg" id="str-w" class="ni" style="flex:1;font-size:12px;padding:7px 9px">
+            <input type="number" placeholder="次数" id="str-r" class="ni" style="flex:1;font-size:12px;padding:7px 9px">
             <button class="upd-btn" style="font-size:11px" onclick="saveStrength()">保存</button>
           </div>
-          <div id="str-log-list" style="margin-top:8px"></div>
+          <div id="str-log" style="margin-top:7px"></div>
         </div>
       </div>
-      <div class="sec" style="margin-top:8px">
+      <div class="s" style="margin-top:8px">
         <div class="chart-wrap">
           <div class="chart-title">睡眠记录</div>
-          <div style="margin-bottom:10px">
-            <div style="font-family:var(--f1);font-size:10px;font-weight:500;color:var(--t2);margin-bottom:6px">时长</div>
-            <div style="display:flex;align-items:center;gap:10px"><input type="range" class="sleep-slider" id="sleep-dur" min="4" max="10" step="0.5" value="7.5" oninput="document.getElementById('sleep-dur-val').textContent=this.value+'h'"><span style="font-family:var(--f1);font-size:13px;font-weight:600;color:var(--ac);width:38px;text-align:right" id="sleep-dur-val">7.5h</span></div>
-          </div>
-          <div style="margin-bottom:10px">
-            <div style="font-family:var(--f1);font-size:10px;font-weight:500;color:var(--t2);margin-bottom:6px">质量</div>
-            <div class="sq-btns" id="sq-btns"><button class="sqb" onclick="setSleepQ(1)">差</button><button class="sqb" onclick="setSleepQ(2)">一般</button><button class="sqb on" onclick="setSleepQ(3)">良好</button><button class="sqb" onclick="setSleepQ(4)">极佳</button></div>
-          </div>
-          <button class="upd-btn" style="width:100%;padding:9px;text-align:center" onclick="saveSleep()">记录昨晚睡眠</button>
-          <div id="sleep-log" style="margin-top:10px"></div>
+          <div style="margin-bottom:9px"><div style="font-family:var(--f1);font-size:10px;font-weight:500;color:var(--t2);margin-bottom:5px">时长</div><div style="display:flex;align-items:center;gap:9px"><input type="range" class="sleep-sl" id="sleep-dur" min="4" max="10" step="0.5" value="7.5" oninput="document.getElementById('slv').textContent=this.value+'h'"><span style="font-family:var(--f1);font-size:13px;font-weight:600;color:var(--ac);width:36px;text-align:right" id="slv">7.5h</span></div></div>
+          <div style="margin-bottom:9px"><div style="font-family:var(--f1);font-size:10px;font-weight:500;color:var(--t2);margin-bottom:5px">质量</div><div class="sqb-row" id="sqb-row"><button class="sqb" onclick="setSleepQ(1)">差</button><button class="sqb" onclick="setSleepQ(2)">一般</button><button class="sqb on" onclick="setSleepQ(3)">良好</button><button class="sqb" onclick="setSleepQ(4)">极佳</button></div></div>
+          <button class="upd-btn" style="width:100%;padding:8px;text-align:center" onclick="saveSleep()">记录昨晚睡眠</button>
+          <div id="sleep-log" style="margin-top:8px"></div>
         </div>
       </div>
-      <div class="sec" style="margin-top:8px"><div class="sec-lbl">围度</div><div class="mg" id="measure-grid"></div></div>
-      <div class="sec" style="margin-top:8px;padding-bottom:4px">
-        <div class="sec-lbl">补剂管理</div>
+      <div class="s" style="margin-top:8px"><div class="slbl">围度</div><div class="mg" id="mg"></div></div>
+      <div class="s" style="margin-top:8px;padding-bottom:4px">
+        <div class="slbl">补剂管理</div>
         <div id="body-supps"></div>
-        <div class="add-supp-row">
-          <input class="add-supp-name" type="text" id="new-supp-name" placeholder="补剂名称（如：维生素D）">
-          <input class="add-supp-dose" type="text" id="new-supp-dose" placeholder="用量">
-          <button class="add-supp-btn" onclick="addSupp()">添加</button>
-        </div>
+        <div class="add-supp-r"><input class="as-n" type="text" id="as-n" placeholder="补剂名称"><input class="as-d" type="text" id="as-d" placeholder="用量（如 5g）"><button class="as-btn" onclick="addSupp()">添加</button></div>
       </div>
     </div>
 
     <!-- ══ 记忆 ══ -->
     <div class="page" id="pg-mem">
-      <div class="ph"><div class="ph-eyebrow">专属记忆库</div><div class="ph-title">记忆</div><div class="ph-sub">每次 AI 回答前自动读取</div></div>
-      <div class="sec" style="margin-top:12px"><div class="sec-lbl">新增记忆</div>
+      <div class="ph"><div class="ph-ey">专属记忆库</div><div class="ph-h1">记忆</div><div class="ph-sub">AI 每次回答前自动读取</div></div>
+      <div class="s" style="margin-top:12px"><div class="slbl">新增记忆</div>
         <div class="mem-box">
-          <textarea id="mem-input" placeholder="例：我不喜欢史密斯机，偏好自由重量&#10;例：左肩近期有牵拉感&#10;例：本周主攻腿部" rows="3"></textarea>
-          <div class="mem-acts">
-            <select class="tier-sel" id="mem-tier"><option value="perm">永久（偏好/特征）</option><option value="mid">中期 4周（伤病/周期）</option><option value="short" selected>短期 7天（本周状态）</option><option value="day">当日</option></select>
-            <button class="mem-save-btn" id="mem-btn" onclick="saveMem()">保存</button>
-          </div>
+          <textarea id="mem-input" placeholder="例：我不喜欢史密斯机&#10;例：左肩最近有牵拉感&#10;例：本周主攻胸背" rows="3"></textarea>
+          <div class="mem-acts"><select class="tier-sel" id="mem-tier"><option value="perm">永久（偏好/特征）</option><option value="mid">中期4周（伤病/周期）</option><option value="short" selected>短期7天（本周）</option><option value="day">当日</option></select><button class="mem-sbtn" id="mem-btn" onclick="saveMem()">保存</button></div>
         </div>
       </div>
-      <div class="sec" style="margin-top:8px">
-        <div class="sec-lbl">有效记忆 <span id="mem-cnt" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t2)"></span></div>
-        <div id="mem-list"><div class="empty">暂无记忆</div></div>
-      </div>
+      <div class="s" style="margin-top:8px"><div class="slbl">有效记忆 <span id="mem-cnt" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t2)"></span></div><div id="mem-list"><div class="empty">暂无记忆</div></div></div>
     </div>
 
     <!-- ══ 复盘 ══ -->
-    <div class="page" id="pg-ana">
-      <div class="ph"><div class="ph-eyebrow">月度复盘</div><div class="ph-title">深度分析</div><div class="ph-sub">汇总全部历史数据 → AI 关联分析</div></div>
-      <div class="sec" style="margin-top:12px"><button class="ana-btn" onclick="runAnalysis()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>运行月度复盘（过去 90 天）</button></div>
-      <div class="sec" style="margin-top:8px;padding-bottom:4px" id="ana-result"></div>
+    <div class="page" id="pg-rev">
+      <div class="ph"><div class="ph-ey">数据复盘</div><div class="ph-h1">复盘分析</div><div class="ph-sub">短期 · 中期 · 月度深度分析</div></div>
+      <div class="s" style="margin-top:12px">
+        <div class="slbl">复盘周期</div>
+        <div class="rev-period-sel">
+          <button class="rps on" data-days="1" onclick="setRevPeriod(1,this)">昨日</button>
+          <button class="rps" data-days="3" onclick="setRevPeriod(3,this)">近3天</button>
+          <button class="rps" data-days="7" onclick="setRevPeriod(7,this)">近7天</button>
+          <button class="rps" data-days="14" onclick="setRevPeriod(14,this)">近14天</button>
+          <button class="rps" data-days="30" onclick="setRevPeriod(30,this)">近30天</button>
+          <button class="rps" data-days="90" onclick="setRevPeriod(90,this)">近90天</button>
+        </div>
+        <button class="ghost-btn" id="run-rev-btn" onclick="runReview()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          运行复盘分析
+        </button>
+      </div>
+      <div class="s" style="margin-top:8px;padding-bottom:4px" id="rev-result"></div>
     </div>
 
   </div>
@@ -788,34 +898,48 @@ body{background:var(--bg);color:var(--t1);font-family:var(--f2);max-width:430px;
     <button class="nb" data-p="plan" onclick="goPage('plan')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>计划</button>
     <button class="nb" data-p="body" onclick="goPage('body')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="12" cy="5" r="2"/><path d="M12 7v8M9 10l3-1 3 1M9 21l3-5 3 5"/></svg>形体</button>
     <button class="nb" data-p="mem" onclick="goPage('mem')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M12 2a7 7 0 0 1 7 7c0 4-3 6-4 9H9c-1-3-4-5-4-9a7 7 0 0 1 7-7z"/><path d="M9 21h6"/></svg>记忆</button>
-    <button class="nb" data-p="ana" onclick="goPage('ana')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>复盘</button>
+    <button class="nb" data-p="rev" onclick="goPage('rev')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>复盘</button>
   </nav>
 </div>
 
 <script>
+// ══ GLOBALS ══
 let AI, db;
-const PT = 170;
-const CHK = `<svg viewBox="0 0 24 24" fill="none" stroke="#0A0A0B" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+function PT(){ return macroTargets().protein; }
+const CHK = `<svg viewBox="0 0 24 24" fill="none" stroke="#08090A" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>`;
 const DEL = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
 const MEASURES = [{key:'arm',label:'手臂围'},{key:'waist',label:'腰围'},{key:'chest',label:'胸围'},{key:'thigh',label:'大腿围'}];
 const TIER_LBL = {perm:'永久',mid:'中期',short:'短期',day:'当日'};
-const TIER_CLS = {perm:'mt-perm',mid:'mt-mid',short:'mt-short',day:'mt-day'};
+const TIER_CLS = {perm:'mt-p',mid:'mt-m',short:'mt-s',day:'mt-d'};
+const MUSCLE_OPTIONS = [
+  {id:'chest',label:'胸'},
+  {id:'back',label:'背'},
+  {id:'shoulder',label:'肩'},
+  {id:'arms',label:'手臂'},
+  {id:'legs',label:'腿'},
+  {id:'chest_back',label:'胸+背'},
+  {id:'push',label:'推（胸肩三头）'},
+  {id:'pull',label:'拉（背二头）'},
+  {id:'rest',label:'休息日',rest:true},
+];
 
 let S = {
   protein:0,carbs:0,fat:0,kcal:0,
   foods:[],foodId:0,
   volume:0,workout:[],rpe:5,
+  todayMuscle:'',
   muscle:40.4,fat_pct:17.8,
   measures:{arm:null,waist:null,chest:null,thigh:null},
-  supps:JSON.parse(localStorage.getItem('form_supps')||'[{"key":"creatine","name":"肌酸","dose":"5g","on":false},{"key":"vitamin","name":"综合维生素","dose":"1粒","on":false},{"key":"omega3","name":"Omega-3","dose":"2粒","on":false}]'),
+  supps:JSON.parse(localStorage.getItem('form_supps')||'[{"key":"cr","name":"肌酸","dose":"5g","on":false},{"key":"vit","name":"综合维生素","dose":"1粒","on":false},{"key":"om3","name":"Omega-3","dose":"2粒","on":false}]'),
   memories:[],
   history:[{date:'5/7',muscle:40.2,fat:18.1},{date:'5/9',muscle:40.3,fat:17.9},{date:'5/11',muscle:40.4,fat:17.8}],
   activePlan:null,
-  sleepQ:3,
   isTrain:true,
+  sleepQ:3,
+  revDays:1,
 };
 
-// ── SETUP ──
+// ══ SETUP ══
 async function doSetup(){
   const ds=document.getElementById('in-ds').value.trim();
   const gm=document.getElementById('in-gm').value.trim();
@@ -823,9 +947,9 @@ async function doSetup(){
   const sk=document.getElementById('in-sk').value.trim();
   const err=document.getElementById('s-err');
   err.textContent='';
-  if(!ds.startsWith('sk-')){err.textContent='DeepSeek Key 格式不对（应以 sk- 开头）';return;}
-  if(!su.includes('supabase.co')){err.textContent='Supabase URL 格式不对';return;}
-  if(!sk){err.textContent='请输入 Supabase Key';return;}
+  if(!ds.startsWith('sk-')){err.textContent='DeepSeek Key格式不对';return;}
+  if(!su.includes('supabase.co')){err.textContent='Supabase URL格式不对';return;}
+  if(!sk){err.textContent='请输入Supabase Key';return;}
   const btn=document.getElementById('s-btn');btn.textContent='连接中…';
   try{
     db=new DB(su,sk);await db.init();
@@ -842,111 +966,177 @@ async function boot(){
   document.getElementById('app').classList.remove('off');
   const ds=todayStr();
   ['dash-date','train-date','train-badge'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=ds;});
-  renderRPE();renderSupps();renderMeasures();renderChart();
-  updateTCTag();updateCarbBadge();
-  await loadMemories();await loadActivePlan();await loadRecentComparisons();
-  await loadStrengthChart();await loadSleepLog();
-  renderDash();updateTokenUI();
-  genWorkout();
-  setTimeout(runSmartCard, 800);
+  renderMuscleSelector();renderRPE();renderSupps();renderMeasures();renderChart();
+  updateTCTag();updateCarbBtn();
+  initNutritionModule();
+  await loadMemories();await loadActivePlan();await loadRecentCmp();
+  await loadStrChart();await loadSleepLog();
+  await loadTodayFood();
+  renderDash();
+  // async: smart gap rec + smart card (non-blocking)
+  updateGapRec();
+  setTimeout(runSmartCard, 600);
+  updateTokenUI();
 }
 
-// ── UTILS ──
+// ══ UTILS ══
 function nt(){return new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});}
 function todayStr(){return new Date().toLocaleDateString('zh-CN',{month:'numeric',day:'numeric',weekday:'short'});}
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2400);}
 function goPage(n){document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));document.getElementById('pg-'+n).classList.add('on');document.querySelector(`[data-p="${n}"]`).classList.add('on');}
+function prof(){return buildProfile(S);}
 function memCtx(){
   const now=new Date();
   const active=S.memories.filter(m=>!m.expires_at||new Date(m.expires_at)>now);
   if(!active.length)return '';
-  return '\n\n[用户记忆库]\n'+active.map(m=>`[${TIER_LBL[m.tier]}] ${m.content}`).join('\n')+'\n[记忆库结束]';
+  return '\n个人记忆：\n'+active.map(m=>`[${TIER_LBL[m.tier]}] ${m.content}`).join('\n');
+}
+function mkThink(txt='解析中…'){
+  const el=document.createElement('div');el.className='think';
+  el.innerHTML=`<div class="dots"><span></span><span></span><span></span></div><span class="think-txt">${txt}</span>`;
+  return el;
 }
 
-// ── TIME CONTEXT ──
+// ══ TIME CONTEXT ══
 function updateTCTag(){
   const tc=getTimeCtx();
-  const cls={morning_baseline:'tc-morning',morning:'tc-morning',evening:'tc-evening',night:'tc-night',late:'tc-night'}[tc.tag]||'tc-day';
-  document.getElementById('tc-tag-wrap').innerHTML=`<div class="tc-tag ${cls}">${tc.label} · ${tc.hint}</div>`;
+  const cls={morning:'tc-m',evening:'tc-e',night:'tc-n',late:'tc-n'}[tc.tag]||'tc-d';
+  document.getElementById('tc-wrap').innerHTML=`<div class="tc-tag ${cls}">${tc.label} · ${tc.hint}</div>`;
 }
 
-// ── CARB BADGE ──
-function updateCarbBadge(){
-  const t=getCarbTarget(S.isTrain,'medium');
-  const cls=S.isTrain?'cdt-train':'cdt-rest';
-  const lbl=S.isTrain?'训练日':'休息日';
-  document.getElementById('carb-badge-wrap').innerHTML=`<div style="display:flex;align-items:center;gap:7px;margin-bottom:7px"><span class="carb-day-tag ${cls}" onclick="S.isTrain=!S.isTrain;updateCarbBadge();updateBars();">${lbl} · 碳水目标 ${t}g</span><span style="font-family:var(--f1);font-size:10px;color:var(--t2)">（点击切换）</span></div>`;
+// ══ CARB BADGE ══
+function toggleTrainDay(){S.isTrain=!S.isTrain;updateCarbBtn();updateBars();updateGapRec();}
+function updateCarbBtn(){
+  const btn=document.getElementById('carb-btn');
+  if(!btn)return;
+  const t=macroTargets().carbs;
+  btn.textContent=S.isTrain?`训练日 碳水${t}g`:`休息日 碳水${t}g`;
+  btn.className='cdt '+(S.isTrain?'cdt-train':'cdt-rest');
 }
 
-// ── TOKEN UI ──
+// ══ SMART GAP REC (async, non-blocking) ══
+async function updateGapRec(){
+  const wrap=document.getElementById('gap-rec-wrap');
+  if(!wrap)return;
+  if(!AI||!AI.ds){wrap.innerHTML='<div style="font-size:12px;color:var(--t2)">设置 API Key 后自动生成建议</div>';return;}
+  try{
+    const r=await AI.call('advice',{
+      system:PROMPTS.gapRec(prof()),
+      userMsg:'根据我今日数据给出补强建议',
+    });
+    if(r._err){wrap.innerHTML=renderSimpleGapRec();return;}
+    const statusCls={ok:'grc-ok',warn:'grc-warn',alert:'grc-alert'}[r.status]||'grc-warn';
+    const hColor={ok:'var(--ac)',warn:'var(--wa)',alert:'var(--da)'}[r.status]||'var(--wa)';
+    wrap.innerHTML=`<div class="gap-rec-card ${statusCls}">
+      <div class="grc-headline" style="color:${hColor}">${r.headline||'今日建议'}</div>
+      ${(r.suggestions||[]).map(s=>`<div class="grc-suggestion">
+        <div><div class="grc-food">${s.food} <span style="color:var(--t2)">${s.amount}</span></div><div class="grc-reason">${s.reason}</div></div>
+        <div class="grc-p">+${s.protein}g</div>
+      </div>`).join('')}
+      ${r.timing?`<div class="grc-timing">⏱ ${r.timing}</div>`:''}
+      ${r.carb_note?`<div class="grc-timing">🍚 ${r.carb_note}</div>`:''}
+    </div>`;
+    updateTokenUI();
+  }catch(e){wrap.innerHTML=renderSimpleGapRec();}
+}
+function renderSimpleGapRec(){
+  const gap=Math.max(0,PT()-S.protein);
+  if(gap<=0)return`<div class="gap-rec-card grc-ok"><div class="grc-headline" style="color:var(--ac)">✓ 蛋白质今日达标，保持！</div></div>`;
+  return`<div class="gap-rec-card grc-warn"><div class="grc-headline" style="color:var(--wa)">还差 ${Math.round(gap)}g 蛋白质</div><div class="grc-suggestion"><div><div class="grc-food">乳清蛋白粉</div></div><div class="grc-p">+${Math.round(gap)}g</div></div></div>`;
+}
+
+// ══ TOKEN UI ══
 function updateTokenUI(){
   if(!AI)return;
   document.getElementById('tok-today').textContent='¥'+AI.tracker.todayCNY();
   document.getElementById('tok-month').textContent='¥'+AI.tracker.monthCNY();
-  document.getElementById('tok-total').textContent='¥'+(AI.tracker.total*7.2).toFixed(2);
+  document.getElementById('tok-total').textContent='¥'+AI.tracker.totalCNY();
 }
 
-// ── DASH ──
+// ══ DASH ══
 function renderDash(){
-  const p=S.protein,pct=Math.min(Math.round(p/PT*100),100);
-  document.getElementById('ring-fill').style.strokeDashoffset=195-195*pct/100;
+  const p=S.protein,pct=Math.min(Math.round(p/PT()*100),100);
+  document.getElementById('ring-fill').style.strokeDashoffset=188-188*pct/100;
   document.getElementById('ring-pct').textContent=pct+'%';
   document.getElementById('dash-p').textContent=Math.round(p);
   document.getElementById('d-muscle').textContent=S.muscle.toFixed(1);
   document.getElementById('d-fat').textContent=S.fat_pct.toFixed(1);
   document.getElementById('d-kcal').textContent=Math.round(S.kcal);
   document.getElementById('d-vol').textContent=Math.round(S.volume);
-  const gap=Math.max(0,PT-p),el=document.getElementById('dash-gap');
-  if(gap<=0){el.textContent='✓ 今日已达标';el.className='p-gap ok';}
-  else{el.textContent=`⚠ 缺口 ${Math.round(gap)}g`;el.className='p-gap';}
-  const rec=document.getElementById('gap-rec');
-  if(gap<=0)rec.innerHTML='<span style="color:var(--ac)">✓ 蛋白质达标，继续保持。</span>';
-  else rec.innerHTML=`还差 <strong style="color:var(--wa)">${Math.round(gap)}g</strong>　建议 <span style="color:var(--ac)">${(gap/30).toFixed(1)} 勺蛋白粉</span> 或 <span style="color:var(--ac)">${Math.round(gap/0.27)}g 瘦牛肉</span>`;
+  const gap=Math.max(0,PT()-p),el=document.getElementById('dash-gap');
+  if(gap<=0){el.textContent='✓ 今日已达标';el.className='pi-g ok';}
+  else{el.textContent=`⚠ 缺口 ${Math.round(gap)}g`;el.className='pi-g';}
 }
 
-// ── SUPPS (自定义) ──
+// ══ SUPPS ══
 function saveSupps(){localStorage.setItem('form_supps',JSON.stringify(S.supps));}
 function renderSupps(){
-  const html=S.supps.length?`<div class="supp-list">${S.supps.map((s,i)=>`
-    <div class="supp-item ${s.on?'on':''}" onclick="toggleSupp(${i})">
-      <div class="supp-chk">${CHK}</div>
-      <div class="supp-name">${s.name}</div>
-      <div class="supp-dose">${s.dose}</div>
-      <button class="supp-del" onclick="event.stopPropagation();delSupp(${i})">${DEL}</button>
-    </div>`).join('')}</div>`:'<div class="empty">暂无补剂，在下方添加</div>';
-  document.getElementById('dash-supps').innerHTML=html;
-  const bd=document.getElementById('body-supps');if(bd)bd.innerHTML=html;
+  const mkList=(onClk)=>S.supps.length?`<div class="supp-list">${S.supps.map((s,i)=>`
+    <div class="si2 ${s.on?'on':''}" onclick="${onClk}(${i})">
+      <div class="s-chk">${CHK}</div>
+      <div class="s-name">${s.name}</div>
+      <div class="s-dose">${s.dose}</div>
+      <button class="s-del" onclick="event.stopPropagation();delSupp(${i})">${DEL}</button>
+    </div>`).join('')}</div>`:'<div class="empty">暂无补剂，在形体页添加</div>';
+  document.getElementById('dash-supps').innerHTML=mkList('toggleSupp');
+  const bs=document.getElementById('body-supps');if(bs)bs.innerHTML=mkList('toggleSupp');
 }
 function toggleSupp(i){S.supps[i].on=!S.supps[i].on;saveSupps();renderSupps();toast(S.supps[i].on?'✓ 已打卡':'已取消');}
 function delSupp(i){S.supps.splice(i,1);saveSupps();renderSupps();toast('已删除');}
 function addSupp(){
-  const n=document.getElementById('new-supp-name').value.trim();
-  const d=document.getElementById('new-supp-dose').value.trim();
+  const n=document.getElementById('as-n').value.trim();const d=document.getElementById('as-d').value.trim();
   if(!n)return;
-  S.supps.push({key:'custom_'+Date.now(),name:n,dose:d||'—',on:false});
+  S.supps.push({key:'c'+Date.now(),name:n,dose:d||'—',on:false});
   saveSupps();renderSupps();
-  document.getElementById('new-supp-name').value='';
-  document.getElementById('new-supp-dose').value='';
+  document.getElementById('as-n').value='';document.getElementById('as-d').value='';
   toast('✓ 已添加：'+n);
 }
 
-// ── RPE ──
+// ══ MUSCLE SELECTOR ══
+function renderMuscleSelector(){
+  document.getElementById('muscle-sel').innerHTML=MUSCLE_OPTIONS.map(m=>`
+    <button class="ms-btn ${m.rest?'rest-btn':''} ${S.todayMuscle===m.id?'on':''}"
+      onclick="selectMuscle('${m.id}','${m.label}')">${m.label}</button>`).join('');
+}
+function selectMuscle(id,label){
+  S.todayMuscle=id;
+  const isRest=id==='rest';
+  S.isTrain=!isRest;
+  updateCarbBtn();updateBars();applyNutritionUI();
+  renderMuscleSelector();
+  if(isRest){
+    document.getElementById('sh-title').textContent='今日休息';
+    document.getElementById('sh-sub').textContent='恢复为明日训练积累';
+    document.getElementById('ex-list').innerHTML='<div class="empty">今日休息日 — 轻度拉伸或休息</div>';
+    document.getElementById('total-cnt').textContent=0;
+    document.getElementById('done-cnt').textContent=0;
+    localStorage.setItem('form_last_rest',new Date().toDateString());
+  } else {
+    document.getElementById('sh-title').textContent=`今日：${label}`;
+    document.getElementById('sh-sub').textContent='点击「生成训练方案」获取个性化动作';
+  }
+  toast(`已选：${label}`);
+}
+
+// ══ RPE ══
 function renderRPE(){document.getElementById('rpe-btns').innerHTML=[1,2,3,4,5,6,7,8,9,10].map(n=>`<button class="rb ${S.rpe===n?'on':''}" onclick="setRPE(${n})">${n}</button>`).join('');}
 function setRPE(n){S.rpe=n;renderRPE();toast(`RPE ${n}`);}
 
-// ── DIET ──
+// ══ DIET ══
 async function parseFood(){
   const input=document.getElementById('food-input').value.trim();if(!input)return;
-  const btn=document.getElementById('parse-btn');btn.disabled=true;btn.textContent='解析中…';
+  const btn=document.getElementById('parse-btn');btn.disabled=true;btn.textContent='…';
   const tc=getTimeCtx();
-  const tk=mkThink(document.getElementById('food-list'),true);
+  const list=document.getElementById('food-list');
+  list.querySelector('.empty')?.remove();
+  const tk=mkThink('AI 解析中…');list.prepend(tk);
   try{
-    const r=await AI.call('diet',{system:PROMPTS.diet(memCtx(),tc),userMsg:input,useCache:true});
-    if(r._parseError)throw new Error('格式错误');
+    const r=await AI.call('diet',{system:PROMPTS.diet(prof(),tc),userMsg:input,useCache:true});
+    if(r._err)throw new Error('格式错误');
     addFoodEntry({...r,id:++S.foodId,time:nt()});
     document.getElementById('food-input').value='';
-    if(db)db.addFoodLog(r).catch(()=>{});
-    renderDash();updateTokenUI();
+    if(db){db.addFoodLog(r).then(row=>{if(row?.id)S.foods[S.foods.length-1].dbId=row.id;}).catch(()=>{});}
+    applyNutritionUI();updateGapRec();updateTokenUI();
     toast(`✓ +${Math.round(r.protein_g)}g 蛋白质${r._cached?' (缓存)':''}`);
   }catch(e){toast('解析失败：'+(e.message||'请重试'));}
   tk.remove();btn.disabled=false;btn.textContent='解析';
@@ -954,194 +1144,201 @@ async function parseFood(){
 
 async function handlePhoto(event){
   const file=event.target.files[0];if(!file)return;
-  const btn=document.getElementById('parse-btn');btn.disabled=true;btn.textContent='识别中…';
-  const tk=mkThink(document.getElementById('food-list'),true);
+  const btn=document.getElementById('parse-btn');btn.disabled=true;btn.textContent='…';
+  const list=document.getElementById('food-list');list.querySelector('.empty')?.remove();
+  const tk=mkThink('识别图片…');list.prepend(tk);
   try{
     const b64=await compressImage(file,1024,0.82);
-    const r=await AI.call('photo',{system:PROMPTS.photo(memCtx()),userMsg:'分析图片食物',imageBase64:b64});
-    if(r._parseError)throw new Error('识别格式错误');
+    const r=await AI.call('photo',{system:PROMPTS.photo(prof()),userMsg:'分析食物',imageBase64:b64});
+    if(r._err)throw new Error('识别格式错误');
     addFoodEntry({...r,id:++S.foodId,time:nt(),fromPhoto:true});
-    if(db)db.addFoodLog(r).catch(()=>{});
-    renderDash();updateTokenUI();
+    if(db){db.addFoodLog(r).then(row=>{if(row?.id)S.foods[S.foods.length-1].dbId=row.id;}).catch(()=>{});}
+    applyNutritionUI();updateGapRec();updateTokenUI();
     toast(`✓ ${r.name}（${r.confidence}）`);
   }catch(e){toast('识别失败：'+(e.message||'请重试'));}
   tk.remove();btn.disabled=false;btn.textContent='解析';event.target.value='';
 }
 
-function toggleManual(){
-  const p=document.getElementById('manual-panel');p.classList.toggle('on');
-}
-
+function toggleManual(){document.getElementById('mfp').classList.toggle('on');}
 function addManualFood(){
   const name=document.getElementById('mf-name').value.trim();if(!name)return;
   const p=parseFloat(document.getElementById('mf-p').value)||0;
   const c=parseFloat(document.getElementById('mf-c').value)||0;
   const f=parseFloat(document.getElementById('mf-f').value)||0;
   const k=parseFloat(document.getElementById('mf-k').value)||(p*4+c*4+f*9);
-  addFoodEntry({name,protein_g:p,carbs_g:c,fat_g:f,kcal:k,id:++S.foodId,time:nt(),manual:true});
+  const entry={name,protein_g:p,carbs_g:c,fat_g:f,kcal:k,id:++S.foodId,time:nt(),manual:true};
+  addFoodEntry(entry);
+  if(db)db.addFoodLog(entry).then(row=>{if(row?.id)entry.dbId=row.id;}).catch(()=>{});
   ['mf-name','mf-p','mf-c','mf-f','mf-k'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('manual-panel').classList.remove('on');
-  renderDash();toast('✓ 已精确记录：'+name);
+  document.getElementById('mfp').classList.remove('on');
+  applyNutritionUI();updateGapRec();toast('✓ 精确记录：'+name);
 }
-
-function addFoodEntry(entry){
-  S.foods.push(entry);
-  S.protein+=entry.protein_g||0;S.carbs+=entry.carbs_g||0;S.fat+=entry.fat_g||0;S.kcal+=entry.kcal||0;
-  renderFoodList();updateBars();
+function addFoodEntry(e){
+  S.foods.push(e);
+  S.protein+=e.protein_g||0;S.carbs+=e.carbs_g||0;S.fat+=e.fat_g||0;S.kcal+=e.kcal||0;
+  renderFoodList();updateBars();renderDash();applyNutritionUI();
 }
-
 function renderFoodList(){
   const list=document.getElementById('food-list');
   if(!S.foods.length){list.innerHTML='<div class="empty">暂无记录</div>';document.getElementById('food-cnt').textContent='';return;}
   document.getElementById('food-cnt').textContent=`${S.foods.length} 笔`;
-  list.innerHTML=`<div class="food-list">${[...S.foods].reverse().map(f=>`
-    <div class="food-item">
-      <div class="fi-body">
-        <div class="fi-name">${f.fromPhoto?'📷 ':''}${f.manual?'✎ ':''}${f.name}</div>
-        <div class="fi-time">${f.time}${f.confidence?` · ${f.confidence}`:''}</div>
-        <div class="fi-pills">
-          <span class="pill pill-p">P ${Math.round(f.protein_g)}g</span>
-          <span class="pill pill-c">C ${Math.round(f.carbs_g)}g</span>
-          <span class="pill pill-f">F ${Math.round(f.fat_g)}g</span>
-          <span class="pill pill-k">${Math.round(f.kcal)} kcal</span>
-        </div>
+  list.innerHTML=`<div class="fl">${[...S.foods].reverse().map(f=>`
+    <div class="fi">
+      <div class="fi-b">
+        <div class="fi-n">${f.fromPhoto?'📷 ':''}${f.manual?'✎ ':''}${f.name}</div>
+        <div class="fi-t">${f.time}</div>
+        <div class="fi-ps"><span class="pill pp">P ${Math.round(f.protein_g)}g</span><span class="pill pc2">C ${Math.round(f.carbs_g)}g</span><span class="pill pf">F ${Math.round(f.fat_g)}g</span><span class="pill pk">${Math.round(f.kcal)} kcal</span></div>
       </div>
-      <button class="del-btn" onclick="removeFood(${f.id})">${DEL}</button>
+      <button class="delbtn" onclick="removeFood(${f.id})">${DEL}</button>
     </div>`).join('')}</div>`;
 }
-
 function removeFood(id){
   const idx=S.foods.findIndex(f=>f.id===id);if(idx===-1)return;
   const f=S.foods.splice(idx,1)[0];
   S.protein=Math.max(0,S.protein-(f.protein_g||0));S.carbs=Math.max(0,S.carbs-(f.carbs_g||0));
   S.fat=Math.max(0,S.fat-(f.fat_g||0));S.kcal=Math.max(0,S.kcal-(f.kcal||0));
-  renderFoodList();updateBars();renderDash();toast('已撤回：'+f.name);
+  if(f.dbId&&db)db.deleteFoodLog(f.dbId).catch(()=>{});
+  renderFoodList();updateBars();renderDash();applyNutritionUI();updateGapRec();toast('已撤回：'+f.name);
 }
-
 function updateBars(){
-  const carbT=getCarbTarget(S.isTrain,'medium');
-  [[`p`,S.protein,PT,`${Math.round(S.protein)} / ${PT}g`],
-   [`c`,S.carbs,carbT,`${Math.round(S.carbs)} / ${carbT}g`],
-   [`f`,S.fat,80,`${Math.round(S.fat)}g`],
-   [`e`,S.kcal,2800,`${Math.round(S.kcal)} kcal`],
-  ].forEach(([id,val,max,label])=>{
+  const tgt=macroTargets();
+  [[`p`,S.protein,tgt.protein,`${Math.round(S.protein)} / ${tgt.protein}g`],
+   [`c`,S.carbs,tgt.carbs,`${Math.round(S.carbs)} / ${tgt.carbs}g`],
+   [`f`,S.fat,tgt.fat,`${Math.round(S.fat)} / ${tgt.fat}g`],
+   [`e`,S.kcal,tgt.kcal,`${Math.round(S.kcal)} / ${tgt.kcal} kcal`],
+  ].forEach(([id,val,max,lbl])=>{
     document.getElementById('bar-'+id).style.width=Math.min(100,val/max*100)+'%';
-    document.getElementById('val-'+id).textContent=label;
+    document.getElementById('val-'+id).textContent=lbl;
   });
 }
 
-// ── AI ADVICE ──
+// ══ AI ADVICE ══
 async function askAdvice(scene){
-  const inputId=`${scene==='workout'?'train':scene}-advice-input`;
-  const resultId=`${scene==='workout'?'train':scene}-advice-result`;
-  const btnId=`${scene==='workout'?'train':scene}-advice-btn`;
-  const q=document.getElementById(inputId).value.trim();if(!q)return;
-  const btn=document.getElementById(btnId);btn.disabled=true;btn.textContent='…';
-  const resultEl=document.getElementById(resultId);
-  resultEl.classList.remove('on');resultEl.innerHTML='';
-  const ctx=scene==='diet'
-    ?`今日已摄入蛋白质${Math.round(S.protein)}g（目标${PT}g），碳水${Math.round(S.carbs)}g，热量${Math.round(S.kcal)}kcal`
-    :scene==='workout'?`肌肉量${S.muscle}kg，体脂${S.fat_pct}%，今日RPE ${S.rpe}，训练容量${Math.round(S.volume)}kg·r`
-    :`肌肉量${S.muscle}kg，体脂${S.fat_pct}%，当前计划：${S.activePlan?.goal||'未设置'}`;
+  const map={diet:'diet',workout:'train',plan:'plan'};
+  const k=map[scene]||scene;
+  const q=document.getElementById(k+'-adv-in').value.trim();if(!q)return;
+  const resEl=document.getElementById(k+'-adv-res');
+  const btn=document.getElementById(k+'-adv-btn');
+  btn.disabled=true;btn.textContent='…';
+  resEl.classList.remove('on');resEl.innerHTML='';
   try{
-    const r=await AI.call('chat',{system:PROMPTS.advice(ctx,q,memCtx()),userMsg:q});
-    if(r._parseError||!r.advice){resultEl.innerHTML=`<div class="advice-item">${r._raw||'暂无建议'}</div>`;resultEl.classList.add('on');return;}
-    resultEl.innerHTML=r.advice.map(a=>`<div class="advice-item">${a}</div>`).join('')+(r.priority?`<div class="advice-priority">优先：${r.priority}</div>`:'');
-    resultEl.classList.add('on');updateTokenUI();
-  }catch(e){resultEl.innerHTML=`<div class="advice-item" style="color:var(--da)">请求失败：${e.message}</div>`;resultEl.classList.add('on');}
+    const r=await AI.call('advice',{system:PROMPTS.advice(prof(),q),userMsg:q});
+    if(r._err||!r.advice){resEl.innerHTML=`<div class="adv-item">${r._raw||'暂无建议'}</div>`;}
+    else{resEl.innerHTML=r.advice.map(a=>`<div class="adv-item">${a}</div>`).join('')+(r.priority?`<div class="adv-pri">优先：${r.priority}</div>`:'')}
+    resEl.classList.add('on');updateTokenUI();
+  }catch(e){resEl.innerHTML=`<div class="adv-item" style="color:var(--da)">失败：${e.message}</div>`;resEl.classList.add('on');}
   btn.disabled=false;btn.textContent='问';
 }
 
-// ── TRAINING ──
+// ══ TRAINING ══
 async function genWorkout(){
-  document.getElementById('sh-title').textContent='分析计划与记忆库…';
-  document.getElementById('sh-sub').textContent='读取周期重点 · RPE · 伤病记录';
-  document.getElementById('ex-list').innerHTML=`<div class="thinking"><div class="dots"><span></span><span></span><span></span></div><span class="thinking-txt">正在生成…</span></div>`;
-  const focus=S.activePlan?getCurrentWeekFocus():'';
+  if(!S.todayMuscle||S.todayMuscle==='rest'){toast('请先选择今日训练部位');return;}
+  const muscleLabel=MUSCLE_OPTIONS.find(m=>m.id===S.todayMuscle)?.label||S.todayMuscle;
+  const customReq=document.getElementById('custom-req').value.trim();
+  document.getElementById('sh-title').textContent='生成中…';
+  document.getElementById('sh-sub').textContent=`${muscleLabel} · RPE ${S.rpe}`;
+  document.getElementById('ex-list').innerHTML='';
+  document.getElementById('ex-list').append(mkThink('生成中…'));
   try{
     const r=await AI.call('workout',{
-      system:PROMPTS.workout({muscle:S.muscle,fat_pct:S.fat_pct,rpe:S.rpe,isTrainingDay:S.isTrain,trainDays:0,planWeekFocus:focus},memCtx()),
-      userMsg:'生成今日训练计划。',
+      system:PROMPTS.workout(prof(),muscleLabel,customReq),
+      userMsg:'生成今日训练方案。',
     });
-    if(r._parseError)throw new Error('格式错误');
+    if(r._err)throw new Error('格式错误');
     S.workout=r.exercises.map(e=>({...e,done:false,sets_data:[]}));
     S.volume=0;
     document.getElementById('sh-title').textContent=r.session_title;
     document.getElementById('sh-sub').textContent=`${r.muscle_groups} · ${r.intensity}${r.volume_note?' · '+r.volume_note:''}`;
-    document.getElementById('muscle-grp').textContent=(r.muscle_groups||'').split(/[·、,]/)[0].trim().slice(0,6);
+    document.getElementById('muscle-grp').textContent=(r.muscle_groups||'').split(/[·、,]/)[0].trim().slice(0,5);
     document.getElementById('total-cnt').textContent=S.workout.length;
     document.getElementById('done-cnt').textContent=0;
+    if(r.estimated_duration)document.getElementById('est-dur').textContent=r.estimated_duration+'min';
     renderExercises();updateTokenUI();
   }catch(e){
     document.getElementById('sh-title').textContent='生成失败';
     document.getElementById('sh-sub').textContent=e.message;
-    document.getElementById('ex-list').innerHTML=`<div class="empty">点击「重新生成」重试</div>`;
+    document.getElementById('ex-list').innerHTML='<div class="empty">点击「生成训练方案」重试</div>';
   }
+}
+
+function toggleAddEx(){document.getElementById('aep').classList.toggle('on');}
+function addExercise(){
+  const name=document.getElementById('aep-name').value.trim();if(!name)return;
+  const sets=parseInt(document.getElementById('aep-sets').value)||4;
+  const reps=document.getElementById('aep-reps').value||'8-12';
+  const kg=parseInt(document.getElementById('aep-kg').value)||20;
+  S.workout.push({name,sets,reps,weight_kg:kg,muscle:'自定义',rpe_target:7,is_compound:false,notes:'',done:false,sets_data:[]});
+  document.getElementById('total-cnt').textContent=S.workout.length;
+  renderExercises();
+  document.getElementById('aep').classList.remove('on');
+  ['aep-name','aep-reps'].forEach(id=>document.getElementById(id).value='');
+  toast('✓ 已添加：'+name);
+}
+function removeExercise(i){
+  const name=S.workout[i]?.name||'';
+  S.workout.splice(i,1);
+  document.getElementById('total-cnt').textContent=S.workout.length;
+  recalcVol();renderExercises();renderCmpList();toast('已删除：'+name);
 }
 
 function renderExercises(){
   document.getElementById('ex-list').innerHTML=S.workout.map((ex,i)=>{
-    const sets=ex.sets_data.length?ex.sets_data:Array.from({length:ex.sets},(_,j)=>({w:ex.weight_kg,r:parseInt((ex.reps+'').split('-')[0])||8,done:false}));
+    const sets=ex.sets_data.length?ex.sets_data:Array.from({length:ex.sets},()=>({w:ex.weight_kg,r:parseInt((ex.reps+'').split('-')[0])||8}));
     if(!ex.sets_data.length)ex.sets_data=sets;
     const planVol=ex.sets*parseInt((ex.reps+'').split('-')[0])*ex.weight_kg;
-    const actualVol=ex.done?sets.filter(s=>s.done).reduce((a,s)=>a+s.w*s.r,0):0;
+    const actualVol=ex.done?sets.reduce((a,s)=>a+s.w*s.r,0):0;
     const diff=ex.done?Math.round((actualVol-planVol)/planVol*100):null;
-    return `<div class="ex-card ${ex.done?'done':''}" id="ex-${i}">
-      <div class="ex-header" onclick="toggleEx(${i})">
-        <div class="ex-chk">${CHK}</div>
-        <div class="ex-info">
-          <div class="ex-name">${ex.name}</div>
-          <div class="ex-plan">${ex.sets}组 × ${ex.reps}次 · ${ex.weight_kg}kg · 计划容量 ${planVol}kg·r</div>
-          ${ex.notes?`<div class="ex-plan" style="color:var(--t3)">${ex.notes}</div>`:''}
+    return `<div class="exc ${ex.done?'done':''}" id="exc-${i}">
+      <div class="exc-hdr" onclick="toggleEx(${i})">
+        <div class="exc-chk">${CHK}</div>
+        <div class="exc-info">
+          <div class="exc-name">${ex.name}</div>
+          <div class="exc-plan">${ex.sets}组 × ${ex.reps}次 · ${ex.weight_kg}kg</div>
+          ${ex.notes?`<div class="exc-tip">${ex.notes}</div>`:''}
         </div>
-        <div class="ex-tags">
-          ${ex.rpe_target?`<span class="ex-tag ex-tag-rpe">RPE${ex.rpe_target}</span>`:''}
-          <span class="ex-tag ex-tag-m">${ex.muscle}</span>
+        <div class="exc-tags">
+          ${ex.rpe_target?`<span class="et et-r">RPE${ex.rpe_target}</span>`:''}
+          <span class="et et-m">${ex.muscle}</span>
         </div>
+        <button class="exc-del" onclick="event.stopPropagation();removeExercise(${i})">${DEL}</button>
       </div>
-      ${ex.done?`<div class="sets-panel">
-        <div class="sets-header"><span class="sets-lbl">逐组记录</span><button class="add-set-btn" onclick="event.stopPropagation();addSet(${i})">+ 加组</button></div>
-        <div class="set-lbl-row"><div class="set-col-lbl"></div><div class="set-col-lbl">重量</div><div class="set-col-lbl">次数</div><div class="set-col-lbl">容量</div><div class="set-col-lbl">vs计划</div></div>
+      ${ex.done?`<div class="sp">
+        <div class="sp-hdr"><span class="sp-lbl">逐组记录</span><button class="sp-add" onclick="event.stopPropagation();addSet(${i})">+ 加组</button></div>
+        <div class="sp-col-hdr"><div class="sp-ch"></div><div class="sp-ch">重量</div><div class="sp-ch">次数</div><div class="sp-ch">容量</div><div class="sp-ch">±计划</div></div>
         ${sets.map((s,j)=>{
-          const planRowVol=ex.weight_kg*parseInt((ex.reps+'').split('-')[0]);
-          const actualRowVol=s.w*s.r;
-          const rowDiff=Math.round((actualRowVol-planRowVol)/planRowVol*100);
-          const dc=rowDiff>0?'diff-up':rowDiff<0?'diff-dn':'diff-eq';
-          return `<div class="set-row">
-            <div class="set-num">${j+1}</div>
-            <input class="set-input" type="number" step="0.5" value="${s.w}" onclick="event.stopPropagation()" onchange="updateSet(${i},${j},'w',this.value)">
-            <input class="set-input" type="number" value="${s.r}" onclick="event.stopPropagation()" onchange="updateSet(${i},${j},'r',this.value)">
-            <div class="set-diff" style="color:var(--ac)">${Math.round(actualRowVol)}</div>
-            <div class="set-diff ${dc}">${rowDiff>0?'+':''}${rowDiff}%</div>
-          </div>`;
-        }).join('')}
-        ${diff!==null?`<div class="cmp-strip" style="margin-top:8px">
-          <div class="cmp-row">
-            <div class="cmp-col"><div class="cmp-lbl">计划容量</div><div class="cmp-val" style="color:var(--t2)">${planVol} kg·r</div></div>
-            <div class="cmp-divider"></div>
-            <div class="cmp-col"><div class="cmp-lbl">实际容量</div><div class="cmp-val" style="color:${diff>=0?'var(--ac)':'var(--wa)'}">${Math.round(actualVol)} kg·r</div></div>
+          const pRow=ex.weight_kg*parseInt((ex.reps+'').split('-')[0]);
+          const aRow=s.w*s.r;
+          const rd=Math.round((aRow-pRow)/pRow*100);
+          return`<div class="set-row">
+            <div class="set-n">${j+1}</div>
+            <input class="set-in" type="number" step="0.5" value="${s.w}" onclick="event.stopPropagation()" onchange="updateSet(${i},${j},'w',this.value)">
+            <input class="set-in" type="number" value="${s.r}" onclick="event.stopPropagation()" onchange="updateSet(${i},${j},'r',this.value)">
+            <div class="set-diff" style="color:var(--ac)">${Math.round(aRow)}</div>
+            <div class="set-diff ${rd>0?'d-up':rd<0?'d-dn':'d-eq'}">${rd>0?'+':''}${rd}%</div>
+          </div>`;}).join('')}
+        ${diff!==null?`<div class="cmp-strip">
+          <div class="cmp-r">
+            <div class="cmp-c"><div class="cmp-l">计划</div><div class="cmp-v" style="color:var(--t2)">${planVol}kg·r</div></div>
+            <div class="cmp-div"></div>
+            <div class="cmp-c"><div class="cmp-l">实际</div><div class="cmp-v" style="color:${diff>=0?'var(--ac)':'var(--wa)'}">${Math.round(actualVol)}kg·r</div></div>
           </div>
-          <div class="diff-bar-wrap"><div class="diff-bar-track"><div class="diff-bar-fill" style="width:${Math.min(Math.abs(diff),100)}%;background:${diff>=0?'var(--ac)':'var(--wa)'}"></div></div><span style="font-family:var(--f1);font-size:10px;font-weight:600;color:${diff>=0?'var(--ac)':'var(--wa)'}">${diff>0?'+':''}${diff}%</span></div>
+          <div style="display:flex;align-items:center;gap:5px;margin-top:6px">
+            <div class="diff-track"><div class="diff-fill" style="width:${Math.min(Math.abs(diff),100)}%;background:${diff>=0?'var(--ac)':'var(--wa)'}"></div></div>
+            <span style="font-family:var(--f1);font-size:10px;font-weight:600;color:${diff>=0?'var(--ac)':'var(--wa)'}">${diff>0?'+':''}${diff}%</span>
+          </div>
         </div>`:''}
       </div>`:''}
     </div>`;
   }).join('');
 }
 
-function updateSet(i,j,field,val){
-  S.workout[i].sets_data[j][field]=parseFloat(val)||0;
-  recalcVol();renderExercises();renderCmpList();
-}
-function addSet(i){
-  const ex=S.workout[i];
-  ex.sets_data.push({w:ex.weight_kg,r:parseInt((ex.reps+'').split('-')[0])||8,done:false});
-  renderExercises();
-}
+function updateSet(i,j,field,val){S.workout[i].sets_data[j][field]=parseFloat(val)||0;recalcVol();renderExercises();renderCmpList();}
+function addSet(i){const ex=S.workout[i];ex.sets_data.push({w:ex.weight_kg,r:parseInt((ex.reps+'').split('-')[0])||8});renderExercises();}
 function toggleEx(i){
   S.workout[i].done=!S.workout[i].done;
   if(S.workout[i].done&&!S.workout[i].sets_data.length){
     const ex=S.workout[i];
-    ex.sets_data=Array.from({length:ex.sets},()=>({w:ex.weight_kg,r:parseInt((ex.reps+'').split('-')[0])||8,done:true}));
+    ex.sets_data=Array.from({length:ex.sets},()=>({w:ex.weight_kg,r:parseInt((ex.reps+'').split('-')[0])||8}));
   }
   recalcVol();
   const done=S.workout.filter(e=>e.done).length;
@@ -1151,52 +1348,70 @@ function toggleEx(i){
 }
 function recalcVol(){
   S.volume=S.workout.filter(e=>e.done).reduce((sum,ex)=>sum+ex.sets_data.reduce((a,s)=>a+s.w*s.r,0),0);
-  document.getElementById('vol-val').innerHTML=Math.round(S.volume)+'<span class="vi-unit"> kg·r</span>';
+  document.getElementById('vol-val').innerHTML=Math.round(S.volume)+'<span class="vi-u"> kg·r</span>';
 }
 function renderCmpList(){
   const done=S.workout.filter(e=>e.done);
-  const list=document.getElementById('comparison-list');
+  const list=document.getElementById('cmp-list');
   if(!done.length){list.innerHTML='<div class="empty">完成动作后自动生成对比</div>';return;}
-  const planTotal=S.workout.reduce((s,e)=>s+e.sets*parseInt((e.reps+'').split('-')[0])*e.weight_kg,0);
-  const diff=planTotal>0?Math.round((S.volume-planTotal)/planTotal*100):0;
+  const planTot=S.workout.reduce((s,e)=>s+e.sets*parseInt((e.reps+'').split('-')[0])*e.weight_kg,0);
+  const diff=planTot>0?Math.round((S.volume-planTot)/planTot*100):0;
   list.innerHTML=`<div class="cmp-strip">
-    <div class="cmp-row">
-      <div class="cmp-col"><div class="cmp-lbl">计划总容量</div><div class="cmp-val" style="color:var(--t2)">${Math.round(planTotal)} kg·r</div></div>
-      <div class="cmp-divider"></div>
-      <div class="cmp-col"><div class="cmp-lbl">实际总容量</div><div class="cmp-val" style="color:${diff>=0?'var(--ac)':'var(--wa)'}">${Math.round(S.volume)} kg·r</div></div>
+    <div class="cmp-r">
+      <div class="cmp-c"><div class="cmp-l">计划总容量</div><div class="cmp-v" style="color:var(--t2)">${Math.round(planTot)}kg·r</div></div>
+      <div class="cmp-div"></div>
+      <div class="cmp-c"><div class="cmp-l">实际总容量</div><div class="cmp-v" style="color:${diff>=0?'var(--ac)':'var(--wa)'}">${Math.round(S.volume)}kg·r</div></div>
     </div>
-    <div class="diff-bar-wrap"><div class="diff-bar-track"><div class="diff-bar-fill" style="width:${Math.min(Math.abs(diff),100)}%;background:${diff>=0?'var(--ac)':'var(--wa)'}"></div></div><span style="font-family:var(--f1);font-size:11px;font-weight:600;color:${diff>=0?'var(--ac)':'var(--wa)'}">${diff>0?'+':''}${diff}%</span></div>
+    <div style="display:flex;align-items:center;gap:5px;margin-top:6px">
+      <div class="diff-track"><div class="diff-fill" style="width:${Math.min(Math.abs(diff),100)}%;background:${diff>=0?'var(--ac)':'var(--wa)'}"></div></div>
+      <span style="font-family:var(--f1);font-size:11px;font-weight:600;color:${diff>=0?'var(--ac)':'var(--wa)'}">${diff>0?'+':''}${diff}%</span>
+    </div>
   </div>`;
 }
 
 async function saveSession(){
   const done=S.workout.filter(e=>e.done).length;
-  if(!done){toast('请先完成至少一个动作');return;}
+  if(!done&&S.todayMuscle!=='rest'){toast('请先完成至少一个动作');return;}
   const notes=document.getElementById('session-notes').value;
   if(db){
-    await db.addSession({session_title:document.getElementById('sh-title').textContent,muscle_groups:document.getElementById('muscle-grp').textContent,volume:S.volume,exercises_json:JSON.stringify(S.workout),notes,rpe:S.rpe}).catch(()=>{});
-    const planTotal=S.workout.reduce((s,e)=>s+e.sets*parseInt((e.reps+'').split('-')[0])*e.weight_kg,0);
-    db.addComparison({plan_session_json:JSON.stringify(S.workout.map(e=>({name:e.name,sets:e.sets,reps:e.reps,weight_kg:e.weight_kg}))),actual_session_json:JSON.stringify(S.workout.filter(e=>e.done)),divergence_pct:planTotal>0?Math.round((S.volume-planTotal)/planTotal*100):0,notes}).catch(()=>{});
+    await db.addSession({
+      session_title:document.getElementById('sh-title').textContent,
+      muscle_groups:S.todayMuscle,volume:S.volume,
+      exercises_json:JSON.stringify(S.workout),notes,rpe:S.rpe,
+    }).catch(()=>{});
+    const planTot=S.workout.reduce((s,e)=>s+e.sets*parseInt((e.reps+'').split('-')[0])*e.weight_kg,0);
+    db.addComparison({
+      plan_session_json:JSON.stringify(S.workout.map(e=>({name:e.name,sets:e.sets,reps:e.reps,weight_kg:e.weight_kg}))),
+      actual_session_json:JSON.stringify(S.workout.filter(e=>e.done)),
+      divergence_pct:planTot>0?Math.round((S.volume-planTot)/planTot*100):0,notes,
+    }).catch(()=>{});
     S.workout.filter(e=>e.done&&e.is_compound).forEach(ex=>{
       const sd=ex.sets_data;if(!sd.length)return;
       const best=sd.reduce((a,s)=>calcE1RM(s.w,s.r)>calcE1RM(a.w,a.r)?s:a,sd[0]);
       db.addStrengthLog({exercise_name:ex.name,weight_kg:best.w,reps:best.r,sets:sd.length,e1rm:calcE1RM(best.w,best.r)}).catch(()=>{});
     });
-    await loadRecentComparisons();
+    await loadRecentCmp();
   }
-  if(notes.trim()){if(confirm(`将训后感受存入记忆库（短期7天）？\n\n「${notes.slice(0,60)}」`)){await saveMemoQ(notes,'short');toast('✓ 训练已记录，感受存入记忆库');return;}}
+  if(notes.trim()&&confirm(`将训后感受存入记忆库（短期7天）？\n「${notes.slice(0,60)}」`)){
+    await saveMemoQ(notes,'short');toast('✓ 训练已记录，感受存入记忆库');return;
+  }
   toast(`✓ 已记录 · ${done} 动作 · ${Math.round(S.volume)} kg·r`);
 }
 
-// ── PLAN ──
+// ══ PLAN ══
 async function genPlan(){
-  const btn=document.querySelector('.gen-btn');btn.textContent='生成中…';btn.disabled=true;
+  if(document.getElementById('pf-height'))saveProfileFromForm();
+  const btn=document.getElementById('gen-plan-btn');btn.textContent='生成中…';btn.disabled=true;
   try{
     const r=await AI.call('plan',{
-      system:PROMPTS.plan({muscle:S.muscle,fat_pct:S.fat_pct,goal:document.getElementById('pf-goal').value,weeks:parseInt(document.getElementById('pf-weeks').value),daysPerWeek:parseInt(document.getElementById('pf-days').value),restrictions:document.getElementById('pf-restrictions').value},memCtx()),
+      system:PROMPTS.plan(prof(),
+        document.getElementById('pf-goal').value,
+        parseInt(document.getElementById('pf-wks').value),
+        5,// 固定五练
+        document.getElementById('pf-res').value),
       userMsg:'为我生成完整的健美周期计划。',
     });
-    if(r._parseError)throw new Error('格式错误');
+    if(r._err)throw new Error('格式错误');
     S.activePlan=r;
     if(db)db.savePlan({title:r.title,goal:r.goal,duration_weeks:r.duration_weeks,phase_json:JSON.stringify(r)}).catch(()=>{});
     renderActivePlan();updateTokenUI();toast('✓ 计划已生成');
@@ -1205,105 +1420,154 @@ async function genPlan(){
 }
 
 function saveManualPlan(){
-  const txt=document.getElementById('manual-plan-input').value.trim();if(!txt)return;
+  const txt=document.getElementById('manual-plan').value.trim();if(!txt)return;
   S.activePlan={title:'自定义计划',goal:txt,manual:true};
-  document.getElementById('plan-hero').innerHTML=`<div style="font-family:var(--f1);font-size:10px;font-weight:500;letter-spacing:.12em;color:rgba(155,126,240,.7);margin-bottom:6px;text-transform:uppercase">自定义计划</div><div style="font-size:14px;line-height:1.65;color:var(--t1)">${txt}</div>`;
+  document.getElementById('plan-hero').innerHTML=`<div style="font-family:var(--f1);font-size:10px;font-weight:500;letter-spacing:.12em;color:rgba(155,124,238,.7);margin-bottom:5px;text-transform:uppercase">自定义计划</div><div style="font-size:13px;line-height:1.7;color:var(--t1)">${txt}</div>`;
   if(db)db.savePlan({title:'自定义计划',goal:txt,phase_json:JSON.stringify(S.activePlan)}).catch(()=>{});
-  document.getElementById('manual-plan-input').value='';
+  document.getElementById('manual-plan').value='';
   toast('✓ 手动计划已保存');
 }
 
 async function loadActivePlan(){
   if(!db)return;
-  try{const p=await db.getActivePlan();if(p?.phase_json){S.activePlan=JSON.parse(p.phase_json);renderActivePlan();}}catch(e){}
-}
-
-function getCurrentWeekFocus(){
-  if(!S.activePlan?.phases)return S.activePlan?.goal||'';
-  const p=S.activePlan.phases[0];return p?`${p.focus} · ${p.notes||''}`:'';
+  try{
+    const p=await db.getActivePlan();
+    if(p?.phase_json){S.activePlan=JSON.parse(p.phase_json);renderActivePlan();}
+  }catch(e){}
 }
 
 function renderActivePlan(){
   const plan=S.activePlan;if(!plan)return;
-  if(plan.manual){document.getElementById('plan-hero').innerHTML=`<div style="font-family:var(--f1);font-size:10px;font-weight:500;letter-spacing:.12em;color:rgba(155,126,240,.7);margin-bottom:6px;text-transform:uppercase">自定义计划</div><div style="font-size:14px;line-height:1.65">${plan.goal}</div>`;return;}
+  if(plan.manual){
+    document.getElementById('plan-hero').innerHTML=`<div style="font-family:var(--f1);font-size:10px;font-weight:500;letter-spacing:.12em;color:rgba(155,124,238,.7);margin-bottom:5px;text-transform:uppercase">自定义计划</div><div style="font-size:13px;line-height:1.7">${plan.goal}</div>`;
+    return;
+  }
+  document.getElementById('plan-hero').className='plan-hero ph-active';
   document.getElementById('plan-hero').innerHTML=`
-    <div style="font-family:var(--f1);font-size:10px;font-weight:500;letter-spacing:.12em;color:rgba(155,126,240,.7);margin-bottom:4px;text-transform:uppercase">当前周期</div>
-    <div style="font-family:var(--f1);font-size:17px;font-weight:700;letter-spacing:-.02em;margin-bottom:5px">${plan.title||plan.goal}</div>
+    <div style="font-family:var(--f1);font-size:10px;font-weight:500;letter-spacing:.12em;color:rgba(155,124,238,.7);margin-bottom:4px;text-transform:uppercase">当前周期</div>
+    <div style="font-family:var(--f1);font-size:16px;font-weight:700;letter-spacing:-.02em;margin-bottom:5px">${plan.title||plan.goal}</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <span style="font-family:var(--f1);font-size:11px;font-weight:500;color:var(--t2)">${plan.duration_weeks}周计划</span>
+      <span style="font-family:var(--f1);font-size:11px;font-weight:500;color:var(--t2)">${plan.duration_weeks}周</span>
       <span style="color:var(--t3)">·</span>
       <span style="font-family:var(--f1);font-size:11px;font-weight:500;color:var(--t2)">蛋白质 ${plan.nutrition?.protein_g||170}g/天</span>
       <span style="color:var(--t3)">·</span>
-      <span style="font-family:var(--f1);font-size:11px;font-weight:500;color:var(--t2)">训练日碳水 ${plan.nutrition?.train_carbs||280}g</span>
-    </div>`;
-  if(plan.weekly_structure?.day_plan){
-    document.getElementById('week-card').innerHTML=plan.weekly_structure.day_plan.map(d=>`
-      <div class="day-row"><span class="day-name">${d.split(/[：:]/)[0]}</span><span class="day-focus">${d.split(/[：:]/)[1]||d}</span><span class="day-tag ${d.includes('休')?'dt-rest':'dt-train'}">${d.includes('休')?'休息':'训练'}</span></div>`).join('');
+      <span style="font-family:var(--f1);font-size:11px;font-weight:500;color:var(--t2)">训练日碳水 ${plan.nutrition?.train_carbs||260}g</span>
+    </div>
+    ${plan.leg_frequency?`<div style="font-size:11px;color:var(--t2);margin-top:5px">腿部：${plan.leg_frequency}</div>`:''}`;
+
+  if(plan.default_split?.week_template){
+    const legDays=['legs'];
+    document.getElementById('week-card').innerHTML=plan.default_split.week_template.map(d=>`
+      <div class="day-row">
+        <span class="day-name">${d.day.replace('周','')}</span>
+        <span class="day-focus">${d.muscle}</span>
+        <span class="day-tag ${d.type==='rest'?'dt-rs':d.muscle.includes('腿')?'dt-leg':'dt-tr'}">${d.type==='rest'?'休息':d.muscle.includes('腿')?'腿日':'训练'}</span>
+      </div>`).join('');
   }
   if(plan.milestones?.length){
-    document.getElementById('milestones-card').innerHTML=plan.milestones.map(m=>`
-      <div class="ms-row"><div class="ms-dot"></div><div class="ms-week">第${m.week}周</div><div class="ms-body"><div class="ms-title">肌肉 ${m.muscle_target}kg · 体脂 ${m.fat_target}%</div><div class="ms-sub">${m.notes||''}</div></div></div>`).join('');
+    document.getElementById('ms-card').innerHTML=plan.milestones.map(m=>`
+      <div class="ms-row"><div class="ms-dot"></div><div class="ms-wk">第${m.week}周</div><div class="ms-b"><div class="ms-t">肌肉 ${m.muscle_target}kg · 体脂 ${m.fat_target}%</div><div class="ms-s">${m.strength_notes||''}</div></div></div>`).join('');
+  }
+  // 同步到训练页：本周重点
+  if(plan.default_split?.week_template){
+    const dow=new Date().getDay();
+    const dayMap={0:'周日',1:'周一',2:'周二',3:'周三',4:'周四',5:'周五',6:'周六'};
+    const todayTemplate=plan.default_split.week_template.find(d=>d.day===dayMap[dow]);
+    if(todayTemplate&&todayTemplate.type!=='rest'){
+      S.activePlan.weekFocus=todayTemplate.muscle;
+      // suggest muscle group for today
+      const match=MUSCLE_OPTIONS.find(m=>todayTemplate.muscle.includes(m.label)||m.label.includes(todayTemplate.muscle.split('+')[0]));
+      if(match&&!S.todayMuscle){
+        document.getElementById('sh-sub').textContent=`计划建议今日练：${todayTemplate.muscle}`;
+      }
+    } else if(todayTemplate?.type==='rest'){
+      document.getElementById('sh-sub').textContent='今日计划为休息日';
+    }
   }
 }
 
-async function loadRecentComparisons(){
+async function loadRecentCmp(){
   if(!db)return;
   try{
     const data=await db.getRecentComparisons(7);
-    const el=document.getElementById('recent-comparisons');
+    const el=document.getElementById('recent-cmp');
     if(!data.length){el.innerHTML='<div class="empty">完成训练记录后显示</div>';return;}
     el.innerHTML=data.reverse().map(c=>{
       const d=new Date(c.date).toLocaleDateString('zh-CN',{month:'numeric',day:'numeric'});
       const dp=c.divergence_pct||0;
-      return `<div class="cmp-hist-item"><div class="cmp-hist-row"><span class="cmp-hist-date">${d}</span><span class="cmp-hist-pct" style="color:${dp>=0?'var(--ac)':'var(--wa)'}">${dp>0?'+':''}${dp}%</span></div><div style="font-size:12px;color:var(--t2);margin-top:3px">${c.notes?.slice(0,50)||'无备注'}</div><div class="diff-bar-track" style="margin-top:6px;height:2px"><div class="diff-bar-fill" style="width:${Math.min(Math.abs(dp),100)}%;background:${dp>=0?'var(--ac)':'var(--wa)'}"></div></div></div>`;
+      return`<div class="cmp-hist"><div class="ch-hdr"><span class="ch-date">${d}</span><span class="ch-pct" style="color:${dp>=0?'var(--ac)':'var(--wa)'}">${dp>0?'+':''}${dp}%</span></div><div style="font-size:12px;color:var(--t2);margin-top:3px">${c.notes?.slice(0,50)||'无备注'}</div><div class="diff-track" style="margin-top:5px;height:2px"><div class="diff-fill" style="width:${Math.min(Math.abs(dp),100)}%;background:${dp>=0?'var(--ac)':'var(--wa)'}"></div></div></div>`;
     }).join('');
   }catch(e){}
 }
 
-// ── BODY ──
+// ══ BODY ══
 function updateComp(){
   const m=parseFloat(document.getElementById('in-muscle').value);
   const f=parseFloat(document.getElementById('in-fat').value);
   if(m){S.muscle=m;['muscle-val','d-muscle'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=m.toFixed(1);});}
   if(f){S.fat_pct=f;['fat-val','d-fat'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=f.toFixed(1);});}
-  if(m||f){const d=new Date();S.history.push({date:`${d.getMonth()+1}/${d.getDate()}`,muscle:S.muscle,fat:S.fat_pct});if(S.history.length>7)S.history.shift();if(db)db.addBodyStat({muscle_kg:S.muscle,fat_pct:S.fat_pct}).catch(()=>{});renderChart();toast('✓ 成分已更新');}
+  if(m||f){
+    const d=new Date();S.history.push({date:`${d.getMonth()+1}/${d.getDate()}`,muscle:S.muscle,fat:S.fat_pct});
+    if(S.history.length>7)S.history.shift();
+    if(db)db.addBodyStat({muscle_kg:S.muscle,fat_pct:S.fat_pct}).catch(()=>{});
+    const prof=loadProfile();prof.fat_pct=S.fat_pct;if(S.muscle)prof.muscle_kg=S.muscle;saveProfile(prof);
+    if(document.getElementById('pf-fat'))document.getElementById('pf-fat').value=S.fat_pct;
+    applyNutritionUI();
+    renderChart();toast('✓ 成分已更新');
+  }
   document.getElementById('in-muscle').value='';document.getElementById('in-fat').value='';
 }
-
 function renderChart(){
   const pts=S.history;if(pts.length<2)return;
   const svg=document.getElementById('trend-svg');
-  const W=340,H=105,pad=16;
+  const W=340,H=100,pad=15;
   const mV=pts.map(p=>p.muscle),fV=pts.map(p=>p.fat);
-  const mMin=Math.min(...mV)-.5,mMax=Math.max(...mV)+.5,fMin=Math.min(...fV)-.5,fMax=Math.max(...fV)+.5;
+  const mMin=Math.min(...mV)-.4,mMax=Math.max(...mV)+.4,fMin=Math.min(...fV)-.4,fMax=Math.max(...fV)+.4;
   const xS=i=>pad+i*(W-pad*2)/(pts.length-1);
   const mY=v=>H-pad-(v-mMin)/(mMax-mMin)*(H-pad*2);
   const fY=v=>H-pad-(v-fMin)/(fMax-fMin)*(H-pad*2);
   svg.innerHTML=`
-    ${pts.map((p,i)=>`<text x="${xS(i)}" y="${H-1}" text-anchor="middle" fill="#3A3835" font-size="8" font-family="Inter,sans-serif">${p.date}</text>`).join('')}
-    <path d="${pts.map((p,i)=>`${i===0?'M':'L'}${xS(i)},${mY(p.muscle)}`).join(' ')}" fill="none" stroke="#E8FF6B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="${pts.map((p,i)=>`${i===0?'M':'L'}${xS(i)},${fY(p.fat)}`).join(' ')}" fill="none" stroke="#F59E4A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4,3"/>
-    ${pts.map((p,i)=>`<circle cx="${xS(i)}" cy="${mY(p.muscle)}" r="2.5" fill="#E8FF6B"/>`).join('')}
-    ${pts.map((p,i)=>`<circle cx="${xS(i)}" cy="${fY(p.fat)}" r="2.5" fill="#F59E4A"/>`).join('')}`;
+    ${pts.map((p,i)=>`<text x="${xS(i)}" y="${H}" text-anchor="middle" fill="#323030" font-size="8" font-family="Inter,sans-serif">${p.date}</text>`).join('')}
+    <path d="${pts.map((p,i)=>`${i===0?'M':'L'}${xS(i)},${mY(p.muscle)}`).join(' ')}" fill="none" stroke="#E2FF5C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="${pts.map((p,i)=>`${i===0?'M':'L'}${xS(i)},${fY(p.fat)}`).join(' ')}" fill="none" stroke="#F0964A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4,3"/>
+    ${pts.map((p,i)=>`<circle cx="${xS(i)}" cy="${mY(p.muscle)}" r="2.5" fill="#DEFF47"/>`).join('')}
+    ${pts.map((p,i)=>`<circle cx="${xS(i)}" cy="${fY(p.fat)}" r="2.5" fill="#F0964A"/>`).join('')}`;
 }
-
 function renderMeasures(){
-  document.getElementById('measure-grid').innerHTML=MEASURES.map(d=>`
-    <div class="mi"><div class="mi-lbl">${d.label}</div>
+  document.getElementById('mg').innerHTML=MEASURES.map(d=>`
+    <div class="mi"><div class="mi-l">${d.label}</div>
     <div class="mi-vr"><div class="mi-v" id="mv-${d.key}">${S.measures[d.key]||'—'}</div><div class="mi-u">${S.measures[d.key]?'cm':''}</div></div>
-    <div style="display:flex;gap:5px;margin-top:3px"><input type="number" step="0.1" class="ni" id="mi-${d.key}" placeholder="cm" style="font-size:12px;padding:6px 8px"><button class="upd-btn" onclick="updateM('${d.key}')" style="font-size:10px;padding:6px 9px">更新</button></div></div>`).join('');
+    <div style="display:flex;gap:5px;margin-top:3px"><input type="number" step="0.1" class="ni" id="mi-${d.key}" placeholder="cm" style="flex:1;font-size:12px;padding:6px 8px"><button class="upd-btn" onclick="updateM('${d.key}')" style="font-size:10px;padding:6px 9px">更新</button></div></div>`).join('');
 }
-function updateM(key){const v=parseFloat(document.getElementById('mi-'+key).value);if(!v)return;S.measures[key]=v;document.getElementById('mv-'+key).textContent=v.toFixed(1);document.getElementById('mi-'+key).value='';toast(`✓ ${MEASURES.find(m=>m.key===key)?.label} 已更新`);}
+function updateM(key){
+  const v=parseFloat(document.getElementById('mi-'+key).value);if(!v)return;
+  S.measures[key]=v;document.getElementById('mv-'+key).textContent=v.toFixed(1);
+  document.getElementById('mi-'+key).value='';
+  if(db)db.addBodyStat({[`${key}_cm`]:v,muscle_kg:S.muscle,fat_pct:S.fat_pct}).catch(()=>{});
+  toast(`✓ ${MEASURES.find(m=>m.key===key)?.label} 已更新`);
+}
 
 let sleepQ=3;
 function setSleepQ(q){sleepQ=q;document.querySelectorAll('.sqb').forEach((b,i)=>b.classList.toggle('on',i+1===q));}
-async function saveSleep(){const dur=parseFloat(document.getElementById('sleep-dur').value);if(db)await db.addSleepLog({duration_h:dur,quality:sleepQ}).catch(()=>{});await loadSleepLog();toast(`✓ 睡眠 ${dur}h · 质量 ${sleepQ}/4`);}
-async function loadSleepLog(){if(!db)return;try{const d=await db.getRecentSleepLogs(14);renderSleepLog(d);}catch(e){}}
+async function saveSleep(){
+  const dur=parseFloat(document.getElementById('sleep-dur').value);
+  if(db)await db.addSleepLog({duration_h:dur,quality:sleepQ}).catch(()=>{});
+  await loadSleepLog();toast(`✓ 睡眠 ${dur}h · 质量 ${sleepQ}/4`);
+}
+async function loadSleepLog(){
+  if(!db)return;
+  try{const d=await db.getRecentSleepLogs(14);renderSleepLog(d);}catch(e){}
+}
 function renderSleepLog(data){
-  const el=document.getElementById('sleep-log');
-  if(!data.length){el.innerHTML='';return;}
+  const el=document.getElementById('sleep-log');if(!data.length){el.innerHTML='';return;}
   const q=['','差','一般','良好','极佳'];
-  el.innerHTML=[...data].reverse().slice(0,6).map(d=>`<div class="sleep-log-item"><div class="sl-date">${new Date(d.logged_at).toLocaleDateString('zh-CN',{month:'numeric',day:'numeric'})}</div><div class="sl-bar-wrap"><div class="sl-bar" style="width:${((d.duration_h-4)/6*100).toFixed(0)}%"></div></div><div class="sl-dur">${d.duration_h}h</div><div style="font-family:var(--f1);font-size:10px;color:var(--t2);width:22px;text-align:center">${q[d.quality]||''}</div></div>`).join('');
+  el.innerHTML=[...data].reverse().slice(0,6).map(d=>`
+    <div class="sl-item">
+      <div class="sl-d">${new Date(d.logged_at).toLocaleDateString('zh-CN',{month:'numeric',day:'numeric'})}</div>
+      <div class="sl-bw"><div class="sl-bf" style="width:${((d.duration_h-4)/6*100).toFixed(0)}%"></div></div>
+      <div class="sl-dur">${d.duration_h}h</div>
+      <div class="sl-q">${q[d.quality]||''}</div>
+    </div>`).join('');
 }
 
 let strEntryVis=false;
@@ -1316,30 +1580,33 @@ async function saveStrength(){
   if(db)await db.addStrengthLog({exercise_name:name,weight_kg:w,reps:r,sets:1,e1rm}).catch(()=>{});
   document.getElementById('str-w').value='';document.getElementById('str-r').value='';
   strEntryVis=false;document.getElementById('str-entry-row').style.display='none';
-  await loadStrengthChart();toast(`✓ ${name} E1RM ${e1rm}kg`);
+  await loadStrChart();toast(`✓ ${name} E1RM ${e1rm}kg`);
 }
-async function loadStrengthChart(){
+async function loadStrChart(){
   if(!db)return;
   const name=document.getElementById('str-sel')?.value||'臥推';
   try{const d=await db.getStrengthHistory(name,12);renderStrChart(d);renderStrLog(d);}catch(e){}
 }
 function renderStrChart(pts){
   const svg=document.getElementById('str-svg');if(!svg)return;
-  if(pts.length<2){svg.innerHTML=`<text x="150" y="45" text-anchor="middle" fill="#3A3835" font-size="11" font-family="Inter,sans-serif">暂无数据 · 完成训练后自动记录</text>`;return;}
-  const W=300,H=90,pad=14;
+  if(pts.length<2){svg.innerHTML=`<text x="150" y="42" text-anchor="middle" fill="#323030" font-size="11" font-family="Inter,sans-serif">暂无数据 · 完成训练后自动记录</text>`;return;}
+  const W=300,H=85,pad=13;
   const vals=pts.map(p=>p.e1rm||p.weight_kg);
   const vMin=Math.min(...vals)-5,vMax=Math.max(...vals)+5;
   const xS=i=>pad+i*(W-pad*2)/(pts.length-1);
   const yS=v=>H-pad-(v-vMin)/(vMax-vMin)*(H-pad*2);
-  svg.innerHTML=`${pts.map((p,i)=>i%3===0?`<text x="${xS(i)}" y="${H-1}" text-anchor="middle" fill="#3A3835" font-size="8" font-family="Inter,sans-serif">${new Date(p.logged_at).toLocaleDateString('zh-CN',{month:'numeric',day:'numeric'})}</text>`:'').join('')}<path d="${pts.map((p,i)=>`${i===0?'M':'L'}${xS(i)},${yS(p.e1rm||p.weight_kg)}`).join(' ')}" fill="none" stroke="#9B7EF0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>${pts.map((p,i)=>`<circle cx="${xS(i)}" cy="${yS(p.e1rm||p.weight_kg)}" r="2.5" fill="#9B7EF0"/>`).join('')}`;
+  svg.innerHTML=`
+    ${pts.map((p,i)=>i%3===0?`<text x="${xS(i)}" y="${H}" text-anchor="middle" fill="#323030" font-size="8" font-family="Inter,sans-serif">${new Date(p.logged_at).toLocaleDateString('zh-CN',{month:'numeric',day:'numeric'})}</text>`:'').join('')}
+    <path d="${pts.map((p,i)=>`${i===0?'M':'L'}${xS(i)},${yS(p.e1rm||p.weight_kg)}`).join(' ')}" fill="none" stroke="#9B7CEE" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    ${pts.map((p,i)=>`<circle cx="${xS(i)}" cy="${yS(p.e1rm||p.weight_kg)}" r="2.5" fill="#9B7CEE"/>`).join('')}`;
 }
 function renderStrLog(data){
-  const el=document.getElementById('str-log-list');
-  if(!data.length){el.innerHTML='';return;}
-  el.innerHTML=[...data].reverse().slice(0,4).map(d=>`<div class="str-log-item"><div class="sl-d2">${new Date(d.logged_at).toLocaleDateString('zh-CN',{month:'numeric',day:'numeric'})}</div><div style="flex:1"><div class="sl-e1rm">E1RM ${d.e1rm||d.weight_kg}kg</div><div class="sl-detail2">${d.weight_kg}kg × ${d.reps}次 × ${d.sets}组</div></div></div>`).join('');
+  const el=document.getElementById('str-log');if(!data.length){el.innerHTML='';return;}
+  el.innerHTML=[...data].reverse().slice(0,4).map(d=>`
+    <div class="stl-item"><div class="stl-d">${new Date(d.logged_at).toLocaleDateString('zh-CN',{month:'numeric',day:'numeric'})}</div><div style="flex:1"><div class="stl-e">E1RM ${d.e1rm||d.weight_kg}kg</div><div class="stl-det">${d.weight_kg}kg × ${d.reps}次 × ${d.sets}组</div></div></div>`).join('');
 }
 
-// ── MEMORY ──
+// ══ MEMORY ══
 async function loadMemories(){if(!db)return;try{S.memories=await db.getActiveMemories();renderMemories();}catch(e){}}
 async function saveMem(){
   const c=document.getElementById('mem-input').value.trim();if(!c)return;
@@ -1362,342 +1629,138 @@ async function deleteMem(idx){
 function renderMemories(){
   const now=new Date();
   const active=S.memories.filter(m=>!m.expires_at||new Date(m.expires_at)>now);
-  document.getElementById('mem-cnt').textContent=active.length?`${active.length} 条有效`:'';
+  document.getElementById('mem-cnt').textContent=active.length?`${active.length} 条`:'' ;
   document.getElementById('mem-list').innerHTML=active.length
-    ?`<div class="mem-list">${active.map((m,i)=>`<div class="mem-item"><span class="mt ${TIER_CLS[m.tier]||'mt-short'}">${TIER_LBL[m.tier]||m.tier}</span><div class="mem-body"><div class="mem-txt">${m.content}</div><div class="mem-meta">${m.expires_at?'到期：'+new Date(m.expires_at).toLocaleDateString('zh-CN'):'永久有效'}</div></div><button class="mem-del" onclick="deleteMem(${i})">${DEL}</button></div>`).join('')}</div>`
+    ?`<div class="mem-list">${active.map((m,i)=>`<div class="mem-i"><span class="mt ${TIER_CLS[m.tier]||'mt-s'}">${TIER_LBL[m.tier]||m.tier}</span><div class="mem-b"><div class="mem-t">${m.content}</div><div class="mem-m">${m.expires_at?'到期：'+new Date(m.expires_at).toLocaleDateString('zh-CN'):'永久有效'}</div></div><button class="mem-del" onclick="deleteMem(${i})">${DEL}</button></div>`).join('')}</div>`
     :'<div class="empty">暂无有效记忆</div>';
 }
 
-// ── ANALYSIS ──
-async function runAnalysis(){
-  const el=document.getElementById('ana-result');
-  el.innerHTML=`<div class="thinking"><div class="dots"><span></span><span></span><span></span></div><span class="thinking-txt">汇总数据，深度分析中…</span></div>`;
+// ══ REVIEW ══
+let revDays=1;
+function setRevPeriod(days,btn){
+  revDays=days;
+  document.querySelectorAll('.rps').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+}
+async function runReview(){
+  const el=document.getElementById('rev-result');
+  const btn=document.getElementById('run-rev-btn');
+  btn.disabled=true;
+  el.innerHTML='';el.append(mkThink('分析数据中…'));
+  const to=new Date();
+  const from=new Date(to.getTime()-revDays*864e5);
+  const periodLabel=['昨日','近3天','近7天','近14天','近30天','近90天'][[1,3,7,14,30,90].indexOf(revDays)]||`近${revDays}天`;
   try{
-    const exported=db?await db.exportForAnalysis(90):{food_logs:[],sessions:[],body_stats:[],strength_logs:[],sleep_logs:[],memories:[],active_plan:null};
-    const r=await AI.call('analysis',{system:PROMPTS.analysis(memCtx()),userMsg:`过去90天完整数据：\n${JSON.stringify(exported,null,1)}`});
-    if(r._parseError)throw new Error('格式错误');
+    const data=db?await db.exportRange(from.toISOString(),to.toISOString()):{food_logs:[],sessions:[],sleep_logs:[],body_stats:[]};
+    const r=await AI.call('review',{
+      system:PROMPTS.review(prof(),data,periodLabel),
+      userMsg:`对我${periodLabel}的数据进行复盘分析。`,
+    });
+    if(r._err)throw new Error('格式错误');
     el.innerHTML=`
-      <div style="font-family:var(--f1);font-size:10px;font-weight:500;letter-spacing:.12em;color:var(--t2);text-transform:uppercase;margin-bottom:8px">复盘结论</div>
-      <div class="card" style="margin-bottom:10px">
-        <div style="font-size:13px;line-height:1.7">${r.summary||'—'}</div>
-        <div style="display:flex;gap:7px;margin-top:10px">
-          <div style="flex:1;background:rgba(232,255,107,.04);border:1px solid rgba(232,255,107,.1);border-radius:var(--r1);padding:9px;font-family:var(--f1);font-size:11px"><div style="color:var(--t2);margin-bottom:3px">肌肉量</div><div style="color:var(--ac)">${r.muscle_trend||'—'}</div></div>
-          <div style="flex:1;background:rgba(245,158,74,.04);border:1px solid rgba(245,158,74,.1);border-radius:var(--r1);padding:9px;font-family:var(--f1);font-size:11px"><div style="color:var(--t2);margin-bottom:3px">体脂</div><div style="color:var(--wa)">${r.fat_trend||'—'}</div></div>
-        </div>
-        ${r.sleep_vs_perf?`<div style="margin-top:9px;padding-top:9px;border-top:1px solid var(--line);font-family:var(--f1);font-size:11px;color:var(--t2);line-height:1.6"><span style="color:var(--info)">睡眠关联</span>　${r.sleep_vs_perf}</div>`:''}
+      <div style="font-family:var(--f1);font-size:10px;font-weight:500;letter-spacing:.12em;color:var(--t2);text-transform:uppercase;margin-bottom:7px">${periodLabel}复盘</div>
+      <div class="card" style="margin-bottom:8px"><div style="font-size:13px;line-height:1.7">${r.summary||'—'}</div></div>
+      <div class="rev-grid">
+        <div class="rev-item"><div class="rev-lbl">训练天数</div><div class="rev-val" style="color:var(--pu)">${r.train_days||0}</div><div class="rev-sub">天</div></div>
+        <div class="rev-item"><div class="rev-lbl">总容量</div><div class="rev-val" style="color:var(--ac)">${Math.round((r.total_volume||0)/1000)}k</div><div class="rev-sub">kg·r</div></div>
+        <div class="rev-item"><div class="rev-lbl">均蛋白质</div><div class="rev-val" style="color:${(r.nutrition_avg?.protein_avg||0)>=170?'var(--ac)':'var(--wa)'}">${r.nutrition_avg?.protein_avg||0}</div><div class="rev-sub">g/天</div></div>
+        <div class="rev-item"><div class="rev-lbl">均睡眠</div><div class="rev-val" style="color:${(r.sleep_avg||0)>=7?'var(--ac)':'var(--wa)'}">${(r.sleep_avg||0).toFixed(1)}</div><div class="rev-sub">h/天</div></div>
+        <div class="rev-item"><div class="rev-lbl">肌肉量</div><div class="rev-val">${r.muscle_trend||'—'}</div><div class="rev-sub"></div></div>
+        <div class="rev-item"><div class="rev-lbl">体脂</div><div class="rev-val">${r.fat_trend||'—'}</div><div class="rev-sub"></div></div>
       </div>
-      ${r.train_insights?.length?`<div style="font-family:var(--f1);font-size:10px;font-weight:500;letter-spacing:.12em;color:var(--t2);text-transform:uppercase;margin-bottom:7px">训练洞察</div><div class="card-inset" style="margin-bottom:10px">${r.train_insights.map(t=>`<div class="insight train">${t}</div>`).join('')}</div>`:''}
-      ${r.nutrition_insights?.length?`<div style="font-family:var(--f1);font-size:10px;font-weight:500;letter-spacing:.12em;color:var(--t2);text-transform:uppercase;margin-bottom:7px">营养洞察</div><div class="card-inset" style="margin-bottom:10px">${r.nutrition_insights.map(t=>`<div class="insight">${t}</div>`).join('')}</div>`:''}
-      ${r.recs?.length?`<div style="font-family:var(--f1);font-size:10px;font-weight:500;letter-spacing:.12em;color:var(--t2);text-transform:uppercase;margin-bottom:7px">未来4周建议</div><div class="card-inset" style="margin-bottom:10px">${r.recs.map(t=>`<div class="insight rec">${t}</div>`).join('')}</div>`:''}
-      ${r.risks?.length?`<div style="font-family:var(--f1);font-size:10px;font-weight:500;letter-spacing:.12em;color:var(--da);text-transform:uppercase;margin-bottom:7px">⚠ 风险预警</div><div class="card-inset">${r.risks.map(t=>`<div class="insight risk">${t}</div>`).join('')}</div>`:''}`;
+      ${r.highlights?.length?`<div class="inset" style="margin-bottom:8px">${r.highlights.map(h=>`<div class="insight ins-hi">${h}</div>`).join('')}</div>`:''}
+      ${r.issues?.length?`<div class="inset" style="margin-bottom:8px">${r.issues.map(h=>`<div class="insight ins-is">${h}</div>`).join('')}</div>`:''}
+      ${r.recs?.length?`<div style="font-family:var(--f1);font-size:10px;font-weight:500;letter-spacing:.12em;color:var(--t2);text-transform:uppercase;margin-bottom:7px">建议</div><div class="inset">${r.recs.map(h=>`<div class="insight ins-rc">${h}</div>`).join('')}</div>`:''}
+      ${r.risk?`<div style="font-family:var(--f1);font-size:11px;font-weight:500;color:var(--wa);margin-top:8px;padding-top:8px;border-top:1px solid var(--ln)">⚠ 最需注意：${r.risk}</div>`:''}`;
     updateTokenUI();
   }catch(e){el.innerHTML=`<div class="empty">分析失败：${e.message}</div>`;}
+  btn.disabled=false;
 }
 
-
-// ── SMART STATUS ENGINE ──────────────────────────────
-// 成就解锁阈值
-const ACHIEVEMENTS = [
-  { id:'e1rm_pr',    check: (d)=> d.e1rm_pr,        type:'celebrate', icon:'🏆', title:'力量新纪录！',     msg: d=> `${d.exercise} E1RM 突破至 <strong>${d.val}kg</strong>，超越历史最佳！` },
-  { id:'protein_5d', check: (d)=> d.protein_streak>=5, type:'celebrate', icon:'🔥', title:'蛋白质连续达标',  msg: d=> `已连续 <strong>${d.protein_streak} 天</strong> 蛋白质达标，肌肉合成窗口保持最优！` },
-  { id:'muscle_up',  check: (d)=> d.muscle_delta>0.3,  type:'celebrate', icon:'💪', title:'肌肉量创新高',    msg: d=> `肌肉量较上次 <strong>+${d.muscle_delta.toFixed(1)}kg</strong>，增肌进展顺利。` },
-  { id:'fat_down',   check: (d)=> d.fat_delta< -0.5,   type:'celebrate', icon:'⚡', title:'体脂持续下降',    msg: d=> `体脂率较上次 <strong>${d.fat_delta.toFixed(1)}%</strong>，减脂轨道正确。` },
+// ══ SMART CARD ══
+const ACHIEVEMENTS=[
+  {id:'e1rm_pr',check:d=>d.e1rm_pr,type:'cel',icon:'🏆',title:'力量新纪录！',msg:d=>`${d.exercise} E1RM 突破至 <strong>${d.val}kg</strong>，超越历史最佳！`},
+  {id:'protein_5d',check:d=>d.protein_streak>=5,type:'cel',icon:'🔥',title:'蛋白质连续达标',msg:d=>`已连续 <strong>${d.protein_streak} 天</strong>达标，肌肉合成窗口保持最优！`},
+  {id:'muscle_up',check:d=>d.muscle_delta>0.3,type:'cel',icon:'💪',title:'肌肉量创新高',msg:d=>`较上次 <strong>+${d.muscle_delta.toFixed(1)}kg</strong>，增肌进展顺利。`},
 ];
-const WARNINGS = [
-  { id:'fat_up',       check:(d)=>d.fat_delta>0.8,          type:'alert',   title:'体脂上升过快',     msg: d=>`体脂率 2 周内上升 <strong>+${d.fat_delta.toFixed(1)}%</strong>，建议复查饮食热量缺口，减少精制碳水。` },
-  { id:'muscle_stall', check:(d)=>d.muscle_stall,            type:'warn',    title:'肌肉量停滞信号',   msg: _=>`肌肉量 4 周内无变化，建议：增加复合动作容量 / 确保蛋白质持续达标 / 检查训练渐进超负荷。` },
-  { id:'sleep_low',    check:(d)=>d.avg_sleep<6.0,           type:'warn',    title:'睡眠质量不足',     msg: d=>`近 7 天平均睡眠 <strong>${d.avg_sleep.toFixed(1)}h</strong>，低于 7h 会显著影响恢复与肌肉合成，建议调整作息。` },
-  { id:'no_protein',   check:(d)=>d.protein_streak===0&&d.days_tracked>2, type:'warn', title:'蛋白质长期未达标', msg: _=>`连续多天蛋白质未达 170g 目标，这是增肌最关键的单一变量，优先补足。` },
-  { id:'vol_drop',     check:(d)=>d.vol_drop>25,             type:'warn',    title:'训练容量大幅下降', msg: d=>`本周训练容量较上周下降 <strong>${Math.round(d.vol_drop)}%</strong>，如非计划减量，请检查恢复状态。` },
+const WARNINGS=[
+  {id:'fat_up',check:d=>d.fat_delta>0.8,type:'alert',title:'体脂上升过快',msg:d=>`2周内上升 <strong>+${d.fat_delta.toFixed(1)}%</strong>，建议检查热量摄入，减少精制碳水。`},
+  {id:'sleep_low',check:d=>d.avg_sleep<6.0&&d.avg_sleep>0,type:'warn',title:'睡眠质量不足',msg:d=>`近7天均 <strong>${d.avg_sleep.toFixed(1)}h</strong>，低于7h会显著影响恢复与合成。`},
+  {id:'vol_drop',check:d=>d.vol_drop>25,type:'warn',title:'训练容量大幅下降',msg:d=>`较上周下降 <strong>${Math.round(d.vol_drop)}%</strong>，如非计划减量，请检查恢复状态。`},
 ];
-
-// 主入口：计算所有指标，决定显示哪张卡
-async function runSmartCard() {
-  const wrap = document.getElementById('smart-card-wrap');
-  if (!wrap) return;
-
-  // 从本地状态 + Supabase 获取数据
-  const data = await collectSmartData();
-
-  // 日报（每天首次打开）
-  const today = new Date().toDateString();
-  const lastReport = localStorage.getItem('form_last_report');
-  if (lastReport !== today) {
-    localStorage.setItem('form_last_report', today);
-    renderDailyReport(wrap, data);
-    return;
+function wk(){const d=new Date();const s=new Date(d.getFullYear(),0,1);return`${d.getFullYear()}_w${Math.ceil(((d-s)/864e5+s.getDay()+1)/7)}`;}
+async function runSmartCard(){
+  const wrap=document.getElementById('sc-wrap');if(!wrap||!AI)return;
+  const data=await collectSCData();
+  const today=new Date().toDateString();
+  const lastRep=localStorage.getItem('form_last_rep');
+  if(lastRep!==today){localStorage.setItem('form_last_rep',today);renderDailyRep(wrap,data);return;}
+  for(const ach of ACHIEVEMENTS){
+    if(ach.check(data)){const k=ach.id+'_'+wk();const dis=JSON.parse(localStorage.getItem('form_dis')||'[]');if(!dis.includes(k)){renderAch(wrap,ach,data,k);return;}}
   }
-
-  // 检查周报（每周一触发）
-  const isMonday = new Date().getDay() === 1;
-  const lastWeekly = localStorage.getItem('form_last_weekly');
-  const thisWeek = getWeekKey();
-  if (isMonday && lastWeekly !== thisWeek) {
-    localStorage.setItem('form_last_weekly', thisWeek);
-    renderWeeklyReport(wrap, data);
-    return;
+  for(const w of WARNINGS){
+    if(w.check(data)){const k=w.id+'_'+wk();const dis=JSON.parse(localStorage.getItem('form_dis')||'[]');if(!dis.includes(k)){renderWarn(wrap,w,data,k);return;}}
   }
-
-  // 检查成就
-  for (const ach of ACHIEVEMENTS) {
-    if (ach.check(data)) {
-      const dismissed = JSON.parse(localStorage.getItem('form_dismissed')||'[]');
-      const key = ach.id + '_' + getWeekKey();
-      if (!dismissed.includes(key)) {
-        renderAchievement(wrap, ach, data, key);
-        return;
-      }
-    }
-  }
-
-  // 检查预警
-  for (const w of WARNINGS) {
-    if (w.check(data)) {
-      const dismissed = JSON.parse(localStorage.getItem('form_dismissed')||'[]');
-      const key = w.id + '_' + getWeekKey();
-      if (!dismissed.includes(key)) {
-        renderWarning(wrap, w, data, key);
-        return;
-      }
-    }
-  }
-
-  // 全部正常：不显示卡片
-  wrap.innerHTML = '';
+  wrap.innerHTML='';
 }
-
-function getWeekKey() {
-  const d = new Date();
-  const start = new Date(d.getFullYear(), 0, 1);
-  const week = Math.ceil(((d - start) / 86400000 + start.getDay() + 1) / 7);
-  return `${d.getFullYear()}_w${week}`;
-}
-
-function dismissCard(key) {
-  const dismissed = JSON.parse(localStorage.getItem('form_dismissed')||'[]');
-  dismissed.push(key);
-  if (dismissed.length > 50) dismissed.shift();
-  localStorage.setItem('form_dismissed', JSON.stringify(dismissed));
-  document.getElementById('smart-card-wrap').innerHTML = '';
-}
-
-async function collectSmartData() {
-  const data = {
-    // 今日
-    protein_today: S.protein,
-    kcal_today: S.kcal,
-    vol_today: S.volume,
-    rpe: S.rpe,
-    // 成分变化
-    muscle_delta: 0,
-    fat_delta: 0,
-    muscle_stall: false,
-    // 蛋白质连续达标天数
-    protein_streak: parseInt(localStorage.getItem('form_p_streak')||'0'),
-    days_tracked: parseInt(localStorage.getItem('form_days_tracked')||'0'),
-    // 睡眠
-    avg_sleep: 7.5,
-    // 训练容量对比
-    vol_drop: 0,
-    // E1RM 破纪录
-    e1rm_pr: false,
-    exercise: '',
-    val: 0,
-  };
-
-  if (!db) return data;
-
-  try {
-    // 体成分变化
-    const body = await db.getBodyHistory(8);
-    if (body.length >= 2) {
-      const latest = body[body.length-1];
-      const prev = body[body.length-2];
-      data.muscle_delta = (latest.muscle_kg||0) - (prev.muscle_kg||0);
-      data.fat_delta = (latest.fat_pct||0) - (prev.fat_pct||0);
-      // 4周停滞检测
-      const fourWeeksAgo = body.find(b => {
-        const d = new Date(b.recorded_at);
-        return Date.now() - d.getTime() > 25*86400000;
-      });
-      if (fourWeeksAgo) {
-        data.muscle_stall = Math.abs((latest.muscle_kg||0) - (fourWeeksAgo.muscle_kg||0)) < 0.15;
-      }
-    }
-
-    // 睡眠平均
-    const sleeps = await db.getRecentSleepLogs(7);
-    if (sleeps.length > 2) {
-      data.avg_sleep = sleeps.reduce((a,s)=>a+(s.duration_h||7),0) / sleeps.length;
-    }
-
-    // 训练容量周对比
-    const sessions = await db.getRecentSessions(14);
-    if (sessions.length >= 2) {
-      const thisWeekSessions = sessions.filter(s => {
-        const d = new Date(s.trained_at);
-        return Date.now() - d.getTime() < 7*86400000;
-      });
-      const lastWeekSessions = sessions.filter(s => {
-        const d = new Date(s.trained_at);
-        const age = Date.now() - d.getTime();
-        return age >= 7*86400000 && age < 14*86400000;
-      });
-      if (thisWeekSessions.length && lastWeekSessions.length) {
-        const thisVol = thisWeekSessions.reduce((a,s)=>a+(s.volume||0),0);
-        const lastVol = lastWeekSessions.reduce((a,s)=>a+(s.volume||0),0);
-        if (lastVol > 0) data.vol_drop = Math.max(0, (lastVol - thisVol) / lastVol * 100);
-      }
-    }
-
-    // E1RM 破纪录检测（取上次存的最高值对比）
-    const strExercises = ['臥推','深蹲','硬举','过头推举'];
-    for (const ex of strExercises) {
-      const hist = await db.getStrengthHistory(ex, 10);
-      if (hist.length >= 2) {
-        const latest = hist[hist.length-1];
-        const prev = hist.slice(0,-1);
-        const prevMax = Math.max(...prev.map(h=>h.e1rm||0));
-        if ((latest.e1rm||0) > prevMax && prevMax > 0) {
-          data.e1rm_pr = true;
-          data.exercise = ex;
-          data.val = latest.e1rm;
-          break;
-        }
-      }
-    }
-
-    // 蛋白质连续达标（今天更新）
-    const today = new Date().toDateString();
-    const lastPCheck = localStorage.getItem('form_p_check_day');
-    if (lastPCheck !== today && S.protein >= 170) {
-      const streak = parseInt(localStorage.getItem('form_p_streak')||'0') + 1;
-      localStorage.setItem('form_p_streak', streak);
-      localStorage.setItem('form_p_check_day', today);
-      data.protein_streak = streak;
-    }
-
-  } catch(e) { console.warn('SmartCard data error:', e); }
-
+function dismissSC(key){const dis=JSON.parse(localStorage.getItem('form_dis')||'[]');dis.push(key);if(dis.length>50)dis.shift();localStorage.setItem('form_dis',JSON.stringify(dis));document.getElementById('sc-wrap').innerHTML='';}
+async function collectSCData(){
+  const data={protein_today:S.protein,vol_today:S.volume,muscle_delta:0,fat_delta:0,protein_streak:parseInt(localStorage.getItem('form_ps')||'0'),avg_sleep:7.5,vol_drop:0,e1rm_pr:false,exercise:'',val:0};
+  if(!db)return data;
+  try{
+    const body=await db.getBodyHistory(6);
+    if(body.length>=2){data.muscle_delta=(body[body.length-1].muscle_kg||0)-(body[body.length-2].muscle_kg||0);data.fat_delta=(body[body.length-1].fat_pct||0)-(body[body.length-2].fat_pct||0);}
+    const sleeps=await db.getRecentSleepLogs(7);
+    if(sleeps.length>1)data.avg_sleep=sleeps.reduce((a,s)=>a+(s.duration_h||7),0)/sleeps.length;
+    const sess=await db.getRecentSessions(14);
+    const tw=sess.filter(s=>Date.now()-new Date(s.trained_at).getTime()<7*864e5);
+    const lw=sess.filter(s=>{const a=Date.now()-new Date(s.trained_at).getTime();return a>=7*864e5&&a<14*864e5;});
+    if(tw.length&&lw.length){const tv=tw.reduce((a,s)=>a+(s.volume||0),0);const lv=lw.reduce((a,s)=>a+(s.volume||0),0);if(lv>0)data.vol_drop=Math.max(0,(lv-tv)/lv*100);}
+    const today=new Date().toDateString();
+    if(localStorage.getItem('form_pc')!==today&&S.protein>=PT()){const str=parseInt(localStorage.getItem('form_ps')||'0')+1;localStorage.setItem('form_ps',str);localStorage.setItem('form_pc',today);data.protein_streak=str;}
+  }catch(e){}
   return data;
 }
-
-// ── 日报 ──────────────────────────────────────────────
-function renderDailyReport(wrap, data) {
-  const h = new Date().getHours();
-  const greeting = h < 12 ? '早上好' : h < 18 ? '下午好' : '晚上好';
-  const streak = data.protein_streak;
-  const items = [];
-
-  if (streak > 0) items.push({ dot:'var(--ac)', txt:`蛋白质连续达标 <strong>${streak} 天</strong>` });
-  if (data.vol_today > 0) items.push({ dot:'var(--pu)', txt:`今日已完成 <strong>${Math.round(data.vol_today)} kg·r</strong> 训练容量` });
-  if (data.avg_sleep < 6.5) items.push({ dot:'var(--wa)', txt:`昨晚睡眠不足，今日注意降低训练强度` });
-  if (data.muscle_delta > 0.2) items.push({ dot:'var(--ac)', txt:`肌肉量近期上升 <strong>+${data.muscle_delta.toFixed(1)}kg</strong>` });
-  if (data.fat_delta > 0.5) items.push({ dot:'var(--da)', txt:`体脂近期上升 +${data.fat_delta.toFixed(1)}%，注意热量缺口` });
-
-  const gap = Math.max(0, 170 - data.protein_today);
-
-  wrap.innerHTML = `
-    <div class="smart-card sc-report">
-      <button class="sc-dismiss" onclick="document.getElementById('smart-card-wrap').innerHTML=''">×</button>
-      <div class="sc-type" style="color:var(--t2)">日报 · ${new Date().toLocaleDateString('zh-CN',{month:'numeric',day:'numeric'})}</div>
-      <div class="sc-title">${greeting}，今日状态</div>
-      <div class="report-grid">
-        <div class="rg-item">
-          <div class="rg-lbl">蛋白质</div>
-          <div class="rg-val" style="color:${data.protein_today>=170?'var(--ac)':'var(--wa)'}">${Math.round(data.protein_today)}g</div>
-          <div class="rg-sub">${gap>0?'缺 '+Math.round(gap)+'g':'已达标'}</div>
-        </div>
-        <div class="rg-item">
-          <div class="rg-lbl">训练容量</div>
-          <div class="rg-val" style="color:var(--pu)">${Math.round(data.vol_today)||'—'}</div>
-          <div class="rg-sub">kg·reps</div>
-        </div>
-        <div class="rg-item">
-          <div class="rg-lbl">睡眠</div>
-          <div class="rg-val" style="color:${data.avg_sleep>=7?'var(--ac)':'var(--wa)'}">${data.avg_sleep.toFixed(1)}h</div>
-          <div class="rg-sub">近7天均值</div>
-        </div>
-      </div>
-      ${items.length ? `<div class="sc-items">${items.map(i=>`<div class="sc-item"><div class="sc-item-dot" style="background:${i.dot}"></div><div>${i.txt}</div></div>`).join('')}</div>` : ''}
-    </div>`;
+function renderDailyRep(wrap,data){
+  const h=new Date().getHours();
+  const g=h<12?'早上好':h<18?'下午好':'晚上好';
+  const gap=Math.max(0,PT()-data.protein_today);
+  const items=[];
+  if(data.protein_streak>0)items.push({c:'var(--ac)',t:`蛋白质连续达标 <strong>${data.protein_streak} 天</strong>`});
+  if(data.avg_sleep<6.5&&data.avg_sleep>0)items.push({c:'var(--wa)',t:`近期睡眠不足，今日适当降低训练强度`});
+  if(data.muscle_delta>0.2)items.push({c:'var(--ac)',t:`肌肉量近期上升 <strong>+${data.muscle_delta.toFixed(1)}kg</strong>`});
+  if(data.fat_delta>0.5)items.push({c:'var(--da)',t:`体脂上升 +${data.fat_delta.toFixed(1)}%，注意热量缺口`});
+  wrap.innerHTML=`<div class="sc sc-rep" style="margin:12px 20px 0">
+    <button class="sc-x" onclick="document.getElementById('sc-wrap').innerHTML=''">×</button>
+    <div class="sc-ey" style="color:var(--t2)">日报 · ${new Date().toLocaleDateString('zh-CN',{month:'numeric',day:'numeric'})}</div>
+    <div class="sc-title">${g}</div>
+    <div class="rep-grid">
+      <div class="rg-i"><div class="rg-l">蛋白质</div><div class="rg-v" style="color:${data.protein_today>=PT()?'var(--ac)':'var(--wa)'}">${Math.round(data.protein_today)}g</div><div class="rg-s">${gap>0?'缺 '+Math.round(gap)+'g':'达标'}</div></div>
+      <div class="rg-i"><div class="rg-l">训练容量</div><div class="rg-v" style="color:var(--pu)">${Math.round(data.vol_today)||'—'}</div><div class="rg-s">kg·reps</div></div>
+      <div class="rg-i"><div class="rg-l">睡眠均值</div><div class="rg-v" style="color:${data.avg_sleep>=7?'var(--ac)':'var(--wa)'}">${data.avg_sleep.toFixed(1)}h</div><div class="rg-s">近7天</div></div>
+    </div>
+    ${items.length?`<div class="sc-items">${items.map(i=>`<div class="sc-item"><div class="sc-dot" style="background:${i.c}"></div><div>${i.t}</div></div>`).join('')}</div>`:''}
+  </div>`;
+}
+function renderAch(wrap,ach,data,key){
+  wrap.innerHTML=`<div class="sc sc-cel" style="margin:12px 20px 0">
+    <button class="sc-x" onclick="dismissSC('${key}')">×</button>
+    <div class="sc-ey" style="color:var(--pu)">${ach.icon} 成就达成</div>
+    <div class="sc-title">${ach.title}</div>
+    <div class="sc-body">${ach.msg(data)}</div>
+  </div>`;
+}
+function renderWarn(wrap,w,data,key){
+  const c={alert:'var(--da)',warn:'var(--wa)'}[w.type]||'var(--wa)';
+  wrap.innerHTML=`<div class="sc ${w.type==='alert'?'sc-alert':'sc-warn'}" style="margin:12px 20px 0">
+    <button class="sc-x" onclick="dismissSC('${key}')">×</button>
+    <div class="sc-ey" style="color:${c}">⚠ 数据预警</div>
+    <div class="sc-title">${w.title}</div>
+    <div class="sc-body">${w.msg(data)}</div>
+  </div>`;
 }
 
-// ── 周报 ──────────────────────────────────────────────
-async function renderWeeklyReport(wrap, data) {
-  let sessions = [];
-  let weekVols = [0,0,0,0,0,0,0];
-  let days = ['一','二','三','四','五','六','日'];
-
-  if (db) {
-    try {
-      sessions = await db.getRecentSessions(7);
-      sessions.forEach(s => {
-        const d = new Date(s.trained_at);
-        const dow = (d.getDay()+6)%7; // 0=Mon
-        weekVols[dow] = (weekVols[dow]||0) + (s.volume||0);
-      });
-    } catch(e) {}
-  }
-
-  const totalVol = weekVols.reduce((a,b)=>a+b,0);
-  const trainDays = weekVols.filter(v=>v>0).length;
-  const maxVol = Math.max(...weekVols, 1);
-
-  wrap.innerHTML = `
-    <div class="smart-card sc-report">
-      <button class="sc-dismiss" onclick="document.getElementById('smart-card-wrap').innerHTML=''">×</button>
-      <div class="sc-type" style="color:var(--t2)">周报 · 上周总结</div>
-      <div class="sc-title">本周训练概况</div>
-      <div class="report-grid" style="margin-top:8px">
-        <div class="rg-item"><div class="rg-lbl">训练天数</div><div class="rg-val" style="color:var(--ac)">${trainDays}</div><div class="rg-sub">天 / 本周</div></div>
-        <div class="rg-item"><div class="rg-lbl">总容量</div><div class="rg-val" style="color:var(--pu)">${Math.round(totalVol/1000)}k</div><div class="rg-sub">kg·reps</div></div>
-        <div class="rg-item"><div class="rg-lbl">蛋白质连达</div><div class="rg-val" style="color:${data.protein_streak>=5?'var(--ac)':'var(--wa)'}">${data.protein_streak}</div><div class="rg-sub">天</div></div>
-      </div>
-      <div class="week-bars">
-        ${weekVols.map((v,i)=>`
-          <div class="week-bar-wrap">
-            <div class="week-bar" style="height:${Math.round(v/maxVol*34)+3}px;background:${v>0?'var(--pu)':'var(--bg4)'}"></div>
-            <div class="week-bar-lbl">${days[i]}</div>
-          </div>`).join('')}
-      </div>
-      ${data.vol_drop > 20 ? `<div class="sc-item" style="margin-top:8px"><div class="sc-item-dot" style="background:var(--wa)"></div><div style="font-size:12px;color:var(--t2)">容量较上周下降 ${Math.round(data.vol_drop)}%，注意渐进超负荷</div></div>` : ''}
-    </div>`;
-}
-
-// ── 成就卡 ────────────────────────────────────────────
-function renderAchievement(wrap, ach, data, key) {
-  wrap.innerHTML = `
-    <div class="smart-card sc-celebrate">
-      <button class="sc-dismiss" onclick="dismissCard('${key}')">×</button>
-      <div class="sc-type" style="color:var(--pu)">${ach.icon} 成就达成</div>
-      <div class="sc-title">${ach.title}</div>
-      <div class="sc-body">${ach.msg(data)}</div>
-    </div>`;
-}
-
-// ── 预警卡 ────────────────────────────────────────────
-function renderWarning(wrap, w, data, key) {
-  const colors = { alert:'var(--da)', warn:'var(--wa)' };
-  const c = colors[w.type]||'var(--wa)';
-  wrap.innerHTML = `
-    <div class="smart-card ${w.type==='alert'?'sc-alert':'sc-warn'}">
-      <button class="sc-dismiss" onclick="dismissCard('${key}')">×</button>
-      <div class="sc-type" style="color:${c}">⚠ 数据预警</div>
-      <div class="sc-title">${w.title}</div>
-      <div class="sc-body">${w.msg(data)}</div>
-    </div>`;
-}
-
-// ── SHARED ──
-function mkThink(container,prepend=false){
-  const el=document.createElement('div');el.className='thinking';
-  el.innerHTML=`<div class="dots"><span></span><span></span><span></span></div><span class="thinking-txt">正在解析…</span>`;
-  if(prepend)container.prepend(el);else container.append(el);
-  return el;
-}
-
-// ── INIT ──
+// ══ INIT ══
 (function(){
   const ds=localStorage.getItem('form_ds');const gm=localStorage.getItem('form_gm');
   const su=localStorage.getItem('form_su');const sk=localStorage.getItem('form_sk');
