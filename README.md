@@ -1,6 +1,10 @@
 # FORM · Body Lab v3 — 部署指南
 
-## Supabase SQL（全部貼入 SQL Editor 一次執行）
+## Supabase SQL
+
+### 第一次安装：整段贴入 SQL Editor 执行
+
+若某张表已存在，可忽略；若报错 **`policy "allow all" already exists`**，说明旧表已建好，**不要重复跑整段**，改跑下面「仅补 user_settings」即可。
 
 ```sql
 CREATE TABLE IF NOT EXISTS memories (
@@ -74,7 +78,50 @@ CREATE TABLE IF NOT EXISTS session_comparisons (
 );
 ALTER TABLE session_comparisons ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "allow all" ON session_comparisons FOR ALL USING (true) WITH CHECK (true);
+
+-- 个人设置（身高体重档案、补剂列表 — 主屏幕与 Safari 共用云端）
+CREATE TABLE IF NOT EXISTS user_settings (
+  id text PRIMARY KEY DEFAULT 'default',
+  profile_json text,
+  supps_json text,
+  updated_at timestamptz DEFAULT now()
+);
+ALTER TABLE user_settings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "allow all" ON user_settings FOR ALL USING (true) WITH CHECK (true);
 ```
+
+### 若报错 policy already exists（只补新表）
+
+旧表（memories、food_logs 等）已有策略时，**只执行这一段**：
+
+```sql
+CREATE TABLE IF NOT EXISTS user_settings (
+  id text PRIMARY KEY DEFAULT 'default',
+  profile_json text,
+  supps_json text,
+  updated_at timestamptz DEFAULT now()
+);
+ALTER TABLE user_settings ENABLE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE tablename = 'user_settings' AND policyname = 'allow all'
+  ) THEN
+    CREATE POLICY "allow all" ON user_settings
+      FOR ALL USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+```
+
+执行成功后，在 Supabase → **Table Editor** 里应能看到 `user_settings` 表。
+
+## 主屏幕（PWA）与数据说明
+
+- **会丢的情况**：Safari 里打开的是本地文件或 A 网址，主屏幕添加的是 B 网址 — 不是同一个应用，本地 Key 和缓存不共享。
+- **不会丢的情况**：Safari 与主屏幕都使用**同一个 https 部署地址**（如 `xxx.vercel.app`），并在主屏幕 App 里**再填一次 API Key**。饮食、训练、记忆、体测在 **Supabase 云端**，换入口后仍会拉回。
+- 概况页顶部 **绿点「云端已连接」** 表示同步正常；红色请检查 Supabase SQL 是否全部执行。
 
 ## 部署步驟
 
