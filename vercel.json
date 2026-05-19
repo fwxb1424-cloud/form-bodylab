@@ -1,0 +1,16 @@
+{
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "crons": [
+    { "path": "/api/notify?hour=0",  "schedule": "0 0 * * *"  },
+    { "path": "/api/notify?hour=5",  "schedule": "0 5 * * *"  },
+    { "path": "/api/notify?hour=13", "schedule": "0 13 * * *" }
+  ],
+  "headers": [
+    { "source": "/(.*)", "headers": [
+      { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+    ]}
+  ]
+}
