@@ -7,13 +7,14 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="FORM">
 <meta name="theme-color" content="#080809">
-<link rel="manifest" href="/manifest.json">
+<link rel="manifest" href="manifest.json">
 <title>FORM</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="/macros.js"></script>
-<script src="/nutrition-ui.js"></script>
-<script src="/ai-provider.js"></script>
-<script src="/db.js"></script>
+<script src="macros.js"></script>
+<script src="db.js"></script>
+<script src="sync-store.js"></script>
+<script src="nutrition-ui.js"></script>
+<script src="ai-provider.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,400&family=DM+Sans:wght@400;500&display=swap');
 :root{
@@ -153,6 +154,14 @@ body{
 .meal-tip{font-size:11px;color:var(--t2);margin-top:3px;line-height:1.4;}
 .pf-save{width:100%;margin-top:12px;background:var(--ac);color:#050506;border:none;border-radius:var(--r);padding:13px;font-family:var(--f1);font-size:13px;font-weight:700;cursor:pointer;}
 .pf-save:active{background:var(--ac2);}
+.cloud-bar{display:flex;align-items:center;gap:7px;font-family:var(--f1);font-size:10px;color:var(--t2);padding:9px 12px;margin:10px 20px 0;background:var(--s1);border:1px solid var(--ln);border-radius:var(--r);}
+.app-status{display:flex;flex-wrap:wrap;gap:6px;padding:8px 14px 6px;background:rgba(8,8,10,.96);border-bottom:1px solid var(--ln);position:sticky;top:0;z-index:40;}
+.status-pill{font-family:var(--f1);font-size:10px;font-weight:500;padding:4px 10px;border-radius:999px;border:1px solid var(--ln);background:var(--s2);color:var(--t2);cursor:pointer;}
+.status-pill.st-ok{border-color:rgba(226,255,92,.25);color:var(--ac);background:rgba(226,255,92,.08);}
+.status-pill.st-bad{border-color:rgba(240,150,74,.3);color:var(--wa);background:rgba(240,150,74,.08);}
+.status-pill.status-info{cursor:default;border-color:var(--ln);color:var(--t2);}
+.cloud-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;box-shadow:0 0 8px currentColor;}
+.pwa-tip{font-size:11px;color:var(--wa);line-height:1.55;margin-top:10px;padding:10px 12px;background:rgba(240,150,74,.06);border:1px solid rgba(240,150,74,.15);border-radius:var(--r);}
 .tok-collapsed .tok-row{display:none;}
 .tok-toggle{font-family:var(--f1);font-size:10px;color:var(--t3);background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;}
 
@@ -570,7 +579,8 @@ body{
 <div class="setup" id="setup">
   <div class="sl">FORM</div>
   <div class="st">首次设置</div>
-  <div class="ss">Keys 只存在此设备，不上传任何服务器</div>
+  <div class="ss">DeepSeek 用于 AI 解析；Supabase 是你的云端数据库（饮食/训练/记忆/档案）。两者都填好，关掉网页也不会丢记录。</div>
+  <div class="pwa-tip">勿用「本地 html 文件」打开。请用 Vercel 的 <strong>https 网址</strong>；主屏幕 App 里需再填一次 Key。顶部状态栏绿色=已连上数据库。</div>
   <div class="sf">
     <span class="sf-l">DeepSeek API Key <span>（主力）</span></span>
     <input type="password" id="in-ds" placeholder="sk-xxxxxxxx" autocomplete="off" spellcheck="false">
@@ -948,16 +958,17 @@ async function doSetup(){
   const sk=document.getElementById('in-sk').value.trim();
   const err=document.getElementById('s-err');
   err.textContent='';
-  if(!ds.startsWith('sk-')){err.textContent='DeepSeek Key格式不对';return;}
-  if(!su.includes('supabase.co')){err.textContent='Supabase URL格式不对';return;}
-  if(!sk){err.textContent='请输入Supabase Key';return;}
+  if(!ds.startsWith('sk-')){err.textContent='DeepSeek Key 格式不对（应以 sk- 开头）';return;}
+  if(!su.includes('supabase.co')){err.textContent='Supabase URL 格式不对';return;}
+  if(!sk){err.textContent='请输入 Supabase anon key';return;}
   const btn=document.getElementById('s-btn');btn.textContent='连接中…';
+  localStorage.setItem('form_ds',ds);localStorage.setItem('form_gm',gm||'');
+  localStorage.setItem('form_su',su);localStorage.setItem('form_sk',sk);
   try{
     db=new DB(su,sk);await db.init();
     AI=new AIProvider(ds,gm||null);
-    localStorage.setItem('form_ds',ds);localStorage.setItem('form_gm',gm);
-    localStorage.setItem('form_su',su);localStorage.setItem('form_sk',sk);
     await boot();
+    toast('✓ 已连接云端数据库与 DeepSeek');
   }catch(e){err.textContent='连接失败：'+e.message;btn.textContent='开始使用 →';}
 }
 function resetSetup(){['form_ds','form_gm','form_su','form_sk'].forEach(k=>localStorage.removeItem(k));location.reload();}
@@ -970,11 +981,12 @@ async function boot(){
   renderMuscleSelector();renderRPE();renderSupps();renderMeasures();renderChart();
   updateTCTag();updateCarbBtn();
   initNutritionModule();
-  await loadMemories();await loadActivePlan();await loadRecentCmp();
-  await loadStrChart();await loadSleepLog();
-  await loadTodayFood();
+  if(typeof restoreLocalProfileOnBoot==='function')restoreLocalProfileOnBoot();
+  if(typeof loadTodayFoodFromLocal==='function')loadTodayFoodFromLocal();
+  if(typeof loadAllFromCloud==='function')await loadAllFromCloud();
+  else{await loadMemories();await loadActivePlan();await loadRecentCmp();await loadStrChart();await loadSleepLog();if(typeof loadTodayFood==='function')await loadTodayFood();}
   renderDash();
-  // async: smart gap rec + smart card (non-blocking)
+  if(typeof refreshAppStatus==='function')refreshAppStatus();
   updateGapRec();
   setTimeout(runSmartCard, 600);
   updateTokenUI();
@@ -1070,7 +1082,7 @@ function renderDash(){
 }
 
 // ══ SUPPS ══
-function saveSupps(){localStorage.setItem('form_supps',JSON.stringify(S.supps));}
+function saveSupps(){localStorage.setItem('form_supps',JSON.stringify(S.supps));if(typeof pushSettingsToCloud==='function')pushSettingsToCloud();}
 function renderSupps(){
   const mkList=(onClk)=>S.supps.length?`<div class="supp-list">${S.supps.map((s,i)=>`
     <div class="si2 ${s.on?'on':''}" onclick="${onClk}(${i})">
@@ -1125,6 +1137,7 @@ function setRPE(n){S.rpe=n;renderRPE();toast(`RPE ${n}`);}
 
 // ══ DIET ══
 async function parseFood(){
+  if(!AI?.ds){toast('请先点顶部「DeepSeek · 去设置」填写 API Key');if(typeof openSetupScreen==='function')openSetupScreen();return;}
   const input=document.getElementById('food-input').value.trim();if(!input)return;
   const btn=document.getElementById('parse-btn');btn.disabled=true;btn.textContent='…';
   const tc=getTimeCtx();
@@ -1136,7 +1149,11 @@ async function parseFood(){
     if(r._err)throw new Error('格式错误');
     addFoodEntry({...r,id:++S.foodId,time:nt()});
     document.getElementById('food-input').value='';
-    if(db){db.addFoodLog(r).then(row=>{if(row?.id)S.foods[S.foods.length-1].dbId=row.id;}).catch(()=>{});}
+    if(db){
+      const row=await dbOp('饮食保存',()=>db.addFoodLog(r));
+      const f=S.foods[S.foods.length-1];
+      if(row?.id&&f)f.dbId=row.id;
+    }
     applyNutritionUI();updateGapRec();updateTokenUI();
     toast(`✓ +${Math.round(r.protein_g)}g 蛋白质${r._cached?' (缓存)':''}`);
   }catch(e){toast('解析失败：'+(e.message||'请重试'));}
@@ -1144,6 +1161,7 @@ async function parseFood(){
 }
 
 async function handlePhoto(event){
+  if(!AI?.gm&&!AI?.ds){toast('拍照识别需要 Gemini Key，或至少配置 DeepSeek');return;}
   const file=event.target.files[0];if(!file)return;
   const btn=document.getElementById('parse-btn');btn.disabled=true;btn.textContent='…';
   const list=document.getElementById('food-list');list.querySelector('.empty')?.remove();
@@ -1153,7 +1171,11 @@ async function handlePhoto(event){
     const r=await AI.call('photo',{system:PROMPTS.photo(prof()),userMsg:'分析食物',imageBase64:b64});
     if(r._err)throw new Error('识别格式错误');
     addFoodEntry({...r,id:++S.foodId,time:nt(),fromPhoto:true});
-    if(db){db.addFoodLog(r).then(row=>{if(row?.id)S.foods[S.foods.length-1].dbId=row.id;}).catch(()=>{});}
+    if(db){
+      const row=await dbOp('饮食保存',()=>db.addFoodLog(r));
+      const f=S.foods[S.foods.length-1];
+      if(row?.id&&f)f.dbId=row.id;
+    }
     applyNutritionUI();updateGapRec();updateTokenUI();
     toast(`✓ ${r.name}（${r.confidence}）`);
   }catch(e){toast('识别失败：'+(e.message||'请重试'));}
@@ -1161,7 +1183,7 @@ async function handlePhoto(event){
 }
 
 function toggleManual(){document.getElementById('mfp').classList.toggle('on');}
-function addManualFood(){
+async function addManualFood(){
   const name=document.getElementById('mf-name').value.trim();if(!name)return;
   const p=parseFloat(document.getElementById('mf-p').value)||0;
   const c=parseFloat(document.getElementById('mf-c').value)||0;
@@ -1169,7 +1191,7 @@ function addManualFood(){
   const k=parseFloat(document.getElementById('mf-k').value)||(p*4+c*4+f*9);
   const entry={name,protein_g:p,carbs_g:c,fat_g:f,kcal:k,id:++S.foodId,time:nt(),manual:true};
   addFoodEntry(entry);
-  if(db)db.addFoodLog(entry).then(row=>{if(row?.id)entry.dbId=row.id;}).catch(()=>{});
+  if(db){const row=await dbOp('饮食保存',()=>db.addFoodLog(entry));if(row?.id)entry.dbId=row.id;}
   ['mf-name','mf-p','mf-c','mf-f','mf-k'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('mfp').classList.remove('on');
   applyNutritionUI();updateGapRec();toast('✓ 精确记录：'+name);
@@ -1178,6 +1200,8 @@ function addFoodEntry(e){
   S.foods.push(e);
   S.protein+=e.protein_g||0;S.carbs+=e.carbs_g||0;S.fat+=e.fat_g||0;S.kcal+=e.kcal||0;
   renderFoodList();updateBars();renderDash();applyNutritionUI();
+  if(typeof backupTodayFoods==='function')backupTodayFoods();
+  if(typeof refreshAppStatus==='function')refreshAppStatus();
 }
 function renderFoodList(){
   const list=document.getElementById('food-list');
@@ -1199,7 +1223,10 @@ function removeFood(id){
   S.protein=Math.max(0,S.protein-(f.protein_g||0));S.carbs=Math.max(0,S.carbs-(f.carbs_g||0));
   S.fat=Math.max(0,S.fat-(f.fat_g||0));S.kcal=Math.max(0,S.kcal-(f.kcal||0));
   if(f.dbId&&db)db.deleteFoodLog(f.dbId).catch(()=>{});
-  renderFoodList();updateBars();renderDash();applyNutritionUI();updateGapRec();toast('已撤回：'+f.name);
+  renderFoodList();updateBars();renderDash();applyNutritionUI();updateGapRec();
+  if(typeof backupTodayFoods==='function')backupTodayFoods();
+  if(typeof refreshAppStatus==='function')refreshAppStatus();
+  toast('已撤回：'+f.name);
 }
 function updateBars(){
   const tgt=macroTargets();
@@ -1215,6 +1242,7 @@ function updateBars(){
 
 // ══ AI ADVICE ══
 async function askAdvice(scene){
+  if(!AI?.ds){toast('请先配置 DeepSeek Key');if(typeof openSetupScreen==='function')openSetupScreen();return;}
   const map={diet:'diet',workout:'train',plan:'plan'};
   const k=map[scene]||scene;
   const q=document.getElementById(k+'-adv-in').value.trim();if(!q)return;
@@ -1380,22 +1408,22 @@ async function saveSession(){
   if(!done&&S.todayMuscle!=='rest'){toast('请先完成至少一个动作');return;}
   const notes=document.getElementById('session-notes').value;
   if(db){
-    await db.addSession({
+    await dbOp('训练记录',()=>db.addSession({
       session_title:document.getElementById('sh-title').textContent,
       muscle_groups:S.todayMuscle,volume:S.volume,
       exercises_json:JSON.stringify(S.workout),notes,rpe:S.rpe,
-    }).catch(()=>{});
+    }));
     const planTot=S.workout.reduce((s,e)=>s+e.sets*parseInt((e.reps+'').split('-')[0])*e.weight_kg,0);
-    db.addComparison({
+    await dbOp('训练对比',()=>db.addComparison({
       plan_session_json:JSON.stringify(S.workout.map(e=>({name:e.name,sets:e.sets,reps:e.reps,weight_kg:e.weight_kg}))),
       actual_session_json:JSON.stringify(S.workout.filter(e=>e.done)),
       divergence_pct:planTot>0?Math.round((S.volume-planTot)/planTot*100):0,notes,
-    }).catch(()=>{});
-    S.workout.filter(e=>e.done&&e.is_compound).forEach(ex=>{
-      const sd=ex.sets_data;if(!sd.length)return;
+    }));
+    for(const ex of S.workout.filter(e=>e.done&&e.is_compound)){
+      const sd=ex.sets_data;if(!sd.length)continue;
       const best=sd.reduce((a,s)=>calcE1RM(s.w,s.r)>calcE1RM(a.w,a.r)?s:a,sd[0]);
-      db.addStrengthLog({exercise_name:ex.name,weight_kg:best.w,reps:best.r,sets:sd.length,e1rm:calcE1RM(best.w,best.r)}).catch(()=>{});
-    });
+      await dbOp('力量记录',()=>db.addStrengthLog({exercise_name:ex.name,weight_kg:best.w,reps:best.r,sets:sd.length,e1rm:calcE1RM(best.w,best.r)}));
+    }
     await loadRecentCmp();
   }
   if(notes.trim()&&confirm(`将训后感受存入记忆库（短期7天）？\n「${notes.slice(0,60)}」`)){
@@ -1507,7 +1535,7 @@ async function loadRecentCmp(){
 }
 
 // ══ BODY ══
-function updateComp(){
+async function updateComp(){
   const m=parseFloat(document.getElementById('in-muscle').value);
   const f=parseFloat(document.getElementById('in-fat').value);
   if(m){S.muscle=m;['muscle-val','d-muscle'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=m.toFixed(1);});}
@@ -1515,8 +1543,9 @@ function updateComp(){
   if(m||f){
     const d=new Date();S.history.push({date:`${d.getMonth()+1}/${d.getDate()}`,muscle:S.muscle,fat:S.fat_pct});
     if(S.history.length>7)S.history.shift();
-    if(db)db.addBodyStat({muscle_kg:S.muscle,fat_pct:S.fat_pct}).catch(()=>{});
+    await dbOp('体成分保存',()=>db.addBodyStat({muscle_kg:S.muscle,fat_pct:S.fat_pct}));
     const prof=loadProfile();prof.fat_pct=S.fat_pct;if(S.muscle)prof.muscle_kg=S.muscle;saveProfile(prof);
+    if(typeof pushSettingsToCloud==='function')pushSettingsToCloud();
     if(document.getElementById('pf-fat'))document.getElementById('pf-fat').value=S.fat_pct;
     applyNutritionUI();
     renderChart();toast('✓ 成分已更新');
@@ -1624,7 +1653,7 @@ async function saveMem(){
 }
 async function saveMemoQ(content,tier){
   const row={content,tier,expires_at:null,created_at:new Date().toISOString()};
-  if(db){try{const r=await db.addMemory(content,tier);row.id=r.id;}catch(e){}}
+  if(db){const r=await dbOp('记忆保存',()=>db.addMemory(content,tier));if(r)row.id=r.id;}
   S.memories.unshift(row);renderMemories();toast(`✓ 存入${TIER_LBL[tier]}记忆`);
 }
 async function deleteMem(idx){

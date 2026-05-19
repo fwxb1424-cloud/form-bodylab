@@ -3,7 +3,28 @@
  */
 class DB {
   constructor(url,key){ this.sb=supabase.createClient(url,key); }
-  async init(){ const{error}=await this.sb.from('memories').select('id').limit(1); if(error&&error.code!=='PGRST116')throw new Error('Supabase连接失败：'+error.message); }
+  async init(){
+    const required=['memories','food_logs','sessions'];
+    for(const t of required){
+      const{error}=await this.sb.from(t).select('id').limit(1);
+      if(error&&error.code!=='PGRST116')throw new Error('Supabase连接失败('+t+'): '+error.message);
+    }
+    const{error:usErr}=await this.sb.from('user_settings').select('id').limit(1);
+    this.settingsTableOk=!usErr;
+    if(usErr)console.warn('[db] user_settings 表未创建，档案仅存本机。请在 Supabase 执行 README 里「仅补 user_settings」那段 SQL。');
+  }
+
+  // USER SETTINGS（档案、补剂 — 换主屏幕/Safari 后仍能恢复）
+  async getSettings(){
+    const{data,error}=await this.sb.from('user_settings').select('*').eq('id','default').maybeSingle();
+    if(error)throw error;
+    return data;
+  }
+  async saveSettings(row){
+    const{data,error}=await this.sb.from('user_settings').upsert({...row,id:'default',updated_at:new Date().toISOString()}).select().single();
+    if(error)throw error;
+    return data;
+  }
 
   // MEMORIES
   async getActiveMemories(){ const{data,error}=await this.sb.from('memories').select('*').or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`).order('created_at',{ascending:false}); if(error)throw error; return data||[]; }
@@ -34,6 +55,11 @@ class DB {
   // BODY STATS
   async addBodyStat(s){ const{data,error}=await this.sb.from('body_stats').insert({...s,recorded_at:s.recorded_at||new Date().toISOString()}).select().single(); if(error)throw error; return data; }
   async getBodyHistory(limit=20){ const{data,error}=await this.sb.from('body_stats').select('*').order('recorded_at',{ascending:false}).limit(limit); if(error)throw error; return(data||[]).reverse(); }
+  async getLatestBodyStat(){
+    const{data,error}=await this.sb.from('body_stats').select('*').order('recorded_at',{ascending:false}).limit(1).maybeSingle();
+    if(error)throw error;
+    return data;
+  }
 
   // MACRO PLANS
   async savePlan(plan){ const{data,error}=await this.sb.from('macro_plans').insert({...plan,created_at:new Date().toISOString()}).select().single(); if(error)throw error; return data; }

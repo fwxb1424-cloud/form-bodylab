@@ -106,6 +106,8 @@ function saveProfileFromForm() {
     });
   }
   applyNutritionUI();
+  if (typeof pushSettingsToCloud === 'function') pushSettingsToCloud();
+  if (typeof refreshAppStatus === 'function') refreshAppStatus();
   if (typeof toast === 'function') {
     const t = macroTargets();
     toast(`✓ 档案已保存 · 蛋白 ${t.protein}g · 脂肪 ${t.fat}g · 碳水 ${t.carbs}g`);
@@ -171,7 +173,8 @@ async function refreshMealPlanAI() {
   const btn = document.getElementById('meal-ai-btn');
   const body = document.getElementById('meal-plan-body');
   if (!body || !window.AI?.ds) {
-    if (typeof toast === 'function') toast('请先配置 DeepSeek Key');
+    if (typeof toast === 'function') toast('未配置 DeepSeek — 点顶部「DeepSeek · 去设置」');
+    if (typeof openSetupScreen === 'function') openSetupScreen();
     return;
   }
   if (btn) {
@@ -245,8 +248,11 @@ async function loadTodayFood() {
     if (typeof updateBars === 'function') updateBars();
     if (typeof renderDash === 'function') renderDash();
     applyNutritionUI();
+    if (typeof backupTodayFoods === 'function') backupTodayFoods();
+    if (typeof refreshAppStatus === 'function') refreshAppStatus();
   } catch (e) {
     console.warn('loadTodayFood', e);
+    if (typeof loadTodayFoodFromLocal === 'function') loadTodayFoodFromLocal();
   }
 }
 
