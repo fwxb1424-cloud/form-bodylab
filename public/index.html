@@ -708,6 +708,7 @@ body{
         <div class="vr">
           <div class="vi"><div class="vi-l">完成</div><div class="vi-v"><span id="done-cnt">0</span><span class="vi-u"> / <span id="total-cnt">0</span></span></div></div>
           <div class="vi"><div class="vi-l">容量</div><div class="vi-v" id="vol-val">0<span class="vi-u"> kg·r</span></div></div>
+          <div class="vi"><div class="vi-l">肌群</div><div class="vi-v" id="muscle-grp" style="font-size:13px;font-weight:600">—</div></div>
           <div class="vi"><div class="vi-l">时长</div><div class="vi-v" id="est-dur" style="font-size:13px;font-weight:600">—</div></div>
         </div>
       </div>
@@ -1245,14 +1246,19 @@ async function genWorkout(){
       userMsg:'生成今日训练方案。',
     });
     if(r._err)throw new Error('格式错误');
+    if(!Array.isArray(r.exercises)||!r.exercises.length)throw new Error('AI 未返回动作列表，请重试');
     S.workout=r.exercises.map(e=>({...e,done:false,sets_data:[]}));
     S.volume=0;
-    document.getElementById('sh-title').textContent=r.session_title;
-    document.getElementById('sh-sub').textContent=`${r.muscle_groups} · ${r.intensity}${r.volume_note?' · '+r.volume_note:''}`;
-    document.getElementById('muscle-grp').textContent=(r.muscle_groups||'').split(/[·、,]/)[0].trim().slice(0,5);
+    document.getElementById('sh-title').textContent=r.session_title||'今日训练';
+    document.getElementById('sh-sub').textContent=`${r.muscle_groups||muscleLabel} · ${r.intensity||'Medium'}${r.volume_note?' · '+r.volume_note:''}${r.estimated_duration?' · '+r.estimated_duration+'min':''}`;
+    const mgShort=(r.muscle_groups||muscleLabel||'').split(/[·、,]/)[0].trim().slice(0,5);
+    const mgEl=document.getElementById('muscle-grp');
+    if(mgEl)mgEl.textContent=mgShort;
+    else{const badge=document.getElementById('train-badge');if(badge)badge.textContent=mgShort;}
     document.getElementById('total-cnt').textContent=S.workout.length;
     document.getElementById('done-cnt').textContent=0;
-    if(r.estimated_duration)document.getElementById('est-dur').textContent=r.estimated_duration+'min';
+    const durEl=document.getElementById('est-dur');
+    if(durEl&&r.estimated_duration)durEl.textContent=r.estimated_duration+'min';
     renderExercises();updateTokenUI();
   }catch(e){
     document.getElementById('sh-title').textContent='生成失败';
