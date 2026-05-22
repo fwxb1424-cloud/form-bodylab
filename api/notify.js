@@ -9,7 +9,7 @@
 
 export const config = { runtime: 'edge' };
 
-const PT = 170;
+const PT = 168; // 与定制计划一致
 
 export default async function handler(req) {
   const auth = req.headers.get('authorization');
