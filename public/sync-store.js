@@ -292,6 +292,7 @@ async function loadAllFromCloud() {
     if (typeof renderDash === 'function') renderDash();
 
     backupTodayFoods();
+    if (typeof loadTrainDraftForMode === 'function') await loadTrainDraftForMode('today');
     setCloudStatus('ok', `饮食${S.foods.length}条 · 记忆${S.memories.length}条`);
   } catch (e) {
     console.error('loadAllFromCloud', e);
@@ -302,8 +303,318 @@ async function loadAllFromCloud() {
 }
 
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'hidden') backupTodayFoods();
+  if (document.visibilityState === 'hidden') {
+    backupTodayFoods();
+    backupTrainDraft();
+  }
 });
+window.addEventListener('beforeunload', () => backupTrainDraft());
+
+// ── 训练草稿 / 补录昨天 / 自动保存 ─────────────────────────────
+window.S_trainDate = window.S_trainDate || 'today';
+
+function trainDateKey(mode) {
+  const m = mode || window.S_trainDate || 'today';
+  const d = new Date();
+  if (m === 'yesterday') d.setDate(d.getDate() - 1);
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `form_train_${d.getFullYear()}-${mm}-${dd}`;
+}
+
+function trainDayRange(mode) {
+  const d = new Date();
+  if ((mode || window.S_trainDate) === 'yesterday') d.setDate(d.getDate() - 1);
+  const start = new Date(d);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(d);
+  end.setHours(23, 59, 59, 999);
+  return { start: start.toISOString(), end: end.toISOString(), label: d };
+}
+
+function getTrainLogTimestamp() {
+  if (window.S_trainDate === 'yesterday') {
+    const yd = new Date(Date.now() - 864e5);
+    const now = new Date();
+    yd.setHours(now.getHours(), now.getMinutes(), 0, 0);
+    return yd.toISOString();
+  }
+  return new Date().toISOString();
+}
+
+function readTrainDraftEl(id) {
+  const el = document.getElementById(id);
+  return el ? el.value : '';
+}
+
+function serializeTrainDraft() {
+  if (!window.S) return null;
+  return {
+    todayMuscle: S.todayMuscle,
+    isTrain: S.isTrain,
+    rpe: S.rpe,
+    volume: S.volume,
+    workout: S.workout,
+    cloudSessionId: S.trainCloudSessionId || null,
+    sessionTitle: document.getElementById('sh-title')?.textContent || '',
+    sessionNotes: readTrainDraftEl('session-notes'),
+    customReq: readTrainDraftEl('custom-req'),
+    savedAt: Date.now(),
+  };
+}
+
+function trainHasSaveableContent() {
+  if (!window.S || S.todayMuscle === 'rest') return false;
+  if (!S.workout?.length) return false;
+  return S.workout.some(
+    (ex) =>
+      ex.done ||
+      ex.name?.trim() ||
+      (ex.sets_data?.length &&
+        ex.sets_data.some((s) => (parseFloat(s.w) || 0) > 0 || (parseFloat(s.r) || 0) > 0)),
+  );
+}
+
+function applyTrainDraft(d) {
+  if (!d || !window.S) return false;
+  S.todayMuscle = d.todayMuscle || '';
+  if (typeof d.isTrain === 'boolean') S.isTrain = d.isTrain;
+  S.rpe = d.rpe || 5;
+  S.volume = d.volume || 0;
+  S.workout = Array.isArray(d.workout) ? d.workout : [];
+  S.trainCloudSessionId = d.cloudSessionId || null;
+  const notes = document.getElementById('session-notes');
+  if (notes) notes.value = d.sessionNotes || '';
+  const req = document.getElementById('custom-req');
+  if (req) req.value = d.customReq || '';
+  const title = document.getElementById('sh-title');
+  if (title && d.sessionTitle) title.textContent = d.sessionTitle;
+  if (typeof renderMuscleSelector === 'function') renderMuscleSelector();
+  if (typeof renderRPE === 'function') renderRPE();
+  const total = document.getElementById('total-cnt');
+  const done = document.getElementById('done-cnt');
+  if (total) total.textContent = S.workout.length;
+  if (done) done.textContent = S.workout.filter((e) => e.done).length;
+  if (typeof recalcVol === 'function') recalcVol();
+  else {
+    const vol = document.getElementById('vol-val');
+    if (vol) vol.innerHTML = Math.round(S.volume) + '<span class="vi-u"> kg·r</span>';
+  }
+  if (typeof renderExercises === 'function') renderExercises();
+  if (typeof renderCmpList === 'function') renderCmpList();
+  if (S_trainDate === 'today' && typeof renderDash === 'function') renderDash();
+  return true;
+}
+
+function backupTrainDraft() {
+  if (!window.S) return;
+  if (!trainHasSaveableContent()) return;
+  try {
+    localStorage.setItem(trainDateKey(), JSON.stringify(serializeTrainDraft()));
+    updateTrainAutosaveHint('draft');
+  } catch (e) {
+    console.warn('backupTrainDraft', e);
+  }
+}
+
+function loadTrainDraftFromLocal(mode) {
+  if (!window.S) return false;
+  try {
+    const raw = localStorage.getItem(trainDateKey(mode));
+    if (!raw) return false;
+    const d = JSON.parse(raw);
+    if (!d.workout?.length && !d.todayMuscle) return false;
+    return applyTrainDraft(d);
+  } catch (e) {
+    return false;
+  }
+}
+
+function clearTrainDraft(mode) {
+  try {
+    localStorage.removeItem(trainDateKey(mode));
+  } catch (e) {
+    /* ignore */
+  }
+  if (window.S) S.trainCloudSessionId = null;
+}
+
+async function loadTrainFromCloudForDay(mode) {
+  if (!window.db) return false;
+  const { start, end } = trainDayRange(mode);
+  try {
+    const row = await db.getLatestSessionOnDay(start, end);
+    if (!row?.exercises_json) return false;
+    let workout = [];
+    try {
+      workout = JSON.parse(row.exercises_json);
+    } catch (e) {
+      return false;
+    }
+    applyTrainDraft({
+      todayMuscle: row.muscle_groups || S.todayMuscle,
+      rpe: row.rpe || 5,
+      volume: row.volume || 0,
+      workout,
+      cloudSessionId: row.id,
+      sessionTitle: row.session_title || '',
+      sessionNotes: row.notes || '',
+      customReq: '',
+      savedAt: Date.now(),
+    });
+    backupTrainDraft();
+    return true;
+  } catch (e) {
+    console.warn('loadTrainFromCloudForDay', e);
+    return false;
+  }
+}
+
+async function loadTrainDraftForMode(mode) {
+  window.S_trainDate = mode;
+  if (loadTrainDraftFromLocal(mode)) {
+    updateTrainAutosaveHint('restored');
+    return;
+  }
+  if (await loadTrainFromCloudForDay(mode)) {
+    updateTrainAutosaveHint('cloud');
+    if (mode === 'yesterday' && typeof toast === 'function')
+      toast('已从云端载入昨日训练，可继续补全');
+    return;
+  }
+  if (mode === 'today') {
+    S.workout = [];
+    S.volume = 0;
+    S.trainCloudSessionId = null;
+    if (typeof renderExercises === 'function') {
+      const list = document.getElementById('ex-list');
+      if (list && !S.todayMuscle)
+        list.innerHTML =
+          '<div class="think"><div class="dots"><span></span><span></span><span></span></div><span class="think-txt">选择肌群后生成动作方案</span></div>';
+    }
+  }
+  updateTrainAutosaveHint('empty');
+}
+
+let _trainAutosaveTimer = null;
+let _trainCloudSyncTimer = null;
+
+function updateTrainAutosaveHint(state) {
+  const el = document.getElementById('train-autosave-hint');
+  if (!el) return;
+  const map = {
+    draft: '草稿已自动保存到本机',
+    cloud: '已同步云端（可随时补全）',
+    syncing: '正在同步云端…',
+    restored: '已恢复未完成的训练草稿',
+    empty: S_trainDate === 'yesterday' ? '补录昨天：填写动作后会自动保存' : '填写动作、重量后会自动保存草稿',
+    err: '本机已保存，云端同步失败',
+  };
+  el.textContent = map[state] || map.empty;
+}
+
+function scheduleTrainAutosave() {
+  clearTimeout(_trainAutosaveTimer);
+  _trainAutosaveTimer = setTimeout(() => {
+    if (!trainHasSaveableContent()) return;
+    backupTrainDraft();
+    clearTimeout(_trainCloudSyncTimer);
+    _trainCloudSyncTimer = setTimeout(() => autoSyncTrainToCloud(), 2200);
+  }, 400);
+}
+
+function buildSessionPayload() {
+  const notes = readTrainDraftEl('session-notes');
+  const title = document.getElementById('sh-title')?.textContent || '训练记录';
+  const intensity =
+    S.workout.filter((e) => e.done).length >= S.workout.length * 0.8 ? 'High' : 'Medium';
+  return {
+    session_title: title,
+    muscle_groups: S.todayMuscle,
+    intensity,
+    volume: S.volume,
+    exercises_json: JSON.stringify(S.workout),
+    notes,
+    rpe: S.rpe,
+    trained_at: getTrainLogTimestamp(),
+  };
+}
+
+async function autoSyncTrainToCloud() {
+  if (!window.db || !trainHasSaveableContent()) return;
+  updateTrainAutosaveHint('syncing');
+  const payload = buildSessionPayload();
+  try {
+    let row;
+    if (S.trainCloudSessionId) {
+      row = await dbOp('训练自动保存', () => db.updateSession(S.trainCloudSessionId, payload));
+    } else {
+      row = await dbOp('训练自动保存', () => db.addSession(payload));
+      if (row?.id) S.trainCloudSessionId = row.id;
+    }
+    if (row?.id) S.trainCloudSessionId = row.id;
+    backupTrainDraft();
+    updateTrainAutosaveHint('cloud');
+    if (S_trainDate === 'today' && typeof renderDash === 'function') renderDash();
+  } catch (e) {
+    updateTrainAutosaveHint('err');
+  }
+}
+
+function updateTrainDateUI() {
+  const bar = document.getElementById('train-backfill-bar');
+  const todayBtn = document.getElementById('ts-today');
+  const yestBtn = document.getElementById('ts-yesterday');
+  const title = document.getElementById('train-page-title');
+  const saveBtn = document.getElementById('train-save-btn');
+  const sub = document.getElementById('train-date');
+  const isY = S_trainDate === 'yesterday';
+
+  bar?.classList.toggle('hidden', !isY);
+  todayBtn?.classList.toggle('on', !isY);
+  yestBtn?.classList.toggle('on', isY);
+  if (title) title.textContent = isY ? '昨日训练' : '今日训练';
+  if (saveBtn) saveBtn.textContent = isY ? '记录昨日训练 ✓' : '记录今日训练 ✓';
+  if (sub && isY) {
+    const { label } = trainDayRange('yesterday');
+    sub.textContent = `补录 ${label.getMonth() + 1}/${label.getDate()}（周${['日', '一', '二', '三', '四', '五', '六'][label.getDay()]}）`;
+  } else if (sub && typeof todayStr === 'function') sub.textContent = todayStr();
+  const bfDate = document.getElementById('train-bf-date-label');
+  if (bfDate && isY) {
+    const { label } = trainDayRange('yesterday');
+    bfDate.textContent = `昨天 ${label.getMonth() + 1}/${label.getDate()} · 自动保存写入昨日`;
+  }
+}
+
+window.switchTrainDate = async function switchTrainDate(mode) {
+  if (mode === S_trainDate) return;
+  backupTrainDraft();
+  S_trainDate = mode;
+  updateTrainDateUI();
+  await loadTrainDraftForMode(mode);
+  if (mode === 'yesterday') toast('补录模式：训练写入昨天');
+  else toast('已切回今日训练');
+};
+
+function saveAppStateLocally() {
+  backupTodayFoods();
+  backupTrainDraft();
+}
+
+function loadAppStateLocally() {
+  loadTrainDraftFromLocal('today');
+}
+
+window.getTrainLogTimestamp = getTrainLogTimestamp;
+window.scheduleTrainAutosave = scheduleTrainAutosave;
+window.backupTrainDraft = backupTrainDraft;
+window.loadTrainDraftFromLocal = loadTrainDraftFromLocal;
+window.loadTrainDraftForMode = loadTrainDraftForMode;
+window.clearTrainDraft = clearTrainDraft;
+window.saveAppStateLocally = saveAppStateLocally;
+window.loadAppStateLocally = loadAppStateLocally;
+window.trainHasSaveableContent = trainHasSaveableContent;
+window.updateTrainDateUI = updateTrainDateUI;
 
 window.dbOp = dbOp;
 window.setCloudStatus = setCloudStatus;

@@ -748,7 +748,23 @@ body{
 
     <!-- ══ 训练 ══ -->
     <div class="page" id="pg-train">
-      <div class="ph"><div class="ph-ey">训练日志</div><div class="ph-h1">今日训练</div><div class="ph-sub" id="train-date"></div></div>
+      <div class="ph"><div class="ph-ey">训练日志</div><div class="ph-h1" id="train-page-title">今日训练</div><div class="ph-sub" id="train-date"></div></div>
+
+      <div class="s" style="margin-top:8px">
+        <div class="date-switcher">
+          <button type="button" class="ds-btn on" id="ts-today" onclick="switchTrainDate('today')">今天</button>
+          <span class="ds-sep">·</span>
+          <button type="button" class="ds-btn" id="ts-yesterday" onclick="switchTrainDate('yesterday')">补录昨天</button>
+        </div>
+        <div class="backfill-bar hidden" id="train-backfill-bar">
+          <div>
+            <div class="bf-label">📅 补录昨天训练</div>
+            <div class="bf-date" id="train-bf-date-label">填写后自动保存到昨天</div>
+          </div>
+          <button type="button" class="bf-close" onclick="switchTrainDate('today')">回到今天</button>
+        </div>
+        <div id="train-autosave-hint" style="font-size:10px;color:var(--t2);margin-top:6px;line-height:1.4">填写动作、重量后会自动保存草稿</div>
+      </div>
 
       <!-- 肌群选择器 -->
       <div class="s" style="margin-top:12px">
@@ -785,7 +801,7 @@ body{
       <!-- custom request -->
       <div class="s" style="margin-top:7px">
         <div class="slbl">特别要求 <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t2)">（可选）</span></div>
-        <input type="text" id="custom-req" class="ni" style="width:100%" placeholder="例：多加一个飞鸟、不要深蹲用腿举代替…">
+        <input type="text" id="custom-req" class="ni" style="width:100%" placeholder="例：多加一个飞鸟、不要深蹲用腿举代替…" oninput="scheduleTrainAutosave()">
       </div>
 
       <!-- gen button -->
@@ -819,7 +835,7 @@ body{
       </div>
 
       <!-- notes -->
-      <div class="s" style="margin-top:7px"><div class="slbl">训后感受</div><textarea class="notes-in" id="session-notes" rows="3" placeholder="泵感、关节感受、中枢疲劳…"></textarea></div>
+      <div class="s" style="margin-top:7px"><div class="slbl">训后感受</div><textarea class="notes-in" id="session-notes" rows="3" placeholder="泵感、关节感受、中枢疲劳…" oninput="scheduleTrainAutosave()"></textarea></div>
 
       <!-- advice -->
       <div class="s" style="margin-top:7px">
@@ -830,7 +846,7 @@ body{
         </div>
       </div>
 
-      <div class="s" style="margin-top:8px;padding-bottom:4px"><button class="save-btn" onclick="saveSession()">记录今日训练 ✓</button></div>
+      <div class="s" style="margin-top:8px;padding-bottom:4px"><button class="save-btn" id="train-save-btn" onclick="saveSession()">记录今日训练 ✓</button></div>
     </div>
 
     <!-- ══ 计划 ══ -->
@@ -1046,6 +1062,7 @@ async function boot(){
   updateTCTag();updateCarbBtn();
   initNutritionModule();
   if(typeof loadAppStateLocally==='function')loadAppStateLocally();
+  if(typeof updateTrainDateUI==='function')updateTrainDateUI();
   if(typeof restoreLocalProfileOnBoot==='function')restoreLocalProfileOnBoot();
   if(typeof loadTodayFoodFromLocal==='function')loadTodayFoodFromLocal();
   if(typeof renderFoodList==='function')renderFoodList();
@@ -1203,11 +1220,12 @@ function selectMuscle(id,label){
     document.getElementById('sh-sub').textContent='点击「生成训练方案」获取个性化动作';
   }
   toast(`已选：${label}${isRest?'':' · 饮食已切训练日'}`);
+  if(typeof scheduleTrainAutosave==='function')scheduleTrainAutosave();
 }
 
 // ══ RPE ══
 function renderRPE(){document.getElementById('rpe-btns').innerHTML=[1,2,3,4,5,6,7,8,9,10].map(n=>`<button class="rb ${S.rpe===n?'on':''}" onclick="setRPE(${n})">${n}</button>`).join('');}
-function setRPE(n){S.rpe=n;renderRPE();toast(`RPE ${n}`);}
+function setRPE(n){S.rpe=n;renderRPE();toast(`RPE ${n}`);if(typeof scheduleTrainAutosave==='function')scheduleTrainAutosave();}
 
 // ══ DIET ══
 
@@ -1504,6 +1522,7 @@ async function genWorkout(){
     const durEl=document.getElementById('est-dur');
     if(durEl&&r.estimated_duration)durEl.textContent=r.estimated_duration+'min';
     renderExercises();updateTokenUI();
+    if(typeof scheduleTrainAutosave==='function')scheduleTrainAutosave();
   }catch(e){
     document.getElementById('sh-title').textContent='生成失败';
     document.getElementById('sh-sub').textContent=e.message;
@@ -1523,12 +1542,14 @@ function addExercise(){
   document.getElementById('aep').classList.remove('on');
   ['aep-name','aep-reps'].forEach(id=>document.getElementById(id).value='');
   toast('✓ 已添加：'+name);
+  if(typeof scheduleTrainAutosave==='function')scheduleTrainAutosave();
 }
 function removeExercise(i){
   const name=S.workout[i]?.name||'';
   S.workout.splice(i,1);
   document.getElementById('total-cnt').textContent=S.workout.length;
   recalcVol();renderExercises();renderCmpList();toast('已删除：'+name);
+  if(typeof scheduleTrainAutosave==='function')scheduleTrainAutosave();
 }
 
 function renderExercises(){
@@ -1582,8 +1603,8 @@ function renderExercises(){
   }).join('');
 }
 
-function updateSet(i,j,field,val){S.workout[i].sets_data[j][field]=parseFloat(val)||0;recalcVol();renderExercises();renderCmpList();}
-function addSet(i){const ex=S.workout[i];ex.sets_data.push({w:ex.weight_kg,r:parseInt((ex.reps+'').split('-')[0])||8});renderExercises();}
+function updateSet(i,j,field,val){S.workout[i].sets_data[j][field]=parseFloat(val)||0;recalcVol();renderExercises();renderCmpList();if(typeof scheduleTrainAutosave==='function')scheduleTrainAutosave();}
+function addSet(i){const ex=S.workout[i];ex.sets_data.push({w:ex.weight_kg,r:parseInt((ex.reps+'').split('-')[0])||8});renderExercises();if(typeof scheduleTrainAutosave==='function')scheduleTrainAutosave();}
 function toggleEx(i){
   S.workout[i].done=!S.workout[i].done;
   if(S.workout[i].done&&!S.workout[i].sets_data.length){
@@ -1595,10 +1616,12 @@ function toggleEx(i){
   document.getElementById('done-cnt').textContent=done;
   renderExercises();renderCmpList();renderDash();
   if(done===S.workout.length&&S.workout.length>0)toast('全部完成！容量 '+Math.round(S.volume)+' kg·r');
+  if(typeof scheduleTrainAutosave==='function')scheduleTrainAutosave();
 }
 function recalcVol(){
   S.volume=S.workout.filter(e=>e.done).reduce((sum,ex)=>sum+ex.sets_data.reduce((a,s)=>a+s.w*s.r,0),0);
   document.getElementById('vol-val').innerHTML=Math.round(S.volume)+'<span class="vi-u"> kg·r</span>';
+  if(typeof scheduleTrainAutosave==='function')scheduleTrainAutosave();
 }
 function renderCmpList(){
   const done=S.workout.filter(e=>e.done);
@@ -1621,31 +1644,43 @@ function renderCmpList(){
 
 async function saveSession(){
   const done=S.workout.filter(e=>e.done).length;
-  if(!done&&S.todayMuscle!=='rest'){toast('请先完成至少一个动作');return;}
+  const hasDraft=typeof trainHasSaveableContent==='function'&&trainHasSaveableContent();
+  if(!done&&S.todayMuscle!=='rest'&&!hasDraft){toast('请先完成至少一个动作，或填写动作与重量');return;}
   const notes=document.getElementById('session-notes').value;
+  const trainedAt=typeof getTrainLogTimestamp==='function'?getTrainLogTimestamp():new Date().toISOString();
+  const payload={
+    session_title:document.getElementById('sh-title').textContent,
+    muscle_groups:S.todayMuscle,volume:S.volume,
+    exercises_json:JSON.stringify(S.workout),notes,rpe:S.rpe,trained_at:trainedAt,
+  };
   if(db){
-    await dbOp('训练记录',()=>db.addSession({
-      session_title:document.getElementById('sh-title').textContent,
-      muscle_groups:S.todayMuscle,volume:S.volume,
-      exercises_json:JSON.stringify(S.workout),notes,rpe:S.rpe,
-    }));
+    if(S.trainCloudSessionId){
+      await dbOp('训练记录',()=>db.updateSession(S.trainCloudSessionId,payload));
+    }else{
+      const row=await dbOp('训练记录',()=>db.addSession(payload));
+      if(row?.id)S.trainCloudSessionId=row.id;
+    }
     const planTot=S.workout.reduce((s,e)=>s+e.sets*parseInt((e.reps+'').split('-')[0])*e.weight_kg,0);
     await dbOp('训练对比',()=>db.addComparison({
       plan_session_json:JSON.stringify(S.workout.map(e=>({name:e.name,sets:e.sets,reps:e.reps,weight_kg:e.weight_kg}))),
-      actual_session_json:JSON.stringify(S.workout.filter(e=>e.done)),
-      divergence_pct:planTot>0?Math.round((S.volume-planTot)/planTot*100):0,notes,
+      actual_session_json:JSON.stringify(S.workout.filter(e=>e.done).length?S.workout.filter(e=>e.done):S.workout),
+      divergence_pct:planTot>0?Math.round((S.volume-planTot)/planTot*100):0,notes,date:trainedAt,
     }));
     for(const ex of S.workout.filter(e=>e.done&&e.is_compound)){
       const sd=ex.sets_data;if(!sd.length)continue;
       const best=sd.reduce((a,s)=>calcE1RM(s.w,s.r)>calcE1RM(a.w,a.r)?s:a,sd[0]);
-      await dbOp('力量记录',()=>db.addStrengthLog({exercise_name:ex.name,weight_kg:best.w,reps:best.r,sets:sd.length,e1rm:calcE1RM(best.w,best.r)}));
+      await dbOp('力量记录',()=>db.addStrengthLog({exercise_name:ex.name,weight_kg:best.w,reps:best.r,sets:sd.length,e1rm:calcE1RM(best.w,best.r),logged_at:trainedAt}));
     }
     await loadRecentCmp();
   }
+  const dayLbl=S_trainDate==='yesterday'?'昨日':'今日';
+  if(typeof clearTrainDraft==='function')clearTrainDraft(S_trainDate);
+  S.trainCloudSessionId=null;
   if(notes.trim()&&confirm(`将训后感受存入记忆库（短期7天）？\n「${notes.slice(0,60)}」`)){
-    await saveMemoQ(notes,'short');toast('✓ 训练已记录，感受存入记忆库');return;
+    await saveMemoQ(notes,'short');toast(`✓ ${dayLbl}训练已记录，感受存入记忆库`);return;
   }
-  toast(`✓ 已记录 · ${done} 动作 · ${Math.round(S.volume)} kg·r`);
+  toast(`✓ ${dayLbl}已记录 · ${done||S.workout.length} 动作 · ${Math.round(S.volume)} kg·r`);
+  if(S_trainDate==='today'){S.workout=[];S.volume=0;renderExercises();renderCmpList();renderDash();}
 }
 
 // ══ PLAN ══

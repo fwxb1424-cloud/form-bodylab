@@ -40,8 +40,10 @@ class DB {
 
   // SESSIONS
   async addSession(s){ const{data,error}=await this.sb.from('sessions').insert({...s,trained_at:s.trained_at||new Date().toISOString()}).select().single(); if(error)throw error; return data; }
+  async updateSession(id,patch){ const{data,error}=await this.sb.from('sessions').update(patch).eq('id',id).select().single(); if(error)throw error; return data; }
   async getRecentSessions(days=90){ const since=new Date();since.setDate(since.getDate()-days); const{data,error}=await this.sb.from('sessions').select('*').gte('trained_at',since.toISOString()).order('trained_at',{ascending:false}); if(error)throw error; return data||[]; }
   async getSessionsByRange(from,to){ const{data,error}=await this.sb.from('sessions').select('*').gte('trained_at',from).lte('trained_at',to).order('trained_at'); if(error)throw error; return data||[]; }
+  async getLatestSessionOnDay(fromISO,toISO){ const{data,error}=await this.sb.from('sessions').select('*').gte('trained_at',fromISO).lte('trained_at',toISO).order('trained_at',{ascending:false}).limit(1).maybeSingle(); if(error)throw error; return data; }
 
   // STRENGTH
   async addStrengthLog(e){ const{data,error}=await this.sb.from('strength_logs').insert({...e,logged_at:e.logged_at||new Date().toISOString()}).select().single(); if(error)throw error; return data; }
