@@ -311,35 +311,46 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('beforeunload', () => backupTrainDraft());
 
 // ── 训练草稿 / 补录昨天 / 自动保存 ─────────────────────────────
+// S_trainDate 现在存储两种值：
+//   'today'       → 今天
+//   数字（如 -1, -2, -3…）→ 往前N天（-1=昨天, -2=前天，以此类推）
 window.S_trainDate = window.S_trainDate || 'today';
 
-function trainDateKey(mode) {
-  const m = mode || window.S_trainDate || 'today';
+// 把模式转换成实际日期对象
+function trainModeToDate(mode) {
   const d = new Date();
-  if (m === 'yesterday') d.setDate(d.getDate() - 1);
+  if (mode === 'today' || mode === 0) return d;
+  const offset = typeof mode === 'number' ? mode : (mode === 'yesterday' ? -1 : parseInt(mode) || 0);
+  d.setDate(d.getDate() + offset);
+  return d;
+}
+
+function trainDateKey(mode) {
+  const d = trainModeToDate(mode ?? window.S_trainDate);
+  const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
-  return `form_train_${d.getFullYear()}-${mm}-${dd}`;
+  return `form_train_${yyyy}-${mm}-${dd}`;
 }
 
 function trainDayRange(mode) {
-  const d = new Date();
-  if ((mode || window.S_trainDate) === 'yesterday') d.setDate(d.getDate() - 1);
-  const start = new Date(d);
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(d);
-  end.setHours(23, 59, 59, 999);
+  const d = trainModeToDate(mode ?? window.S_trainDate);
+  const start = new Date(d); start.setHours(0, 0, 0, 0);
+  const end = new Date(d); end.setHours(23, 59, 59, 999);
   return { start: start.toISOString(), end: end.toISOString(), label: d };
 }
 
 function getTrainLogTimestamp() {
-  if (window.S_trainDate === 'yesterday') {
-    const yd = new Date(Date.now() - 864e5);
-    const now = new Date();
-    yd.setHours(now.getHours(), now.getMinutes(), 0, 0);
-    return yd.toISOString();
-  }
-  return new Date().toISOString();
+  const mode = window.S_trainDate;
+  if (mode === 'today') return new Date().toISOString();
+  const d = trainModeToDate(mode);
+  const now = new Date();
+  d.setHours(now.getHours(), now.getMinutes(), 0, 0);
+  return d.toISOString();
+}
+
+function isTrainToday() {
+  return window.S_trainDate === 'today' || window.S_trainDate === 0;
 }
 
 function readTrainDraftEl(id) {
@@ -402,7 +413,7 @@ function applyTrainDraft(d) {
   }
   if (typeof renderExercises === 'function') renderExercises();
   if (typeof renderCmpList === 'function') renderCmpList();
-  if (S_trainDate === 'today' && typeof renderDash === 'function') renderDash();
+  if (isTrainToday() && typeof renderDash === 'function') renderDash();
   return true;
 }
 
@@ -478,8 +489,8 @@ async function loadTrainDraftForMode(mode) {
   }
   if (await loadTrainFromCloudForDay(mode)) {
     updateTrainAutosaveHint('cloud');
-    if (mode === 'yesterday' && typeof toast === 'function')
-      toast('已从云端载入昨日训练，可继续补全');
+    if (!isTrainToday() && typeof toast === 'function')
+      toast('已从云端载入该日训练，可继续补全');
     return;
   }
   if (mode === 'today') {
@@ -507,7 +518,7 @@ function updateTrainAutosaveHint(state) {
     cloud: '已同步云端（可随时补全）',
     syncing: '正在同步云端…',
     restored: '已恢复未完成的训练草稿',
-    empty: S_trainDate === 'yesterday' ? '补录昨天：填写动作后会自动保存' : '填写动作、重量后会自动保存草稿',
+    empty: isTrainToday() ? '填写动作、重量后会自动保存草稿' : '补录模式：填写动作后会自动保存',
     err: '本机已保存，云端同步失败',
   };
   el.textContent = map[state] || map.empty;
@@ -555,7 +566,7 @@ async function autoSyncTrainToCloud() {
     if (row?.id) S.trainCloudSessionId = row.id;
     backupTrainDraft();
     updateTrainAutosaveHint('cloud');
-    if (S_trainDate === 'today' && typeof renderDash === 'function') renderDash();
+    if (isTrainToday() && typeof renderDash === 'function') renderDash();
   } catch (e) {
     updateTrainAutosaveHint('err');
   }
@@ -564,36 +575,49 @@ async function autoSyncTrainToCloud() {
 function updateTrainDateUI() {
   const bar = document.getElementById('train-backfill-bar');
   const todayBtn = document.getElementById('ts-today');
-  const yestBtn = document.getElementById('ts-yesterday');
+  const backBtn = document.getElementById('ts-backfill'); // 新的"补录"按钮
   const title = document.getElementById('train-page-title');
   const saveBtn = document.getElementById('train-save-btn');
   const sub = document.getElementById('train-date');
-  const isY = S_trainDate === 'yesterday';
+  const isToday = isTrainToday();
+  const { label } = trainDayRange();
 
-  bar?.classList.toggle('hidden', !isY);
-  todayBtn?.classList.toggle('on', !isY);
-  yestBtn?.classList.toggle('on', isY);
-  if (title) title.textContent = isY ? '昨日训练' : '今日训练';
-  if (saveBtn) saveBtn.textContent = isY ? '记录昨日训练 ✓' : '记录今日训练 ✓';
-  if (sub && isY) {
-    const { label } = trainDayRange('yesterday');
-    sub.textContent = `补录 ${label.getMonth() + 1}/${label.getDate()}（周${['日', '一', '二', '三', '四', '五', '六'][label.getDay()]}）`;
-  } else if (sub && typeof todayStr === 'function') sub.textContent = todayStr();
-  const bfDate = document.getElementById('train-bf-date-label');
-  if (bfDate && isY) {
-    const { label } = trainDayRange('yesterday');
-    bfDate.textContent = `昨天 ${label.getMonth() + 1}/${label.getDate()} · 自动保存写入昨日`;
+  bar?.classList.toggle('hidden', isToday);
+  todayBtn?.classList.toggle('on', isToday);
+  backBtn?.classList.toggle('on', !isToday);
+
+  if (isToday) {
+    if (title) title.textContent = '今日训练';
+    if (saveBtn) saveBtn.textContent = '记录今日训练 ✓';
+    if (sub && typeof todayStr === 'function') sub.textContent = todayStr();
+  } else {
+    const dow = ['日','一','二','三','四','五','六'][label.getDay()];
+    const dateStr = `${label.getMonth()+1}/${label.getDate()}（周${dow}）`;
+    if (title) title.textContent = `补录 ${dateStr}`;
+    if (saveBtn) saveBtn.textContent = `记录 ${dateStr} 训练 ✓`;
+    if (sub) sub.textContent = dateStr;
+    const bfDate = document.getElementById('train-bf-date-label');
+    if (bfDate) bfDate.textContent = `${dateStr} · 自动保存写入该日时间戳`;
   }
+
+  // 更新autosave hint
+  updateTrainAutosaveHint('empty');
 }
 
+// mode: 'today' | -1 | -2 | -3 … (负数=往前N天)
 window.switchTrainDate = async function switchTrainDate(mode) {
   if (mode === S_trainDate) return;
   backupTrainDraft();
-  S_trainDate = mode;
+  window.S_trainDate = mode;
   updateTrainDateUI();
   await loadTrainDraftForMode(mode);
-  if (mode === 'yesterday') toast('补录模式：训练写入昨天');
-  else toast('已切回今日训练');
+  if (isTrainToday()) {
+    toast('已切回今日训练');
+  } else {
+    const { label } = trainDayRange();
+    const dow = ['日','一','二','三','四','五','六'][label.getDay()];
+    toast(`补录模式：${label.getMonth()+1}/${label.getDate()}（周${dow}）`);
+  }
 };
 
 function saveAppStateLocally() {
@@ -615,6 +639,9 @@ window.saveAppStateLocally = saveAppStateLocally;
 window.loadAppStateLocally = loadAppStateLocally;
 window.trainHasSaveableContent = trainHasSaveableContent;
 window.updateTrainDateUI = updateTrainDateUI;
+window.isTrainToday = isTrainToday;
+window.trainModeToDate = trainModeToDate;
+window.trainDayRange = trainDayRange;
 
 window.dbOp = dbOp;
 window.setCloudStatus = setCloudStatus;

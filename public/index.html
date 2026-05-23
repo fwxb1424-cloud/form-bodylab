@@ -174,6 +174,19 @@ body{
 .ds-btn{font-family:var(--f1);font-size:11px;padding:4px 10px;border-radius:20px;border:1px solid var(--ln);background:var(--s2);color:var(--t2);cursor:pointer;}
 .ds-btn.on{background:rgba(226,255,92,.1);border-color:rgba(226,255,92,.3);color:var(--ac);font-weight:600;}
 .ds-sep{font-size:10px;color:var(--t3);}
+.ds-sel{font-family:var(--f1);font-size:11px;padding:4px 8px;border-radius:12px;border:1px solid var(--ln);background:var(--s2);color:var(--t2);cursor:pointer;outline:none;}
+.week-exec-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:10px;}
+.we-day{background:var(--s2);border:1px solid var(--ln);border-radius:var(--r);padding:7px 4px;text-align:center;}
+.we-day.done{border-color:rgba(226,255,92,.4);background:rgba(226,255,92,.06);}
+.we-day.missed{border-color:rgba(232,88,88,.2);background:rgba(232,88,88,.03);}
+.we-day.rest-ok{border-color:rgba(106,172,255,.2);background:rgba(106,172,255,.04);}
+.we-day.future{opacity:.35;}
+.we-day-name{font-family:var(--f1);font-size:9px;color:var(--t2);margin-bottom:3px;}
+.we-day-icon{font-size:14px;line-height:1;}
+.we-day-type{font-family:var(--f1);font-size:8px;color:var(--t3);margin-top:2px;}
+.exec-summary{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+.exec-pill{font-size:11px;padding:3px 9px;border-radius:12px;border:1px solid var(--ln);background:var(--s2);color:var(--t2);}
+.exec-pill strong{color:var(--t1);}.exec-pill.good strong{color:var(--ac);}.exec-pill.warn strong{color:var(--wa);}
 
 /* ── 饮食列表按餐次分组 ── */
 .meal-group{margin-bottom:10px;}
@@ -673,20 +686,30 @@ body{
       <div class="s" style="margin-top:12px">
         <div id="tc-wrap"></div>
 
-        <!-- 日期切换：今天 / 昨天 -->
+        <!-- 日期选择器 -->
         <div class="date-switcher">
           <button class="ds-btn on" id="ds-today" onclick="switchDietDate('today')">今天</button>
           <span class="ds-sep">·</span>
-          <button class="ds-btn" id="ds-yesterday" onclick="switchDietDate('yesterday')">补录昨天</button>
+          <span style="font-size:11px;color:var(--t2)">补录：</span>
+          <select id="diet-date-sel" class="ds-sel" onchange="switchDietDate(parseInt(this.value)||'today')">
+            <option value="today">— 选择日期 —</option>
+            <option value="-1">昨天</option>
+            <option value="-2">前天</option>
+            <option value="-3">3天前</option>
+            <option value="-4">4天前</option>
+            <option value="-5">5天前</option>
+            <option value="-6">6天前</option>
+            <option value="-7">7天前</option>
+          </select>
         </div>
 
         <!-- 补录模式横幅（切到昨天时显示）-->
         <div class="backfill-bar hidden" id="backfill-bar">
           <div>
             <div class="bf-label">📅 补录模式</div>
-            <div class="bf-date" id="bf-date-label">昨天 · 记录将写入昨日时间戳</div>
+            <div class="bf-date" id="bf-date-label">记录将写入所选日期</div>
           </div>
-          <button class="bf-close" onclick="switchDietDate('today')">回到今天</button>
+          <button class="bf-close" onclick="switchDietDate('today');document.getElementById('diet-date-sel').value='today'">回到今天</button>
         </div>
 
         <!-- 餐次选择器 -->
@@ -754,14 +777,24 @@ body{
         <div class="date-switcher">
           <button type="button" class="ds-btn on" id="ts-today" onclick="switchTrainDate('today')">今天</button>
           <span class="ds-sep">·</span>
-          <button type="button" class="ds-btn" id="ts-yesterday" onclick="switchTrainDate('yesterday')">补录昨天</button>
+          <span style="font-size:11px;color:var(--t2)">补录：</span>
+          <select id="train-date-sel" class="ds-sel" onchange="switchTrainDate(parseInt(this.value)||'today')">
+            <option value="today">— 选择日期 —</option>
+            <option value="-1">昨天</option>
+            <option value="-2">前天</option>
+            <option value="-3">3天前</option>
+            <option value="-4">4天前</option>
+            <option value="-5">5天前</option>
+            <option value="-6">6天前</option>
+            <option value="-7">7天前</option>
+          </select>
         </div>
         <div class="backfill-bar hidden" id="train-backfill-bar">
           <div>
-            <div class="bf-label">📅 补录昨天训练</div>
-            <div class="bf-date" id="train-bf-date-label">填写后自动保存到昨天</div>
+            <div class="bf-label">📅 补录模式</div>
+            <div class="bf-date" id="train-bf-date-label">填写后自动保存到该日</div>
           </div>
-          <button type="button" class="bf-close" onclick="switchTrainDate('today')">回到今天</button>
+          <button type="button" class="bf-close" onclick="switchTrainDate('today');document.getElementById('train-date-sel').value='today'">回到今天</button>
         </div>
         <div id="train-autosave-hint" style="font-size:10px;color:var(--t2);margin-top:6px;line-height:1.4">填写动作、重量后会自动保存草稿</div>
       </div>
@@ -851,9 +884,29 @@ body{
 
     <!-- ══ 计划 ══ -->
     <div class="page" id="pg-plan">
-      <div class="ph"><div class="ph-ey">长线规划</div><div class="ph-h1">训练计划</div><div class="ph-sub">大周期 → 每周结构 → 每日灵活</div></div>
-      <div class="s" style="margin-top:12px"><div class="slbl">当前计划</div><div class="plan-hero ph-empty" id="plan-hero"><div style="font-size:13px;color:var(--t2)">暂无计划，在下方生成或手动输入</div></div></div>
-      <div class="s" style="margin-top:8px"><div class="slbl">每周训练结构</div><div class="pw-card" id="week-card"><div class="empty">生成计划后显示</div></div></div>
+      <div class="ph"><div class="ph-ey">长线规划</div><div class="ph-h1">训练计划</div><div class="ph-sub">减脂期 W1–W8 · 每周执行追踪</div></div>
+
+      <!-- 本周执行率看板 -->
+      <div class="s" style="margin-top:12px">
+        <div class="slbl">本周执行情况 <span id="plan-week-badge" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ac);font-size:10px"></span></div>
+        <div id="week-exec-board"><div class="empty">连接云端后显示本周执行情况</div></div>
+      </div>
+
+      <!-- 周期进度 -->
+      <div class="s" style="margin-top:8px">
+        <div class="slbl">周期进度</div>
+        <div id="plan-phase-progress"></div>
+      </div>
+
+      <!-- 本周训练结构（计划底稿） -->
+      <div class="s" style="margin-top:8px">
+        <div class="slbl">本周训练结构</div>
+        <div id="plan-week-grid"></div>
+      </div>
+
+      <!-- 以下为原有AI计划功能（折叠区） -->
+      <div class="s" style="margin-top:8px"><div class="slbl">AI周期计划</div><div class="plan-hero ph-empty" id="plan-hero"><div style="font-size:13px;color:var(--t2)">点下方「AI生成」可叠加AI周期方案</div></div></div>
+      <div class="s" style="margin-top:8px"><div class="slbl">每周结构（AI）</div><div class="pw-card" id="week-card"><div class="empty">生成计划后显示</div></div></div>
       <div class="s" style="margin-top:8px"><div class="slbl">里程碑</div><div class="card" id="ms-card"><div class="empty">生成计划后显示</div></div></div>
       <div class="s" style="margin-top:8px">
         <div class="slbl">生成新周期计划</div>
@@ -920,6 +973,10 @@ body{
         <div class="chart-wrap">
           <div class="chart-title">睡眠记录</div>
           <div style="margin-bottom:9px"><div style="font-family:var(--f1);font-size:10px;font-weight:500;color:var(--t2);margin-bottom:5px">时长</div><div style="display:flex;align-items:center;gap:9px"><input type="range" class="sleep-sl" id="sleep-dur" min="4" max="10" step="0.5" value="7.5" oninput="document.getElementById('slv').textContent=this.value+'h'"><span style="font-family:var(--f1);font-size:13px;font-weight:600;color:var(--ac);width:36px;text-align:right" id="slv">7.5h</span></div></div>
+          <div style="margin-bottom:9px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div><div style="font-family:var(--f1);font-size:10px;font-weight:500;color:var(--t2);margin-bottom:5px">入睡时间</div><input type="time" id="sleep-start" value="23:00" style="width:100%;background:var(--s2);border:1px solid var(--ln2);border-radius:var(--r);padding:8px 10px;color:var(--t1);font-family:var(--f1);font-size:13px;outline:none"></div>
+            <div><div style="font-family:var(--f1);font-size:10px;font-weight:500;color:var(--t2);margin-bottom:5px">起床时间</div><input type="time" id="sleep-end" value="07:00" style="width:100%;background:var(--s2);border:1px solid var(--ln2);border-radius:var(--r);padding:8px 10px;color:var(--t1);font-family:var(--f1);font-size:13px;outline:none" oninput="calcSleepDur()"></div>
+          </div>
           <div style="margin-bottom:9px"><div style="font-family:var(--f1);font-size:10px;font-weight:500;color:var(--t2);margin-bottom:5px">质量</div><div class="sqb-row" id="sqb-row"><button class="sqb" onclick="setSleepQ(1)">差</button><button class="sqb" onclick="setSleepQ(2)">一般</button><button class="sqb on" onclick="setSleepQ(3)">良好</button><button class="sqb" onclick="setSleepQ(4)">极佳</button></div></div>
           <button class="upd-btn" style="width:100%;padding:8px;text-align:center" onclick="saveSleep()">记录昨晚睡眠</button>
           <div id="sleep-log" style="margin-top:8px"></div>
@@ -1077,6 +1134,12 @@ async function boot(){
   updateTokenUI();
   if(typeof window._initCycleModule==='function') window._initCycleModule();
   if(typeof autoSelectMealType==='function') autoSelectMealType();
+  // 计划页初始化
+  renderPlanWeekGrid();
+  renderPhaseProgress();
+  renderWeekExecBoard();
+  // 训练页自动预选今日计划（仅首次）
+  if(!S.todayMuscle && typeof autoSelectTodayMuscle==='function') autoSelectTodayMuscle();
 }
 
 // ══ UTILS ══
@@ -1230,23 +1293,22 @@ function setRPE(n){S.rpe=n;renderRPE();toast(`RPE ${n}`);if(typeof scheduleTrain
 // ══ DIET ══
 
 // ── 当前选中的餐次 ───────────────────────────────────────
-let S_mealType = '早餐'; // 默认早餐，按时段自动初始化
-let S_dietDate = 'today'; // 'today' | 'yesterday'
+let S_mealType = '早餐';
 
 function autoSelectMealType(){
   const h = new Date().getHours();
   let type = '早餐';
   if(h >= 10 && h < 13) type = '午餐';
-  else if(h >= 13 && h < 15) type = '加餐';
-  else if(h >= 17 && h < 20) type = '晚餐';
-  else if(h >= 20) type = '练后';
+  else if(h >= 13 && h < 17) type = '加餐';
+  else if(h >= 17) type = '晚餐';
   setMealTypeUI(type);
 }
 
 function setMealTypeUI(type){
   S_mealType = type;
   document.querySelectorAll('.mt-pill').forEach(btn => {
-    btn.classList.toggle('on', btn.textContent.trim().includes(type));
+    const t = btn.textContent.replace(/[🌅☀️🥤🌙💪\s]/gu,'').replace('/练后','');
+    btn.classList.toggle('on', t === type || (type==='练后' && t==='晚餐'));
   });
 }
 
@@ -1255,61 +1317,82 @@ window.selectMealType = function(type, btn){
   document.querySelectorAll('.mt-pill').forEach(b => b.classList.remove('on'));
   if(btn) btn.classList.add('on');
 };
+// S_dietDate: 'today' | 数字偏移（-1=昨天, -2=前天...）
+let S_dietDate = 'today';
+let S_yd = { protein:0, carbs:0, fat:0, kcal:0, loaded:false };
 
-// ── 日期切换：今天 / 补录昨天 ──────────────────────────
+function dietModeToDate(mode) {
+  const d = new Date();
+  if(!mode || mode === 'today') return d;
+  const offset = typeof mode === 'number' ? mode : parseInt(mode)||0;
+  d.setDate(d.getDate() + offset);
+  return d;
+}
+
+function isDietToday() {
+  return !S_dietDate || S_dietDate === 'today' || S_dietDate === 0;
+}
+
+function getLogTimestamp(){
+  if(isDietToday()) return new Date().toISOString();
+  const d = dietModeToDate(S_dietDate);
+  const now = new Date();
+  d.setHours(now.getHours(), now.getMinutes(), 0, 0);
+  return d.toISOString();
+}
+
 window.switchDietDate = function(mode){
   S_dietDate = mode;
   const barEl = document.getElementById('backfill-bar');
   const todayBtn = document.getElementById('ds-today');
-  const yestBtn = document.getElementById('ds-yesterday');
   const titleEl = document.getElementById('diet-page-title');
+  const isToday = isDietToday();
 
-  if(mode === 'yesterday'){
-    barEl?.classList.remove('hidden');
-    todayBtn?.classList.remove('on');
-    yestBtn?.classList.add('on');
-    if(titleEl) titleEl.textContent = '昨日摄入';
-    const yd = new Date(Date.now() - 864e5);
-    const lbl = `${yd.getMonth()+1}/${yd.getDate()}（${['日','一','二','三','四','五','六'][yd.getDay()]}）`;
-    const dateLabel = document.getElementById('bf-date-label');
-    if(dateLabel) dateLabel.textContent = `昨天 ${lbl} · 记录将写入昨日时间戳`;
-    toast('补录模式：记录写入昨日');
-    loadYesterdayFood();
-  } else {
-    barEl?.classList.add('hidden');
-    todayBtn?.classList.add('on');
-    yestBtn?.classList.remove('on');
+  barEl?.classList.toggle('hidden', isToday);
+  todayBtn?.classList.toggle('on', isToday);
+
+  if(isToday){
+    S_yd = { protein:0, carbs:0, fat:0, kcal:0, loaded:false };
     if(titleEl) titleEl.textContent = '今日摄入';
-    loadTodayFood(); // 切回今天重新加载
+    const sub = document.querySelector('#pg-diet .ph-sub');
+    if(sub) sub.textContent = '描述 / 拍照 / 精确输入';
+    updateBars();
+    loadTodayFood();
+  } else {
+    const d = dietModeToDate(mode);
+    const dow = ['日','一','二','三','四','五','六'][d.getDay()];
+    const dateStr = `${d.getMonth()+1}/${d.getDate()}（周${dow}）`;
+    if(titleEl) titleEl.textContent = `补录 ${dateStr}`;
+    const lbl = document.getElementById('bf-date-label');
+    if(lbl) lbl.textContent = `${dateStr} · 记录写入该日时间戳`;
+    toast(`补录模式：${dateStr}`);
+    loadBackfillFood(mode);
   }
 };
 
-// 获取记录时间戳（补录昨天则返回昨日23:59，今天返回now）
-function getLogTimestamp(){
-  if(S_dietDate === 'yesterday'){
-    const yd = new Date(Date.now() - 864e5);
-    // 用昨天加上当前时分，让补录有时间排序意义
-    const now = new Date();
-    yd.setHours(now.getHours(), now.getMinutes(), 0, 0);
-    return yd.toISOString();
-  }
-  return new Date().toISOString();
-}
-
-// 加载昨日饮食到列表（只展示，不影响今日累计）
-async function loadYesterdayFood(){
-  if(!window.db) { toast('需要云端连接才能查看昨日记录'); return; }
-  const yd = new Date(Date.now() - 864e5);
-  yd.setHours(0,0,0,0);
-  const yd_end = new Date(yd); yd_end.setHours(23,59,59,999);
+// 通用补录加载：加载任意日期的饮食记录
+async function loadBackfillFood(mode){
+  if(!window.db) { toast('需要云端连接才能查看历史记录'); return; }
+  const d = dietModeToDate(mode);
+  const start = new Date(d); start.setHours(0,0,0,0);
+  const end = new Date(d); end.setHours(23,59,59,999);
   const list = document.getElementById('food-list');
-  if(list) list.innerHTML = '<div class="empty">加载昨日记录中…</div>';
+  if(list) list.innerHTML = '<div class="empty">加载中…</div>';
   try {
-    const rows = await db.getFoodLogsByRange(yd.toISOString(), yd_end.toISOString());
-    // 临时展示昨日记录，不写入S（不影响今日宏量统计）
+    const rows = await db.getFoodLogsByRange(start.toISOString(), end.toISOString());
+    S_yd.protein = rows.reduce((a,r)=>a+(r.protein_g||0), 0);
+    S_yd.carbs   = rows.reduce((a,r)=>a+(r.carbs_g||0),  0);
+    S_yd.fat     = rows.reduce((a,r)=>a+(r.fat_g||0),    0);
+    S_yd.kcal    = rows.reduce((a,r)=>a+(r.kcal||0),     0);
+    S_yd.loaded  = true;
     renderFoodListRaw(rows, true);
+    updateBars(); // 切换看板到该日数据
     const cnt = document.getElementById('food-cnt');
-    if(cnt) cnt.textContent = rows.length ? `昨日 ${rows.length} 笔` : '昨日暂无记录';
+    if(cnt) cnt.textContent = rows.length ? `该日 ${rows.length} 笔` : '该日暂无记录';
+    const sub = document.querySelector('#pg-diet .ph-sub');
+    if(sub) sub.textContent = rows.length
+      ? `蛋白 ${Math.round(S_yd.protein)}g · 热量 ${Math.round(S_yd.kcal)} kcal`
+      : '该日暂无记录，可补录';
   } catch(e) {
     if(list) list.innerHTML = '<div class="empty">加载失败，请检查网络</div>';
   }
@@ -1328,19 +1411,19 @@ async function parseFood(){
     if(r._err)throw new Error('格式错误');
     const ts = getLogTimestamp();
     const entry = {...r, id:++S.foodId, time:nt(), meal_type:S_mealType, logged_at:ts};
-    if(S_dietDate === 'today'){
+    if(isDietToday()){
       addFoodEntry(entry);
     }
     document.getElementById('food-input').value='';
     if(db){
       const row=await dbOp('饮食保存',()=>db.addFoodLog({...r, time_tag:S_mealType, logged_at:ts}));
-      if(S_dietDate === 'today'){
+      if(isDietToday()){
         const f=S.foods[S.foods.length-1];
         if(row?.id&&f)f.dbId=row.id;
       }
     }
-    if(S_dietDate === 'today') {applyNutritionUI();updateGapRec();}
-    else { loadYesterdayFood(); }
+    if(isDietToday()) {applyNutritionUI();updateGapRec();}
+    else { loadBackfillFood(S_dietDate); }
     updateTokenUI();
     toast(`✓ +${Math.round(r.protein_g)}g 蛋白质 [${S_mealType}]${r._cached?' (缓存)':''}`);
   }catch(e){toast('解析失败：'+(e.message||'请重试'));}
@@ -1359,13 +1442,13 @@ async function handlePhoto(event){
     if(r._err)throw new Error('识别格式错误');
     const ts = getLogTimestamp();
     const entry = {...r, id:++S.foodId, time:nt(), fromPhoto:true, meal_type:S_mealType, logged_at:ts};
-    if(S_dietDate === 'today') addFoodEntry(entry);
+    if(isDietToday()) addFoodEntry(entry);
     if(db){
       const row=await dbOp('饮食保存',()=>db.addFoodLog({...r, time_tag:S_mealType, logged_at:ts}));
-      if(S_dietDate === 'today'){const f=S.foods[S.foods.length-1];if(row?.id&&f)f.dbId=row.id;}
+      if(isDietToday()){const f=S.foods[S.foods.length-1];if(row?.id&&f)f.dbId=row.id;}
     }
-    if(S_dietDate === 'today') {applyNutritionUI();updateGapRec();}
-    else loadYesterdayFood();
+    if(isDietToday()) {applyNutritionUI();updateGapRec();}
+    else loadBackfillFood(S_dietDate);
     updateTokenUI();
     toast(`✓ ${r.name}（${r.confidence}）[${S_mealType}]`);
   }catch(e){toast('识别失败：'+(e.message||'请重试'));}
@@ -1382,15 +1465,15 @@ async function addManualFood(){
   const k=parseFloat(document.getElementById('mf-k').value)||(p*4+c*4+f*9);
   const ts = getLogTimestamp();
   const entry={name,protein_g:p,carbs_g:c,fat_g:f,kcal:k,id:++S.foodId,time:nt(),manual:true,meal_type:S_mealType,logged_at:ts};
-  if(S_dietDate === 'today') addFoodEntry(entry);
+  if(isDietToday()) addFoodEntry(entry);
   if(db){
     const row=await dbOp('饮食保存',()=>db.addFoodLog({name,protein_g:p,carbs_g:c,fat_g:f,kcal:k,time_tag:S_mealType,logged_at:ts}));
-    if(S_dietDate === 'today' && row?.id) entry.dbId=row.id;
+    if(isDietToday() && row?.id) entry.dbId=row.id;
   }
   ['mf-name','mf-p','mf-c','mf-f','mf-k'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('mfp').classList.remove('on');
-  if(S_dietDate === 'today') {applyNutritionUI();updateGapRec();toast('✓ 精确记录：'+name+' ['+S_mealType+']');}
-  else {loadYesterdayFood();toast('✓ 已补录昨日：'+name);}
+  if(isDietToday()) {applyNutritionUI();updateGapRec();toast('✓ 精确记录：'+name+' ['+S_mealType+']');}
+  else {loadBackfillFood(S_dietDate);toast('✓ 已补录昨日：'+name);}
 }
 
 function addFoodEntry(e){
@@ -1836,11 +1919,39 @@ function updateM(key){
 
 let sleepQ=3;
 function setSleepQ(q){sleepQ=q;document.querySelectorAll('.sqb').forEach((b,i)=>b.classList.toggle('on',i+1===q));}
-async function saveSleep(){
-  const dur=parseFloat(document.getElementById('sleep-dur').value);
-  if(db)await db.addSleepLog({duration_h:dur,quality:sleepQ}).catch(()=>{});
-  await loadSleepLog();toast(`✓ 睡眠 ${dur}h · 质量 ${sleepQ}/4`);
+// 根据入睡/起床时间自动计算时长
+function calcSleepDur(){
+  const start = document.getElementById('sleep-start')?.value;
+  const end   = document.getElementById('sleep-end')?.value;
+  if(!start || !end) return;
+  let [sh,sm] = start.split(':').map(Number);
+  let [eh,em] = end.split(':').map(Number);
+  let mins = (eh*60+em) - (sh*60+sm);
+  if(mins < 0) mins += 24*60; // 跨午夜
+  const hrs = Math.round(mins/60*2)/2; // 精确到0.5h
+  const sl = document.getElementById('sleep-dur');
+  const slv = document.getElementById('slv');
+  if(sl){ sl.value = Math.max(4, Math.min(10, hrs)); }
+  if(slv){ slv.textContent = hrs.toFixed(1)+'h'; }
 }
+
+async function saveSleep(){
+  const dur = parseFloat(document.getElementById('sleep-dur').value);
+  const startTime = document.getElementById('sleep-start')?.value || '';
+  const endTime   = document.getElementById('sleep-end')?.value   || '';
+  const notes = startTime ? `入睡${startTime} 起床${endTime}` : '';
+  if(db) await db.addSleepLog({
+    duration_h: dur,
+    quality: sleepQ,
+    notes,
+  }).catch(()=>{});
+  await loadSleepLog();
+  // 入睡时间警告
+  const [sh] = startTime.split(':').map(Number);
+  const lateWarning = sh >= 0 && sh < 6 && startTime ? '（⚠ 入睡偏晚，GH分泌受影响）' : '';
+  toast(`✓ 睡眠 ${dur}h · ${startTime||''}→${endTime||''} ${lateWarning}`);
+}
+
 async function loadSleepLog(){
   if(!db)return;
   try{const d=await db.getRecentSleepLogs(14);renderSleepLog(d);}catch(e){}
@@ -1848,13 +1959,19 @@ async function loadSleepLog(){
 function renderSleepLog(data){
   const el=document.getElementById('sleep-log');if(!data.length){el.innerHTML='';return;}
   const q=['','差','一般','良好','极佳'];
-  el.innerHTML=[...data].reverse().slice(0,6).map(d=>`
-    <div class="sl-item">
+  el.innerHTML=[...data].reverse().slice(0,6).map(d=>{
+    // 解析入睡时间备注
+    const noteMatch = (d.notes||'').match(/入睡(\d+:\d+)/);
+    const sleepTime = noteMatch ? noteMatch[1] : '';
+    const isLate = sleepTime && parseInt(sleepTime.split(':')[0]) >= 23;
+    return `<div class="sl-item">
       <div class="sl-d">${new Date(d.logged_at).toLocaleDateString('zh-CN',{month:'numeric',day:'numeric'})}</div>
+      ${sleepTime ? `<div style="font-size:10px;color:${isLate?'var(--wa)':'var(--t3)'}">↓${sleepTime}</div>` : ''}
       <div class="sl-bw"><div class="sl-bf" style="width:${((d.duration_h-4)/6*100).toFixed(0)}%"></div></div>
       <div class="sl-dur">${d.duration_h}h</div>
       <div class="sl-q">${q[d.quality]||''}</div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 let strEntryVis=false;
@@ -2045,6 +2162,245 @@ function renderWarn(wrap,w,data,key){
     <div class="sc-title">${w.title}</div>
     <div class="sc-body">${w.msg(data)}</div>
   </div>`;
+}
+
+
+// ══ PLAN PAGE: WEEK PLAN DATA + EXEC BOARD + GRID + PROGRESS ══
+
+window.WEEK_PLAN = [
+  { day:'周一', type:'push',     title:'推日 — 胸·侧束·三头', sets:'19组',
+    groups:[
+      {label:'胸部（15组）', exercises:[
+        {n:'杠铃平板卧推',    tag:'主力', s:'4×6–8',   note:'W1–4约82.5–92.5kg；W5–8切4-1-1节奏'},
+        {n:'史密斯上斜卧推',  tag:'主力', s:'4×8–10',  note:'上斜30–40°，专注胸外延，约55–67.5kg'},
+        {n:'双杠臂屈伸',      tag:'收尾', s:'3×力竭',  note:'身体前倾15–20°，肩关节有压力停止'},
+        {n:'蝴蝶机夹胸',      tag:'收尾', s:'4×12–15', note:'顶点停顿1秒，4秒回程'},
+      ]},
+      {label:'侧束（3组）', exercises:[
+        {n:'哑铃侧平举',      tag:'主力', s:'3×15–20', note:'推日尾部侧束是新鲜肌肉，10–12kg'},
+      ]},
+      {label:'三头（1组）', exercises:[
+        {n:'绳索三头下压',    tag:'附带', s:'1×12–15', note:'泵感收尾'},
+      ]},
+    ]},
+  { day:'周二', type:'pull',     title:'拉日 — 背阔·大圆·后束·二头', sets:'20组',
+    groups:[
+      {label:'背阔宽度（8组）', exercises:[
+        {n:'宽握高位下拉',      tag:'主力', s:'4×8',   note:'W3起顶部停顿1秒，4秒离心'},
+        {n:'窄握（反握）下拉',  tag:'主力', s:'4×10',  note:'背阔下段+大圆肌'},
+      ]},
+      {label:'背部厚度（8组）', exercises:[
+        {n:'宽握坐姿划船',      tag:'主力', s:'4×10',  note:'肘后拉至腹侧，顶点停顿1秒'},
+        {n:'窄握（V把）划船',   tag:'主力', s:'4×12',  note:'大圆肌+菱形肌'},
+      ]},
+      {label:'后束（3组）', exercises:[
+        {n:'面拉 Face Pull',    tag:'收尾', s:'3×15',  note:'绳索眼睛高度，外旋到底'},
+      ]},
+      {label:'二头（4组）', exercises:[
+        {n:'旋转式哑铃弯举',    tag:'附带', s:'2×12',  note:'顶端旋转小指朝上'},
+        {n:'锤式弯举',          tag:'附带', s:'2×12',  note:'肱肌+肱桡肌'},
+      ]},
+    ]},
+  { day:'周三', type:'cardio',   title:'独立有氧日', sets:'35分钟', groups:[] },
+  { day:'周四', type:'legs',     title:'腿日 — 股四·后链·臀·核心', sets:'22组',
+    groups:[
+      {label:'腿部主力（15组）', exercises:[
+        {n:'腿举 45° 倒蹬',    tag:'主力', s:'4×10–12', note:'左踝确认无不适才加重'},
+        {n:'臀推（史密斯）',   tag:'主力', s:'4×10–12', note:'顶部停顿2秒挤压'},
+        {n:'史密斯深蹲',       tag:'主力', s:'3×8–10',  note:'脚前置15–20cm，左踝不适直接跳过'},
+        {n:'坐姿腿屈伸',       tag:'辅助', s:'3×15',    note:'股四终末端，慢速控制'},
+        {n:'俯卧握姿腿弯举',   tag:'辅助', s:'4×12',    note:'顶部停顿2秒'},
+      ]},
+      {label:'核心（7组）', exercises:[
+        {n:'加重卷腹',         tag:'核心', s:'3×15',    note:'W3起手持5–10kg'},
+        {n:'悬挂举腿',         tag:'核心', s:'3×12',    note:'下腹+髂腰肌'},
+        {n:'平板支撑',         tag:'核心', s:'2×45秒',  note:'W5起可加重背心'},
+      ]},
+    ]},
+  { day:'周五', type:'shoulder', title:'肩日 — 三角肌全面刺激', sets:'18组',
+    groups:[
+      {label:'推（4组）', exercises:[
+        {n:'器械/史密斯肩推',  tag:'主力', s:'4×8–10',  note:'约55–65kg'},
+      ]},
+      {label:'侧束（8组）', exercises:[
+        {n:'划船机躺姿侧平举', tag:'主力', s:'4×15',    note:'侧束核心，全程张力'},
+        {n:'绳索单侧侧平举',   tag:'主力', s:'3×15',    note:'绳索在髋部，拉至肩平'},
+        {n:'哑铃侧平举',       tag:'主力', s:'2×15–20', note:'W4起最后1组改递减组'},
+      ]},
+      {label:'前束（2组）', exercises:[
+        {n:'绳索前平举',       tag:'辅助', s:'2×12',    note:'手腕中立'},
+      ]},
+      {label:'后束（4组）', exercises:[
+        {n:'俯身哑铃飞鸟',     tag:'收尾', s:'4×15',    note:'顶点停顿0.5秒，肩部立体感关键'},
+      ]},
+    ]},
+  { day:'周六', type:'cardio',   title:'独立有氧日', sets:'35分钟', groups:[] },
+  { day:'周日', type:'rest',     title:'完全休息日', sets:'拉伸15–20分钟', groups:[] },
+];
+
+function getTodayPlanId(date){
+  const d = date || new Date();
+  return {1:'push',2:'pull',3:'cardio',4:'legs',5:'shoulder',6:'cardio',0:'rest'}[d.getDay()]||'rest';
+}
+
+// 自动预选今日训练（首次进入）
+function autoSelectTodayMuscle(date){
+  const id = getTodayPlanId(date);
+  const opt = (window.MUSCLE_OPTIONS||[]).find(m=>m.id===id);
+  if(!opt || S.todayMuscle) return;
+  if(typeof selectMuscle==='function') selectMuscle(id, opt.label, true);
+}
+
+// 计划底稿展示
+function showPlanDraft(muscleId){
+  const exList = document.getElementById('ex-list');
+  if(!exList) return;
+  const planDay = window.WEEK_PLAN ? window.WEEK_PLAN.find(d=>d.type===muscleId) : null;
+  if(!planDay || !planDay.groups?.length){
+    exList.innerHTML='<div class="empty">点击「生成训练方案」加载今日计划</div>'; return;
+  }
+  const allEx = planDay.groups.flatMap(g=>g.exercises);
+  S.workout = allEx.map(e=>({
+    name:e.n, sets:parseInt((e.s||'4').split('×')[0])||4,
+    reps:(e.s||'').split('×')[1]?.trim()||'8-10',
+    weight_kg:0, muscle:muscleId, rpe_target:7,
+    is_compound:e.tag==='主力', notes:e.note||'',
+    done:false, sets_data:[], fromPlan:true,
+  }));
+  document.getElementById('total-cnt').textContent = S.workout.length;
+  document.getElementById('done-cnt').textContent  = 0;
+  if(typeof renderExercises==='function') renderExercises();
+  document.getElementById('sh-sub').textContent = `计划底稿 · ${allEx.length}个动作 · 填入实际重量后保存`;
+}
+
+// 本周执行率看板
+async function renderWeekExecBoard(){
+  const container = document.getElementById('week-exec-board');
+  if(!container) return;
+  if(!window.db){ container.innerHTML='<div class="empty">连接云端后显示</div>'; return; }
+
+  const today = new Date();
+  const dow = today.getDay();
+  const monday = new Date(today);
+  monday.setDate(today.getDate()-(dow===0?6:dow-1));
+  monday.setHours(0,0,0,0);
+  const sunday = new Date(monday); sunday.setDate(monday.getDate()+6); sunday.setHours(23,59,59,999);
+
+  let sessions=[];
+  try{ sessions = await db.getSessionsByRange(monday.toISOString(), sunday.toISOString()); }
+  catch(e){ container.innerHTML='<div class="empty">加载失败</div>'; return; }
+
+  const PLAN_BY_DOW={1:'push',2:'pull',3:'cardio',4:'legs',5:'shoulder',6:'cardio',0:'rest'};
+  const EMOJI={push:'💪',pull:'🏋',legs:'🦵',shoulder:'🙌',cardio:'🚴',rest:'😴'};
+  const LABEL={push:'推',pull:'拉',legs:'腿',shoulder:'肩',cardio:'有氧',rest:'休息'};
+  const DAYS=['周一','周二','周三','周四','周五','周六','周日'];
+  let trainDone=0, trainMissed=0;
+
+  const cells = DAYS.map((_,i)=>{
+    const d=new Date(monday); d.setDate(monday.getDate()+i);
+    const planned=PLAN_BY_DOW[d.getDay()];
+    const isFuture=d>today&&d.toDateString()!==today.toDateString();
+    const isToday=d.toDateString()===today.toDateString();
+    const ds=new Date(d); ds.setHours(0,0,0,0);
+    const de=new Date(d); de.setHours(23,59,59,999);
+    const daySess=sessions.filter(s=>{ const t=new Date(s.trained_at); return t>=ds&&t<=de; });
+    const done=daySess.length>0;
+
+    let cls='we-day', icon, label;
+    if(isFuture){ cls+=' future'; icon=EMOJI[planned]; label=LABEL[planned]; }
+    else if(planned==='rest'||planned==='cardio'){ cls+=' rest-ok'; icon=EMOJI[planned]; label=LABEL[planned]; }
+    else if(done){ cls+=' done'; icon='✓'; label=LABEL[planned]||'完成'; trainDone++; }
+    else if(isToday){ icon=EMOJI[planned]; label='今日'; }
+    else{ cls+=' missed'; icon='✗'; label='缺'; trainMissed++; }
+
+    return `<div class="${cls}"><div class="we-day-name">${DAYS[i]}</div><div class="we-day-icon">${icon}</div><div class="we-day-type">${label}</div></div>`;
+  }).join('');
+
+  const total=trainDone+trainMissed;
+  const rate=total>0?Math.round(trainDone/total*100):100;
+  container.innerHTML=`<div class="week-exec-grid">${cells}</div>
+    <div class="exec-summary">
+      <span class="exec-pill ${rate>=80?'good':'warn'}">完成率 <strong>${rate}%</strong></span>
+      <span class="exec-pill">训练 <strong>${trainDone}/${total}</strong> 天</span>
+      ${trainMissed>0?`<span class="exec-pill warn">缺 <strong>${trainMissed}</strong> 天未记录</span>`:''}
+    </div>`;
+
+  const stored=localStorage.getItem('form_cycle_start');
+  const start=stored?new Date(stored):new Date();
+  const wk=Math.min(8,Math.floor((Date.now()-start.getTime())/864e5/7)+1);
+  const badge=document.getElementById('plan-week-badge');
+  if(badge) badge.textContent=`W${wk} · 执行率${rate}%`;
+}
+
+// 计划页每周结构网格
+function renderPlanWeekGrid(){
+  const container=document.getElementById('plan-week-grid');
+  if(!container||!window.WEEK_PLAN) return;
+  const todayDow=new Date().getDay();
+  const todayIdx=todayDow===0?6:todayDow-1;
+  const STYLE={
+    push:'background:rgba(106,172,255,.15);color:#6AACFF',
+    pull:'background:rgba(226,255,92,.12);color:var(--ac)',
+    legs:'background:rgba(240,150,74,.12);color:var(--wa)',
+    shoulder:'background:rgba(180,154,255,.12);color:var(--pu)',
+    cardio:'background:rgba(106,172,255,.08);color:#6AACFF',
+    rest:'background:var(--s3);color:var(--t3)',
+  };
+  container.innerHTML=WEEK_PLAN.map((d,i)=>{
+    const isToday=i===todayIdx;
+    const st=STYLE[d.type]||STYLE.rest;
+    const exs=d.groups?.flatMap(g=>g.exercises)||[];
+    const rows=exs.slice(0,4).map(e=>`<div class="pw-ex-line"><strong>${e.n}</strong> <span style="color:var(--t3)">${e.s||''}</span></div>`).join('');
+    const more=exs.length>4?`<div class="pw-ex-line" style="color:var(--t3)">…还有${exs.length-4}个动作</div>`:'';
+    const extra=d.type==='cardio'?`<div class="pw-ex-line">35分钟稳态 · 心率130–140bpm</div>`:
+      d.type==='rest'?`<div class="pw-ex-line" style="color:var(--t3)">静态拉伸15–20分钟</div>`:'';
+    return `<div class="pw-day-card${isToday?' today':''}" onclick="this.querySelector('.pw-day-body').classList.toggle('open')">
+      <div class="pw-day-hd">
+        <div class="pw-day-dot" style="${st}">${d.day.replace('周','')}</div>
+        <div class="pw-day-info">
+          <div class="pw-day-name">${d.day}${isToday?` <span style="font-size:9px;color:var(--ac)">今日</span>`:''}</div>
+          <div class="pw-day-sub">${d.title}</div>
+        </div>
+        <div style="${st};padding:2px 8px;border-radius:10px;font-family:var(--f1);font-size:10px">${d.sets}</div>
+      </div>
+      <div class="pw-day-body">${rows}${more}${extra}</div>
+    </div>`;
+  }).join('');
+  const cards=container.querySelectorAll('.pw-day-card');
+  if(cards[todayIdx]) cards[todayIdx].querySelector('.pw-day-body')?.classList.add('open');
+}
+
+// 阶段进度条
+function renderPhaseProgress(){
+  const container=document.getElementById('plan-phase-progress');
+  if(!container) return;
+  if(!localStorage.getItem('form_cycle_start')) localStorage.setItem('form_cycle_start',new Date().toISOString());
+  const start=new Date(localStorage.getItem('form_cycle_start'));
+  const elapsed=Math.floor((Date.now()-start.getTime())/864e5);
+  const weekNum=Math.min(8,Math.floor(elapsed/7)+1);
+  const pct=Math.min(100,Math.round(elapsed/56*100));
+  const bf=window.S?.fat_pct||17.8;
+  const muscle=window.S?.muscle||40.4;
+  container.innerHTML=`<div class="phase-prog-card">
+    <div style="font-family:var(--f1);font-size:10px;font-weight:600;letter-spacing:.1em;color:var(--ac);text-transform:uppercase;margin-bottom:8px">阶段一 · 减脂保肌期 W1–W8</div>
+    <div class="phase-prog-label"><span style="color:var(--t2)">第 <strong style="color:var(--t1)">${weekNum}</strong> 周 / 共8周</span><span style="color:var(--ac);font-weight:600">${pct}%</span></div>
+    <div class="phase-prog-track"><div class="phase-prog-fill" style="width:${pct}%"></div></div>
+    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;margin-top:10px;font-size:11px;color:var(--t2)">
+      <span>当前体脂 <strong style="color:var(--t1)">${Number(bf).toFixed(1)}%</strong></span>
+      <span>目标体脂 <strong style="color:var(--ac)">13.5%</strong></span>
+      <span>骨骼肌量 <strong style="color:var(--pu)">${Number(muscle).toFixed(1)}kg</strong></span>
+    </div>
+  </div>`;
+}
+
+// goPage 钩子——切到计划页时刷新
+const _origGoPage = window.goPage;
+if(typeof _origGoPage==='function'){
+  window.goPage = function(n){
+    _origGoPage(n);
+    if(n==='plan'){ renderWeekExecBoard(); renderPlanWeekGrid(); renderPhaseProgress(); }
+    if(n==='train' && !S.todayMuscle) autoSelectTodayMuscle();
+  };
 }
 
 // ══ INIT ══

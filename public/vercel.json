@@ -1,0 +1,18 @@
+{
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/(.*)",     "destination": "/index.html" }
+  ],
+  "crons": [
+    { "path": "/api/notify?hour=0",  "schedule": "0 0 * * *"  },
+    { "path": "/api/notify?hour=4",  "schedule": "0 4 * * *"  },
+    { "path": "/api/notify?hour=7",  "schedule": "0 7 * * 1-5" },
+    { "path": "/api/notify?hour=12", "schedule": "0 12 * * *" },
+    { "path": "/api/notify?hour=13", "schedule": "0 13 * * *" }
+  ],
+  "headers": [
+    { "source": "/(.*)", "headers": [
+      { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+    ]}
+  ]
+}
