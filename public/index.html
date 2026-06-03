@@ -2106,11 +2106,6 @@ function getBodyweightDisplayStr(ex, setIdx){
   const effective = bodyW - assist;
   return `自重${bodyW}kg${assist>0?` - 辅助${assist}kg = ${effective}kg实效`:''}`;
 }
-  if(!S.workout[i]?.sets_data[j]) return;
-  S.workout[i].sets_data[j][field]=parseFloat(val)||0;
-  recalcVol();renderExercises();renderCmpList();
-  if(typeof scheduleTrainAutosave==='function')scheduleTrainAutosave();
-}
 function updateSet(i,j,field,val){
   if(!S.workout[i]?.sets_data?.[j]) return;
   const parsed=parseFloat(val)||0;
