@@ -324,7 +324,7 @@ function trainModeToDate(mode) {
 }
 
 function isTrainToday() {
-  return !window.S_trainDate || window.isTrainToday() || window.S_trainDate === 0;
+  return !window.S_trainDate || window.S_trainDate === 'today' || window.S_trainDate === 0;
 }
 
 function trainDateKey(mode) {
