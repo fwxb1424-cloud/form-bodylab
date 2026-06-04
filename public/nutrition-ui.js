@@ -8,10 +8,13 @@
  *   4. 阶段切换入口（减脂→精分→增肌），切换后数字自动更新
  */
 
-// ── 工具：今日是否训练日（默认：周一/二/四/五为训练日）──────
+// ── 工具：今日是否训练日（基于队列制，不绑定星期）──────
 function getDefaultIsTrainDay() {
-  const d = new Date().getDay(); // 0=Sun
-  return [1, 2, 4, 5].includes(d); // 周一推/周二拉/周四腿/周五肩
+  const stored = localStorage.getItem('form_is_train');
+  if (stored !== null) return stored === '1';
+  const last = localStorage.getItem('form_last_train_type');
+  if (last === 'rest' || last === 'cardio') return false;
+  return true;
 }
 
 function macroTargets() {
@@ -362,18 +365,22 @@ async function loadTodayFood() {
     S.foodId = 0;
     S.protein = 0; S.carbs = 0; S.fat = 0; S.kcal = 0;
     rows.forEach(r => {
+      const p = r.protein ?? r.protein_g ?? 0;
+      const c = r.carbs   ?? r.carbs_g   ?? 0;
+      const f = r.fat     ?? r.fat_g     ?? 0;
       const e = {
         id: ++S.foodId, dbId: r.id,
         name: r.name,
-        protein_g: r.protein_g, carbs_g: r.carbs_g,
-        fat_g: r.fat_g, kcal: r.kcal,
+        protein_g: p, carbs_g: c, fat_g: f,
+        kcal: r.kcal || 0,
         time: r.time_tag || (typeof nt === 'function' ? nt() : ''),
+        meal_type: r.time_tag || '',
       };
       S.foods.push(e);
-      S.protein += e.protein_g || 0;
-      S.carbs += e.carbs_g || 0;
-      S.fat += e.fat_g || 0;
-      S.kcal += e.kcal || 0;
+      S.protein += p;
+      S.carbs   += c;
+      S.fat     += f;
+      S.kcal    += e.kcal;
     });
     if (typeof renderFoodList === 'function') renderFoodList();
     if (typeof updateBars === 'function') updateBars();
