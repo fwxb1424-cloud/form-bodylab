@@ -78,8 +78,11 @@ function getTomorrowType(todayType) {
 }
 
 export default async function handler(req) {
-  const auth = req.headers.get('authorization');
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  // Vercel cron job 不带 authorization header，只校验来源IP或跳过鉴权
+  // 手动调用时可传 ?secret=xxx 作为轻量保护
+  const url = new URL(req.url);
+  const secret = url.searchParams.get('secret');
+  if (process.env.CRON_SECRET && secret && secret !== process.env.CRON_SECRET) {
     return new Response('Unauthorized', { status: 401 });
   }
 

@@ -1394,6 +1394,13 @@ function renderMuscleSelector(){
 }
 
 function selectMuscle(id,label,silent){
+  // v4.3: 有进行中内容时，切换肌群前确认
+  if(!silent && id !== S.todayMuscle && S.workout && S.workout.length > 0){
+    const hasProgress = S.workout.some(e => e.done || e.sets_data?.some(s=>s.done));
+    if(hasProgress){
+      if(!confirm(`当前有已完成的训练组，切换到「${label}」会清空，确认切换？`)) return;
+    }
+  }
   S.todayMuscle=id;
   const isRest=id==='rest';
   const isCardio=id==='cardio';
@@ -1534,7 +1541,7 @@ async function parseFood(){
     const r=await AI.call('diet',{system:PROMPTS.diet(prof(),tc),userMsg:input,useCache:true});
     if(r._err)throw new Error('格式错误');
     const ts = getLogTimestamp();
-    const entry = {...r, id:++S.foodId, time:nt(), meal_type:S_mealType, logged_at:ts};
+    const entry = {...r, id:Date.now()+Math.random(), time:nt(), meal_type:S_mealType, logged_at:ts};
     if(S_dietDate === 'today'){
       addFoodEntry(entry);
     }
@@ -1565,7 +1572,7 @@ async function handlePhoto(event){
     const r=await AI.call('photo',{system:PROMPTS.photo(prof()),userMsg:'分析食物',imageBase64:b64});
     if(r._err)throw new Error('识别格式错误');
     const ts = getLogTimestamp();
-    const entry = {...r, id:++S.foodId, time:nt(), fromPhoto:true, meal_type:S_mealType, logged_at:ts};
+    const entry = {...r, id:Date.now()+Math.random(), time:nt(), fromPhoto:true, meal_type:S_mealType, logged_at:ts};
     if(S_dietDate === 'today') addFoodEntry(entry);
     if(db){
       const row=await dbOp('饮食保存',()=>db.addFoodLog({...r, time_tag:S_mealType, logged_at:ts}));
@@ -1588,7 +1595,7 @@ async function addManualFood(){
   const f=parseFloat(document.getElementById('mf-f').value)||0;
   const k=parseFloat(document.getElementById('mf-k').value)||(p*4+c*4+f*9);
   const ts = getLogTimestamp();
-  const entry={name,protein_g:p,carbs_g:c,fat_g:f,kcal:k,id:++S.foodId,time:nt(),manual:true,meal_type:S_mealType,logged_at:ts};
+  const entry={name,protein_g:p,carbs_g:c,fat_g:f,kcal:k,id:Date.now()+Math.random(),time:nt(),manual:true,meal_type:S_mealType,logged_at:ts};
   if(S_dietDate === 'today') addFoodEntry(entry);
   if(db){
     const row=await dbOp('饮食保存',()=>db.addFoodLog({name,protein_g:p,carbs_g:c,fat_g:f,kcal:k,time_tag:S_mealType,logged_at:ts}));
@@ -2590,6 +2597,8 @@ async function runReview(){
       ${r.recs?.length?`<div style="font-family:var(--f1);font-size:10px;font-weight:500;letter-spacing:.12em;color:var(--t2);text-transform:uppercase;margin-bottom:7px">建议</div><div class="inset">${r.recs.map(h=>`<div class="insight ins-rc">${h}</div>`).join('')}</div>`:''}
       ${r.risk?`<div style="font-family:var(--f1);font-size:11px;font-weight:500;color:var(--wa);margin-top:8px;padding-top:8px;border-top:1px solid var(--ln)">⚠ 最需注意：${r.risk}</div>`:''}`;
     updateTokenUI();
+    // 记录本次运行时间，避免今日重复自动触发
+    localStorage.setItem('form_last_rev_run', new Date().toDateString());
   }catch(e){el.innerHTML=`<div class="empty">分析失败：${e.message}</div>`;}
   btn.disabled=false;
 }
@@ -2803,17 +2812,36 @@ async function fillLastWeights(){
 // ── 今日状态卡 ──────────────────────────────────────────
 async function renderTodayStatusCard(){
   const wrap=document.getElementById('today-status-card');if(!wrap)return;
-  const next=getNextRecommended();
+  // v4.3: 优先用锚点推算，降级用旧方法
+  const next=typeof getTodayQueueType==='function'?getTodayQueueType():getNextRecommended();
   const opt=MUSCLE_OPTIONS.find(m=>m.id===next)||{label:'训练日',id:next};
   const isTrainDay=!['rest','cardio'].includes(next);
   const tgt=typeof macroTargets==='function'?macroTargets():{protein:168,kcal:2220,carbs:220};
   const proteinPct=Math.min(100,Math.round(S.protein/tgt.protein*100));
   const h=new Date().getHours();
+  const tomorrowType=typeof getTomorrowQueueType==='function'?getTomorrowQueueType():null;
+  const TLBL=window.TRAIN_LABEL_MAP||{push:'推日',pull:'拉日',cardio:'有氧日',legs:'腿日',shoulder:'肩日',rest:'休息日'};
   let timeHint='';
   if(isTrainDay){
-    if(h>=19&&h<21)timeHint='⏰ 准备下班，记得吃练前餐（乳清蛋白+少量碳水）';
-    else if(h>=21&&h<22)timeHint='💪 训练时间，注意组间90s休息';
-    else if(h>=22||h<1)timeHint='🍚 训练结束，30min内补乳清+碳水（香蕉/米饭）';
+    if(h>=5&&h<9)        timeHint='☀️ 早上好，今天力量训练日，下班后记得吃练前餐';
+    else if(h>=9&&h<12)  timeHint='📋 上午好，今天'+opt.label+'，保证今日蛋白168g';
+    else if(h>=12&&h<14) timeHint='🥩 午餐时间，先把蛋白质补到50%以上';
+    else if(h>=14&&h<17) timeHint='⏳ 距训练还有几小时，记得下午加餐';
+    else if(h>=17&&h<19) timeHint='⏰ 快到下班了，练前餐：乳清1勺+香蕉，30min后出发';
+    else if(h>=19&&h<21) timeHint='💪 训练黄金期，组间90s，注意控制节奏';
+    else if(h>=21&&h<23) timeHint='🍚 训练结束了吗？30min内补乳清+碳水（香蕉/米饭）';
+    else                 timeHint='🌙 今天训练完了，好好休息，明天'+(tomorrowType?TLBL[tomorrowType]||tomorrowType:'继续');
+  } else if(next==='cardio'){
+    if(h>=5&&h<8)        timeHint='⏰ 有氧日，该出发了！稳态35分钟，心率130–140bpm';
+    else if(h>=8&&h<10)  timeHint='🚴 有氧训练时间，动感单车/椭圆机/快走均可';
+    else if(h>=10&&h<14) timeHint='✅ 有氧日，记得补录今早训练成果';
+    else if(h>=14&&h<22) timeHint='🥗 有氧日休息日热量1950kcal，下午别吃太多碳水';
+    else                 timeHint='😴 有氧日收尾，记录睡眠，明天'+(tomorrowType?TLBL[tomorrowType]||tomorrowType:'继续');
+  } else {
+    if(h>=6&&h<12)       timeHint='😴 休息日，轻度拉伸15–20分钟，让肌肉充分恢复';
+    else if(h>=12&&h<18) timeHint='🧘 休息日，保证蛋白168g，控制碳水摄入';
+    else if(h>=18&&h<22) timeHint='🌙 休息日晚上，早点睡，明天'+(tomorrowType?TLBL[tomorrowType]||tomorrowType:'继续训练');
+    else                 timeHint='🌙 早点入睡，23:30前最好，好好恢复';
   }
   // 睡眠
   let sleepHtml='';
@@ -2883,7 +2911,7 @@ function renderFavFoods(){
 window.toggleFavEdit=function(){const w=document.getElementById('fav-food-list');if(!w)return;w.dataset.editing=w.dataset.editing==='1'?'0':'1';document.getElementById('fav-edit-btn').textContent=w.dataset.editing==='1'?'完成':'管理';renderFavFoods();};
 window.removeFav=function(i){const f=loadFavFoods();f.splice(i,1);saveFavFoods(f);renderFavFoods();};
 window.addFav=function(){const n=document.getElementById('fav-name')?.value.trim();if(!n)return;const p=parseFloat(document.getElementById('fav-p')?.value)||0,c=parseFloat(document.getElementById('fav-c')?.value)||0,f=parseFloat(document.getElementById('fav-f')?.value)||0,k=parseFloat(document.getElementById('fav-k')?.value)||(p*4+c*4+f*9);const favs=loadFavFoods();favs.push({name:n,protein_g:p,carbs_g:c,fat_g:f,kcal:k});saveFavFoods(favs);renderFavFoods();toast('✓ 已添加：'+n);};
-window.quickAddFav=async function(i){const favs=loadFavFoods();const f=favs[i];if(!f)return;const ts=typeof getLogTimestamp==='function'?getLogTimestamp():new Date().toISOString();const entry={...f,id:++S.foodId,time:nt(),meal_type:S_mealType||'早餐',logged_at:ts};if(typeof isDietToday==='function'&&isDietToday()){if(typeof addFoodEntry==='function')addFoodEntry(entry);}if(db){const row=await dbOp('饮食保存',()=>db.addFoodLog({...f,time_tag:S_mealType||'早餐',logged_at:ts}));if(typeof isDietToday==='function'&&isDietToday()&&row?.id){const fe=S.foods[S.foods.length-1];if(fe)fe.dbId=row.id;}}if(typeof isDietToday==='function'&&!isDietToday()&&typeof loadBackfillFood==='function')loadBackfillFood(S_dietDate);toast(`✓ 快速添加：${f.name}`);};
+window.quickAddFav=async function(i){const favs=loadFavFoods();const f=favs[i];if(!f)return;const ts=typeof getLogTimestamp==='function'?getLogTimestamp():new Date().toISOString();const entry={...f,id:Date.now()+Math.random(),time:nt(),meal_type:S_mealType||'早餐',logged_at:ts};if(typeof isDietToday==='function'&&isDietToday()){if(typeof addFoodEntry==='function')addFoodEntry(entry);}if(db){const row=await dbOp('饮食保存',()=>db.addFoodLog({...f,time_tag:S_mealType||'早餐',logged_at:ts}));if(typeof isDietToday==='function'&&isDietToday()&&row?.id){const fe=S.foods[S.foods.length-1];if(fe)fe.dbId=row.id;}}if(typeof isDietToday==='function'&&!isDietToday()&&typeof loadBackfillFood==='function')loadBackfillFood(S_dietDate);toast(`✓ 快速添加：${f.name}`);};
 
 // ── 执行率看板（修正：不计入未来天、区分调整） ────────
 async function renderWeekExecBoard(){
@@ -3001,6 +3029,18 @@ async function checkStrengthStall(){
       if(n==='plan'){renderWeekExecBoard();renderPlanWeekGrid();renderPhaseProgress();}
       if(n==='dash'){renderTodayStatusCard();renderPhaseTrigger();}
       if(n==='body'){loadStrChart();}
+      // v4.3: 打开复盘页自动运行上次选定的周期
+      if(n==='rev'){
+        const el=document.getElementById('rev-result');
+        // 今天已运行过就不重复跑（避免浪费 API）
+        const lastRev=localStorage.getItem('form_last_rev_run');
+        const today=new Date().toDateString();
+        if(lastRev!==today && typeof runReview==='function'){
+          setTimeout(()=>{
+            if(el&&el.innerHTML.trim()==='') runReview();
+          }, 200);
+        }
+      }
     };
   }
 })();
@@ -3026,3 +3066,1319 @@ async function checkStrengthStall(){
 </script>
 </body>
 </html>
+
+// ═══════════════════════════════════════════════════════════════════
+// FEATURE PACK v4.1 — 功能升级包
+// 包含：① 组间自动计时浮层  ② 概况页睡眠快录  ③ 常用食物置顶
+//        ④ 今日打卡清单     ⑤ 执行看板格子可点击改类型
+// ═══════════════════════════════════════════════════════════════════
+
+// ──────────────────────────────────────────────────────────────────
+// ① 组间休息计时器：完成一组自动弹出，大字倒计时，振动提醒
+// ──────────────────────────────────────────────────────────────────
+
+let _autoRestTimer = null;
+let _autoRestEl = null;
+
+function autoStartRestTimer(exName, setIdx, totalSets, seconds = 90) {
+  // 已完成所有组 → 不启动计时，直接提示
+  if (setIdx + 1 >= totalSets) return;
+
+  // 清除上一个
+  if (_autoRestTimer) { clearInterval(_autoRestTimer); _autoRestTimer = null; }
+  if (_autoRestEl) { _autoRestEl.remove(); _autoRestEl = null; }
+
+  // 创建浮层
+  const el = document.createElement('div');
+  el.id = 'rest-overlay';
+  // 样式：从底部弹出的半屏卡片
+  el.style.cssText = `
+    position:fixed; bottom:0; left:50%; transform:translateX(-50%);
+    width:100%; max-width:430px; z-index:900;
+    background:rgba(10,10,12,.97);
+    border-top:1px solid rgba(226,255,92,.2);
+    border-radius:20px 20px 0 0;
+    padding:20px 24px 40px;
+    box-shadow:0 -8px 40px rgba(0,0,0,.6);
+    backdrop-filter:blur(20px);
+    animation: slideUp .25s ease;
+  `;
+
+  // 注入动画（只注入一次）
+  if (!document.getElementById('rest-anim-style')) {
+    const s = document.createElement('style');
+    s.id = 'rest-anim-style';
+    s.textContent = `
+      @keyframes slideUp { from{transform:translateX(-50%) translateY(100%)} to{transform:translateX(-50%) translateY(0)} }
+      @keyframes countdown-pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+      #rest-overlay .rest-ring { transition: stroke-dashoffset 1s linear; }
+    `;
+    document.head.appendChild(s);
+  }
+
+  let left = seconds;
+  const circumference = 2 * Math.PI * 36; // r=36
+
+  const render = () => {
+    const pct = left / seconds;
+    const offset = circumference * (1 - pct);
+    const mins = Math.floor(left / 60);
+    const secs = String(left % 60).padStart(2, '0');
+    const urgentColor = left <= 15 ? '#F0A050' : '#E2FF5C';
+    const nextSet = setIdx + 2; // 下一组编号（人类可读）
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div>
+          <div style="font-family:var(--f1);font-size:10px;font-weight:600;letter-spacing:.14em;color:var(--t2);text-transform:uppercase">组间休息</div>
+          <div style="font-family:var(--f1);font-size:13px;font-weight:600;color:var(--t1);margin-top:2px">${exName} · 准备第 ${nextSet} 组</div>
+        </div>
+        <button onclick="skipRest()" style="font-family:var(--f1);font-size:11px;font-weight:600;padding:6px 14px;border-radius:20px;border:1px solid var(--ln2);background:var(--s2);color:var(--t2);cursor:pointer">跳过</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:24px">
+        <div style="position:relative;width:88px;height:88px;flex-shrink:0">
+          <svg width="88" height="88" viewBox="0 0 88 88">
+            <circle cx="44" cy="44" r="36" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/>
+            <circle class="rest-ring" cx="44" cy="44" r="36" fill="none"
+              stroke="${urgentColor}" stroke-width="5" stroke-linecap="round"
+              stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"
+              transform="rotate(-90 44 44)"
+              style="${left<=15?'animation:countdown-pulse .8s infinite':''}"/>
+          </svg>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+            <div style="font-family:var(--f1);font-size:26px;font-weight:800;letter-spacing:-.04em;color:${urgentColor};line-height:1">${mins>0?mins+':'+secs:left}</div>
+            <div style="font-family:var(--f1);font-size:9px;color:var(--t3);margin-top:1px">秒</div>
+          </div>
+        </div>
+        <div style="flex:1">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <button onclick="addRestTime(30)" style="font-family:var(--f1);font-size:12px;font-weight:600;padding:10px;border-radius:10px;border:1px solid var(--ln2);background:var(--s2);color:var(--t1);cursor:pointer">+30s</button>
+            <button onclick="addRestTime(-15)" style="font-family:var(--f1);font-size:12px;font-weight:600;padding:10px;border-radius:10px;border:1px solid var(--ln2);background:var(--s2);color:var(--t1);cursor:pointer">-15s</button>
+          </div>
+          <div style="margin-top:8px;font-size:11px;color:var(--t3);line-height:1.5">
+            ${left > 30 ? '深呼吸，放松目标肌群' : left > 10 ? '准备好了吗？' : '开始下一组！'}
+          </div>
+        </div>
+      </div>
+    `;
+  };
+
+  render();
+  document.body.appendChild(el);
+  _autoRestEl = el;
+
+  // 振动（如果支持）
+  if (navigator.vibrate) navigator.vibrate(60);
+
+  _autoRestTimer = setInterval(() => {
+    left--;
+    if (left <= 0) {
+      clearInterval(_autoRestTimer); _autoRestTimer = null;
+      // 结束振动 + 自动关闭
+      if (navigator.vibrate) navigator.vibrate([80, 60, 80]);
+      if (_autoRestEl) {
+        _autoRestEl.innerHTML = `<div style="text-align:center;padding:20px 0">
+          <div style="font-size:32px;margin-bottom:8px">💪</div>
+          <div style="font-family:var(--f1);font-size:16px;font-weight:700;color:var(--ac)">开始第 ${setIdx + 2} 组！</div>
+        </div>`;
+        setTimeout(() => { _autoRestEl?.remove(); _autoRestEl = null; }, 1200);
+      }
+    } else {
+      if (left === 10 && navigator.vibrate) navigator.vibrate(40);
+      render();
+    }
+  }, 1000);
+}
+
+window.skipRest = function () {
+  if (_autoRestTimer) { clearInterval(_autoRestTimer); _autoRestTimer = null; }
+  if (_autoRestEl) { _autoRestEl.remove(); _autoRestEl = null; }
+};
+
+window.addRestTime = function (delta) {
+  // 通过修改剩余时间实现加减
+  const timeEl = _autoRestEl?.querySelector('[style*="font-size:26px"]');
+  if (!timeEl || !_autoRestTimer) return;
+  // 找到当前计时器剩余时间并调整（通过重新设置）
+  // 简单做法：直接关掉重开不太对，这里用全局变量
+  window._restLeft = (window._restLeft || 90) + delta;
+  if (window._restLeft < 5) window._restLeft = 5;
+};
+
+// 覆盖 completeSet：完成一组后自动触发休息浮层
+const _origCompleteSet = window.completeSet;
+window.completeSet = function(exIdx, setIdx) {
+  const ex = S.workout?.[exIdx];
+  const wasDone = ex?.sets_data?.[setIdx]?.done;
+
+  // 调用原函数
+  if (typeof _origCompleteSet === 'function') {
+    _origCompleteSet(exIdx, setIdx);
+  } else {
+    // 内联逻辑（原函数可能还没挂到window）
+    if (!ex) return;
+    ex.sets_data[setIdx].done = !ex.sets_data[setIdx].done;
+    const allDone = ex.sets_data.every(s => s.done);
+    if (allDone !== ex.done) {
+      ex.done = allDone;
+      document.getElementById('done-cnt').textContent = S.workout.filter(e => e.done).length;
+    }
+    recalcVol(); renderExercises(); renderCmpList();
+    if (typeof scheduleTrainAutosave === 'function') scheduleTrainAutosave();
+  }
+
+  // 新增：完成一组（不是取消）且还有剩余组 → 自动启动休息计时
+  const exNow = S.workout?.[exIdx];
+  if (!exNow) return;
+  const justDone = exNow.sets_data?.[setIdx]?.done; // 完成后的状态
+  if (justDone && !exNow.done) {
+    // 还有剩余组，启动计时
+    const totalSets = exNow.sets_data.length;
+    const restSec = exNow.rpe_target >= 8 ? 120 : 90; // RPE高的动作多给30s
+    autoStartRestTimer(exNow.name, setIdx, totalSets, restSec);
+  }
+};
+
+
+// ──────────────────────────────────────────────────────────────────
+// ② 概况页睡眠快录：起床填两个时间，10秒完成
+// ──────────────────────────────────────────────────────────────────
+
+function renderSleepQuickLog() {
+  // 已有记录则显示摘要+更新按钮，未记录则显示快录表单
+  const cached = (() => { try { return JSON.parse(localStorage.getItem('form_last_sleep') || 'null'); } catch(e) { return null; } })();
+  const today = new Date().toDateString();
+  const isToday = cached && new Date(cached.ts).toDateString() === today;
+
+  const wrap = document.getElementById('dash-sleep-quick');
+  if (!wrap) return;
+
+  if (isToday) {
+    // 已记录：显示摘要
+    const hrs = cached.duration_h || 0;
+    const bed = cached.bedtime || '';
+    const color = hrs < 6.5 ? 'var(--wa)' : 'var(--ac)';
+    const warn = hrs < 6.5 ? ' ⚠' : hrs >= 8 ? ' 👍' : '';
+    wrap.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 13px;background:var(--s2);border:1px solid var(--ln);border-radius:var(--r)">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:18px">🛌</span>
+          <div>
+            <div style="font-family:var(--f1);font-size:14px;font-weight:700;color:${color}">${hrs}h${warn}</div>
+            ${bed ? `<div style="font-size:10px;color:var(--t3)">入睡 ${bed}</div>` : ''}
+          </div>
+        </div>
+        <button onclick="showSleepQuickForm()" style="font-size:11px;color:var(--t2);background:none;border:1px solid var(--ln);border-radius:8px;padding:4px 10px;cursor:pointer">更新</button>
+      </div>`;
+  } else {
+    // 未记录：展开表单
+    const now = new Date();
+    const defaultBed = '23:30';
+    const defaultWake = `0${now.getHours()}`.slice(-2) + ':' + `0${now.getMinutes()}`.slice(-2);
+    wrap.innerHTML = `
+      <div id="sleep-quick-form" style="background:var(--s2);border:1px solid rgba(226,255,92,.15);border-radius:var(--r);padding:12px 13px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="font-size:16px">🛌</span>
+          <span style="font-family:var(--f1);font-size:11px;font-weight:600;color:var(--ac);letter-spacing:.08em;text-transform:uppercase">昨晚睡眠</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <div>
+            <div style="font-size:10px;color:var(--t2);margin-bottom:4px">入睡时间</div>
+            <input type="time" id="sq-bed" value="${defaultBed}"
+              style="width:100%;background:var(--s3);border:1px solid var(--ln2);border-radius:8px;padding:8px 10px;color:var(--t1);font-family:var(--f1);font-size:14px;font-weight:600;outline:none;-webkit-appearance:none"
+              oninput="calcSleepQuick()">
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--t2);margin-bottom:4px">起床时间</div>
+            <input type="time" id="sq-wake" value="${defaultWake}"
+              style="width:100%;background:var(--s3);border:1px solid var(--ln2);border-radius:8px;padding:8px 10px;color:var(--t1);font-family:var(--f1);font-size:14px;font-weight:600;outline:none;-webkit-appearance:none"
+              oninput="calcSleepQuick()">
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <div style="font-family:var(--f1);font-size:20px;font-weight:800;color:var(--ac)" id="sq-dur-display">—</div>
+          <div style="flex:1">
+            <div style="display:flex;gap:5px" id="sq-quality-btns">
+              ${['😴差','😐一般','🙂良好','😄极佳'].map((q,i)=>`<button onclick="setSleepQuickQ(${i+1},this)" style="flex:1;font-size:11px;padding:5px 0;border-radius:8px;border:1px solid var(--ln);background:var(--s3);color:var(--t2);cursor:pointer">${q}</button>`).join('')}
+            </div>
+          </div>
+        </div>
+        <button onclick="saveSleepQuick()" style="width:100%;padding:11px;background:var(--ac);color:#08090A;border:none;border-radius:var(--r);font-family:var(--f1);font-size:13px;font-weight:700;cursor:pointer">记录睡眠 ✓</button>
+      </div>`;
+    // 初始算一次时长
+    setTimeout(calcSleepQuick, 50);
+  }
+}
+
+window.showSleepQuickForm = function() {
+  // 清除缓存中的今日标记，让表单重新出现
+  const c = JSON.parse(localStorage.getItem('form_last_sleep') || '{}');
+  c.ts = 0;
+  localStorage.setItem('form_last_sleep', JSON.stringify(c));
+  renderSleepQuickLog();
+};
+
+let _sqQuality = 3;
+window.setSleepQuickQ = function(q, btn) {
+  _sqQuality = q;
+  document.querySelectorAll('#sq-quality-btns button').forEach((b, i) => {
+    b.style.background = i + 1 === q ? 'rgba(226,255,92,.15)' : 'var(--s3)';
+    b.style.borderColor = i + 1 === q ? 'rgba(226,255,92,.4)' : 'var(--ln)';
+    b.style.color = i + 1 === q ? 'var(--ac)' : 'var(--t2)';
+  });
+};
+
+window.calcSleepQuick = function() {
+  const bed = document.getElementById('sq-bed')?.value;
+  const wake = document.getElementById('sq-wake')?.value;
+  const disp = document.getElementById('sq-dur-display');
+  if (!bed || !wake || !disp) return;
+  const [bh, bm] = bed.split(':').map(Number);
+  const [wh, wm] = wake.split(':').map(Number);
+  let mins = (wh * 60 + wm) - (bh * 60 + bm);
+  if (mins < 0) mins += 1440;
+  const hrs = Math.round(mins / 60 * 2) / 2;
+  const color = hrs < 6.5 ? 'var(--wa)' : hrs >= 8 ? 'var(--ac)' : 'var(--t1)';
+  disp.style.color = color;
+  disp.textContent = hrs.toFixed(1) + 'h';
+  disp.dataset.hrs = hrs;
+};
+
+window.saveSleepQuick = async function() {
+  const bed = document.getElementById('sq-bed')?.value || '';
+  const wake = document.getElementById('sq-wake')?.value || '';
+  const hrs = parseFloat(document.getElementById('sq-dur-display')?.dataset.hrs || '0');
+  if (!hrs || hrs < 2) { toast('请先填写入睡和起床时间'); return; }
+
+  const notes = `入睡${bed}${wake ? ' 起床' + wake : ''}`;
+
+  // 写 Supabase
+  if (db) await db.addSleepLog({ duration_h: hrs, quality: _sqQuality, notes }).catch(() => {});
+
+  // 本地缓存
+  localStorage.setItem('form_last_sleep', JSON.stringify({ duration_h: hrs, bedtime: bed, ts: Date.now() }));
+
+  // 同步到形体页
+  const slEl = document.getElementById('sleep-dur');
+  const slvEl = document.getElementById('slv');
+  const sbEl = document.getElementById('sleep-start');
+  const seEl = document.getElementById('sleep-end');
+  if (slEl) slEl.value = Math.max(4, Math.min(10, hrs));
+  if (slvEl) slvEl.textContent = hrs + 'h';
+  if (sbEl) sbEl.value = bed;
+  if (seEl) seEl.value = wake;
+
+  const warn = bed && parseInt(bed.split(':')[0]) >= 23 ? '（⚠ 入睡偏晚）' : '';
+  toast(`✓ 睡眠 ${hrs}h · 入睡 ${bed}${warn}`);
+  renderSleepQuickLog();
+
+  // 刷新今日状态卡
+  if (typeof renderTodayStatusCard === 'function') renderTodayStatusCard();
+  // 刷新今日打卡清单
+  renderDailyChecklist();
+};
+
+// 在 boot 时把睡眠快录插到概况页合适位置
+function injectSleepQuickLog() {
+  // 找补剂打卡 section，在它前面插入睡眠快录
+  const suppSection = document.querySelector('#pg-dash .s:has(#dash-supps)');
+  if (!suppSection || document.getElementById('dash-sleep-quick')) return;
+
+  const wrap = document.createElement('div');
+  wrap.className = 's';
+  wrap.style.marginTop = '7px';
+  wrap.innerHTML = `
+    <div class="slbl">昨晚睡眠</div>
+    <div id="dash-sleep-quick"></div>
+  `;
+  suppSection.parentNode.insertBefore(wrap, suppSection);
+  renderSleepQuickLog();
+}
+
+
+// ──────────────────────────────────────────────────────────────────
+// ③ 常用食物置顶：把 fav-food-list 区块移到输入框正下方
+// ──────────────────────────────────────────────────────────────────
+
+function hoistFavFoods() {
+  const favSection = document.querySelector('#pg-diet .s:has(#fav-food-list)');
+  const inputSection = document.querySelector('#pg-diet .s:has(.fb)'); // textarea所在section
+  if (!favSection || !inputSection || favSection === inputSection) return;
+  // 把 favSection 移到 inputSection 正后面
+  inputSection.parentNode.insertBefore(favSection, inputSection.nextSibling);
+}
+
+// renderFavFoods 原有实现的增强版：确保UI一致
+const _origRenderFavFoods = window.renderFavFoods;
+window.renderFavFoods = function() {
+  if (typeof _origRenderFavFoods === 'function') _origRenderFavFoods();
+  // 确保位置正确
+  hoistFavFoods();
+};
+
+
+// ──────────────────────────────────────────────────────────────────
+// ④ 今日打卡清单：概况页聚合所有待办
+// ──────────────────────────────────────────────────────────────────
+
+function getDailyChecklistItems() {
+  const h = new Date().getHours();
+  const todayType = typeof getTodayQueueType === 'function' ? getTodayQueueType() : 'push';
+  const isTrainDay = !['rest', 'cardio'].includes(todayType);
+  const isCardio = todayType === 'cardio';
+
+  // 睡眠记录
+  const sleepCache = (() => { try { return JSON.parse(localStorage.getItem('form_last_sleep') || 'null'); } catch(e) { return null; } })();
+  const sleepDone = sleepCache && new Date(sleepCache.ts).toDateString() === new Date().toDateString();
+
+  // 体重记录
+  const wDays = typeof daysSinceLastWeight === 'function' ? daysSinceLastWeight() : 999;
+  const weightDone = wDays === 0;
+
+  // 蛋白质
+  const tgt = typeof macroTargets === 'function' ? macroTargets() : { protein: 168 };
+  const proteinDone = S.protein >= tgt.protein;
+
+  // 训练
+  const trainDone = (() => {
+    const lastTrain = localStorage.getItem('form_last_train_type');
+    if (!lastTrain) return false;
+    const lastTs = localStorage.getItem('form_last_train_ts');
+    if (!lastTs) return false;
+    return new Date(parseInt(lastTs)).toDateString() === new Date().toDateString();
+  })();
+
+  // 补剂：所有补剂已打卡
+  const suppsDone = S.supps.length > 0 && S.supps.every(s => s.on);
+  const suppsMorningDone = S.supps.filter(s => (s.time_slot || 'morning') === 'morning').every(s => s.on);
+
+  const items = [];
+
+  // 睡眠（每天早上最重要）
+  if (h < 14 || !sleepDone) {
+    items.push({
+      id: 'sleep',
+      icon: '🛌',
+      label: '记录昨晚睡眠',
+      done: sleepDone,
+      action: () => {
+        const w = document.getElementById('dash-sleep-quick');
+        if (w) { w.scrollIntoView({ behavior: 'smooth' }); showSleepQuickForm(); }
+      },
+    });
+  }
+
+  // 体重（每3天提醒一次）
+  if (wDays >= 3 || !weightDone) {
+    items.push({
+      id: 'weight',
+      icon: '⚖️',
+      label: weightDone ? '今日体重已记录' : `体重快录${wDays >= 3 ? '（' + wDays + '天未录）' : ''}`,
+      done: weightDone,
+      action: () => {
+        const row = document.getElementById('tc-weight-row');
+        if (row) { row.scrollIntoView({ behavior: 'smooth' }); document.getElementById('quick-weight-in')?.focus(); }
+        else if (typeof renderTodayStatusCard === 'function') renderTodayStatusCard();
+      },
+    });
+  }
+
+  // 早晨补剂
+  items.push({
+    id: 'supps',
+    icon: '💊',
+    label: suppsMorningDone ? '早晨补剂已打卡' : '早晨补剂打卡',
+    done: suppsMorningDone,
+    action: () => {
+      const el = document.getElementById('dash-supps');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    },
+  });
+
+  // 训练（力量日 or 有氧日）
+  if (isTrainDay || isCardio) {
+    items.push({
+      id: 'train',
+      icon: isCardio ? '🚴' : '💪',
+      label: trainDone ? '今日训练已完成' : (isCardio ? '有氧日 · 35min稳态' : '力量训练'),
+      done: trainDone,
+      action: () => { if (typeof goPage === 'function') goPage('train'); },
+    });
+  }
+
+  // 蛋白质达标
+  items.push({
+    id: 'protein',
+    icon: '🥩',
+    label: proteinDone
+      ? `蛋白质达标 ${Math.round(S.protein)}g ✓`
+      : `蛋白质 ${Math.round(S.protein)}/${tgt.protein}g`,
+    done: proteinDone,
+    action: () => { if (typeof goPage === 'function') goPage('diet'); },
+  });
+
+  return items;
+}
+
+function renderDailyChecklist() {
+  const wrap = document.getElementById('daily-checklist-wrap');
+  if (!wrap) return;
+
+  const items = getDailyChecklistItems();
+  const doneCount = items.filter(i => i.done).length;
+  const total = items.length;
+  const allDone = doneCount === total;
+  const pct = Math.round(doneCount / total * 100);
+
+  // 进度条颜色
+  const barColor = allDone ? 'var(--ac)' : doneCount >= total * 0.6 ? 'var(--info)' : 'var(--t2)';
+
+  wrap.innerHTML = `
+    <div style="margin-bottom:8px;display:flex;align-items:center;gap:8px">
+      <div style="flex:1;height:3px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden">
+        <div style="width:${pct}%;height:100%;background:${barColor};border-radius:2px;transition:width .4s ease"></div>
+      </div>
+      <span style="font-family:var(--f1);font-size:10px;font-weight:600;color:${barColor}">${doneCount}/${total}</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      ${items.map(item => `
+        <div onclick="window._checklistAction_${item.id}&&window._checklistAction_${item.id}()"
+          style="display:flex;align-items:center;gap:10px;padding:9px 12px;
+            background:${item.done ? 'rgba(226,255,92,.04)' : 'var(--s2)'};
+            border:1px solid ${item.done ? 'rgba(226,255,92,.1)' : 'var(--ln)'};
+            border-radius:var(--r);cursor:pointer;transition:all .15s">
+          <div style="width:20px;height:20px;border-radius:50%;
+            background:${item.done ? 'var(--ac)' : 'rgba(255,255,255,.06)'};
+            border:1.5px solid ${item.done ? 'var(--ac)' : 'rgba(255,255,255,.15)'};
+            display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            ${item.done ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#08090A" stroke-width="3.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+          </div>
+          <span style="font-size:12px">${item.icon}</span>
+          <span style="font-family:var(--f1);font-size:12px;font-weight:${item.done ? '500' : '600'};
+            color:${item.done ? 'var(--t2)' : 'var(--t1)'};
+            text-decoration:${item.done ? 'line-through' : 'none'};flex:1">${item.label}</span>
+          ${!item.done ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--t3);flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>' : ''}
+        </div>
+      `).join('')}
+    </div>
+    ${allDone ? '<div style="text-align:center;margin-top:10px;font-family:var(--f1);font-size:12px;font-weight:600;color:var(--ac)">⭐ 今日全部完成！</div>' : ''}
+  `;
+
+  // 注册 action
+  items.forEach(item => {
+    window[`_checklistAction_${item.id}`] = item.action;
+  });
+}
+
+function injectDailyChecklist() {
+  if (document.getElementById('daily-checklist-wrap')) return;
+
+  // 插到「今日状态卡」下面，「阶段触发器」前面
+  const statusCard = document.getElementById('today-status-card');
+  if (!statusCard) return;
+
+  const section = document.createElement('div');
+  section.className = 's';
+  section.style.marginTop = '7px';
+  section.innerHTML = `
+    <div class="slbl">今日任务</div>
+    <div id="daily-checklist-wrap"></div>
+  `;
+
+  const phaseTrigger = document.getElementById('phase-trigger-wrap');
+  if (phaseTrigger) {
+    statusCard.parentNode.insertBefore(section, phaseTrigger);
+  } else {
+    statusCard.parentNode.insertBefore(section, statusCard.nextSibling);
+  }
+
+  renderDailyChecklist();
+}
+
+
+// ──────────────────────────────────────────────────────────────────
+// ⑤ 执行看板格子可点击：点今天的格子改训练类型
+// ──────────────────────────────────────────────────────────────────
+
+function showQueueTypePicker(dateStr, currentType) {
+  const existing = document.getElementById('queue-picker-modal');
+  if (existing) { existing.remove(); return; }
+
+  const isToday = dateStr === new Date().toISOString().slice(0, 10);
+  if (!isToday) return; // 只允许修改今天
+
+  const QUEUE_LABELS = {
+    push:     '💪 推日（胸·侧束·三头）',
+    pull:     '🏋 拉日（背·二头）',
+    cardio:   '🚴 有氧+核心日',
+    legs:     '🦵 腿日（股四·后链·臀）',
+    shoulder: '🙌 肩日（三角肌）',
+    rest:     '😴 休息日',
+  };
+
+  const modal = document.createElement('div');
+  modal.id = 'queue-picker-modal';
+  modal.style.cssText = `
+    position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:800;
+    display:flex;align-items:flex-end;justify-content:center;
+  `;
+  modal.innerHTML = `
+    <div style="width:100%;max-width:430px;background:var(--s1);border-radius:20px 20px 0 0;
+      padding:20px 20px 40px;border-top:1px solid var(--ln2)">
+      <div style="font-family:var(--f1);font-size:13px;font-weight:700;margin-bottom:4px">调整今日训练类型</div>
+      <div style="font-size:11px;color:var(--t2);margin-bottom:14px">锚点将同步更新，后续日期自动顺延</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${Object.entries(QUEUE_LABELS).map(([key, label]) => `
+          <button onclick="applyQueueTypePicker('${key}')"
+            style="display:flex;align-items:center;gap:10px;padding:12px 14px;
+              background:${key === currentType ? 'rgba(226,255,92,.1)' : 'var(--s2)'};
+              border:1px solid ${key === currentType ? 'rgba(226,255,92,.3)' : 'var(--ln)'};
+              border-radius:var(--r);cursor:pointer;text-align:left;width:100%">
+            <span style="font-size:16px">${label.split(' ')[0]}</span>
+            <span style="font-family:var(--f1);font-size:12px;font-weight:600;
+              color:${key === currentType ? 'var(--ac)' : 'var(--t1)'}">
+              ${label.split(' ').slice(1).join(' ')}
+              ${key === currentType ? ' · 当前' : ''}
+            </span>
+          </button>
+        `).join('')}
+      </div>
+      <button onclick="document.getElementById('queue-picker-modal')?.remove()"
+        style="width:100%;margin-top:12px;padding:12px;background:none;border:1px solid var(--ln);
+          border-radius:var(--r);color:var(--t2);font-size:13px;cursor:pointer">取消</button>
+    </div>
+  `;
+  modal.onclick = e => { if (e.target === modal) modal.remove(); };
+  document.body.appendChild(modal);
+}
+
+window.applyQueueTypePicker = function(queueType) {
+  document.getElementById('queue-picker-modal')?.remove();
+
+  // 更新锚点
+  if (typeof markTodayAs === 'function') markTodayAs(queueType);
+
+  // 同步到训练页肌群选择
+  const opt = (window.MUSCLE_OPTIONS || []).find(m => m.id === queueType);
+  if (opt && typeof selectMuscle === 'function') {
+    selectMuscle(opt.id, opt.label, true);
+  }
+
+  // 云端同步
+  if (typeof syncQueueAnchor === 'function') syncQueueAnchor().catch(() => {});
+
+  // 刷新看板
+  if (typeof renderWeekExecBoard === 'function') renderWeekExecBoard();
+  if (typeof renderDailyChecklist === 'function') renderDailyChecklist();
+  if (typeof renderTodayStatusCard === 'function') renderTodayStatusCard();
+
+  toast(`✓ 今日已调整为：${queueType}`);
+};
+
+// 覆盖 renderWeekExecBoard 的格子点击，注入 onclick
+// 通过 MutationObserver 监听看板渲染完成后给今天的格子加点击事件
+function watchExecBoardForClick() {
+  const board = document.getElementById('week-exec-board');
+  if (!board) return;
+  const obs = new MutationObserver(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    board.querySelectorAll('.we-day[title]').forEach(cell => {
+      if (cell.dataset.clickBound) return;
+      const title = cell.getAttribute('title') || '';
+      const dateStr = title.split(' ')[0].replace(/(\d+)月(\d+)日?/, (_, m, d) => {
+        const year = new Date().getFullYear();
+        return `${year}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      });
+      // 今天的格子加高亮样式和点击
+      if (dateStr === today || title.includes('今日')) {
+        cell.style.cursor = 'pointer';
+        cell.style.outline = '1.5px solid rgba(226,255,92,.3)';
+        cell.style.outlineOffset = '-1px';
+        cell.title = (cell.title || '') + ' · 点击调整';
+        cell.dataset.clickBound = '1';
+        cell.addEventListener('click', () => {
+          const qType = (window.PLAN_QUEUE_DEF || window.PLAN_QUEUE || [])[0] || 'push';
+          const currentType = typeof getTodayQueueType === 'function' ? getTodayQueueType() : qType;
+          showQueueTypePicker(today, currentType);
+        });
+      }
+    });
+  });
+  obs.observe(board, { childList: true, subtree: true });
+}
+
+
+// ──────────────────────────────────────────────────────────────────
+// 训练完成时间戳记录（供打卡清单判断）
+// ──────────────────────────────────────────────────────────────────
+const _origSetLastTrainType = window.setLastTrainType;
+window.setLastTrainType = function(type) {
+  if (typeof _origSetLastTrainType === 'function') _origSetLastTrainType(type);
+  localStorage.setItem('form_last_train_ts', Date.now().toString());
+  // 刷新打卡清单
+  if (typeof renderDailyChecklist === 'function') renderDailyChecklist();
+};
+
+
+// ──────────────────────────────────────────────────────────────────
+// 把所有功能挂到 boot 完成后
+// ──────────────────────────────────────────────────────────────────
+(function patchBoot() {
+  const origBoot = window.boot;
+  if (typeof origBoot !== 'function') {
+    // boot 还没定义，延迟等待
+    let attempts = 0;
+    const interval = setInterval(() => {
+      attempts++;
+      if (typeof window.boot === 'function' || attempts > 30) {
+        clearInterval(interval);
+        if (typeof window.boot === 'function') patchBoot();
+      }
+    }, 100);
+    return;
+  }
+
+  if (origBoot._v41Patched) return;
+
+  window.boot = async function(...args) {
+    await origBoot.apply(this, args);
+
+    // 注入所有新功能
+    injectSleepQuickLog();
+    injectDailyChecklist();
+    hoistFavFoods();
+    watchExecBoardForClick();
+
+    // 补剂打卡时也刷新清单
+    const origToggleSupp = window.toggleSupp;
+    if (origToggleSupp && !origToggleSupp._clPatch) {
+      window.toggleSupp = function(...a) {
+        origToggleSupp.apply(this, a);
+        renderDailyChecklist();
+      };
+      window.toggleSupp._clPatch = true;
+    }
+
+    // 今日状态卡里的体重记录后也刷新清单
+    const origDoQuickWeight = window.doQuickWeight;
+    if (origDoQuickWeight && !origDoQuickWeight._clPatch) {
+      const _orig = origDoQuickWeight;
+      window.doQuickWeight = async function(...a) {
+        await _orig.apply(this, a);
+        renderDailyChecklist();
+      };
+      window.doQuickWeight._clPatch = true;
+    }
+  };
+
+  window.boot._v41Patched = true;
+})();
+
+// ──────────────────────────────────────────────────────────────────
+// 如果 boot 已经执行过（页面已加载完），直接初始化
+// ──────────────────────────────────────────────────────────────────
+if (document.getElementById('app') && !document.getElementById('app').classList.contains('off')) {
+  // App 已启动，直接注入
+  setTimeout(() => {
+    injectSleepQuickLog();
+    injectDailyChecklist();
+    hoistFavFoods();
+    watchExecBoardForClick();
+  }, 200);
+}
+
+
+// ═══════════════════════════════════════════════════════════════════
+// FEATURE PACK v4.2
+// ⑥ 概况页周进展摘要卡（数据可视化）
+// ⑦ 训练动作历史 PR 显示
+// ═══════════════════════════════════════════════════════════════════
+
+// ──────────────────────────────────────────────────────────────────
+// ⑥ 周进展摘要卡：体重趋势 + 训练执行率 + 蛋白达标率
+//    替代/增强原有 renderDailyRep，插入 sc-wrap 下方独立区域
+// ──────────────────────────────────────────────────────────────────
+
+async function renderWeekInsightCard() {
+  let wrap = document.getElementById('week-insight-wrap');
+  if (!wrap) {
+    // 找 sc-wrap，在它后面插入
+    const scWrap = document.getElementById('sc-wrap');
+    if (!scWrap) return;
+    const section = document.createElement('div');
+    section.className = 's';
+    section.style.marginTop = '7px';
+    section.innerHTML = `
+      <div class="slbl" style="display:flex;align-items:center;justify-content:space-between">
+        <span>近期进展</span>
+        <span id="week-insight-sub" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t2);font-size:10px"></span>
+      </div>
+      <div id="week-insight-wrap"></div>
+    `;
+    scWrap.parentNode.insertBefore(section, scWrap.nextSibling);
+    wrap = document.getElementById('week-insight-wrap');
+  }
+
+  if (!window.db) {
+    wrap.innerHTML = '<div class="empty">连接云端后显示</div>';
+    return;
+  }
+
+  wrap.innerHTML = '<div style="height:72px;display:flex;align-items:center;justify-content:center"><div class="dots"><span></span><span></span><span></span></div></div>';
+
+  try {
+    // 并行拉数据
+    const [weightRows, sessions7, sessions14, foodLogs7, sleepLogs7] = await Promise.all([
+      db.getWeightTrendDays(28).catch(() => []),
+      db.getRecentSessions(7).catch(() => []),
+      db.getRecentSessions(14).catch(() => []),
+      db.getFoodLogsByRange(
+        new Date(Date.now() - 7 * 864e5).toISOString(),
+        new Date().toISOString()
+      ).catch(() => []),
+      db.getRecentSleepLogs(7).catch(() => []),
+    ]);
+
+    // ── 体重趋势 ──────────────────────────────────────
+    let weightSection = '';
+    if (weightRows.length >= 2) {
+      const W = 280, H = 40, PAD = 8;
+      const weights = weightRows.map(r => r.weight_kg);
+      const minW = Math.min(...weights) - 0.3;
+      const maxW = Math.max(...weights) + 0.3;
+      const spread = maxW - minW || 0.5;
+      const toX = i => PAD + (W - PAD * 2) / (weightRows.length - 1) * i;
+      const toY = w => H - PAD - (w - minW) / spread * (H - PAD * 2);
+      const pts = weightRows.map((r, i) => `${toX(i).toFixed(1)},${toY(r.weight_kg).toFixed(1)}`).join(' ');
+
+      // 线性回归趋势线
+      const n = weights.length;
+      const sx = weights.reduce((_, __, i) => _ + i, 0);
+      const sy = weights.reduce((a, v) => a + v, 0);
+      const sxy = weights.reduce((a, v, i) => a + i * v, 0);
+      const sx2 = weights.reduce((a, _, i) => a + i * i, 0);
+      const slope = (n * sxy - sx * sy) / (n * sx2 - sx * sx);
+      const intercept = (sy - slope * sx) / n;
+      const tx1 = toX(0).toFixed(1), ty1 = toY(intercept).toFixed(1);
+      const tx2 = toX(n - 1).toFixed(1), ty2 = toY(slope * (n - 1) + intercept).toFixed(1);
+
+      const first = weights[0], last = weights[weights.length - 1];
+      const diff = last - first;
+      const diffStr = diff > 0 ? `+${diff.toFixed(1)}` : diff.toFixed(1);
+      // 减脂期：下降是好事
+      const trendColor = diff < -0.3 ? 'var(--ac)' : diff > 0.5 ? 'var(--wa)' : 'var(--info)';
+      const trendLabel = diff < -0.3 ? `↓${Math.abs(diff).toFixed(1)}kg` : diff > 0.3 ? `↑${diff.toFixed(1)}kg` : '→ 平稳';
+
+      const firstDate = new Date(weightRows[0].recorded_at).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' });
+      const lastDate = new Date(weightRows[weightRows.length - 1].recorded_at).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' });
+
+      weightSection = `
+        <div style="margin-bottom:10px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:5px">
+            <span style="font-family:var(--f1);font-size:10px;font-weight:600;letter-spacing:.1em;color:var(--t2);text-transform:uppercase">体重趋势</span>
+            <span style="font-family:var(--f1);font-size:13px;font-weight:700;color:${trendColor}">${last.toFixed(1)}kg <span style="font-size:10px;font-weight:500">${trendLabel}</span></span>
+          </div>
+          <div style="position:relative">
+            <svg width="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="display:block;height:40px">
+              <defs>
+                <linearGradient id="wt-grad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="${trendColor}" stop-opacity=".18"/>
+                  <stop offset="100%" stop-color="${trendColor}" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <!-- 填充区域 -->
+              <polygon points="${pts} ${toX(n-1).toFixed(1)},${H} ${toX(0).toFixed(1)},${H}" fill="url(#wt-grad)"/>
+              <!-- 趋势虚线 -->
+              <line x1="${tx1}" y1="${ty1}" x2="${tx2}" y2="${ty2}"
+                stroke="${trendColor}" stroke-width="1" stroke-dasharray="3 3" opacity=".4"/>
+              <!-- 折线 -->
+              <polyline points="${pts}" fill="none" stroke="${trendColor}" stroke-width="2"
+                stroke-linejoin="round" stroke-linecap="round"/>
+              <!-- 最新点 -->
+              <circle cx="${toX(n-1).toFixed(1)}" cy="${toY(last).toFixed(1)}" r="3.5" fill="${trendColor}"/>
+            </svg>
+            <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--t3);margin-top:2px">
+              <span>${firstDate}</span>
+              <span>${weightRows.length}条记录 · 28天</span>
+              <span>${lastDate}</span>
+            </div>
+          </div>
+        </div>`;
+    } else {
+      const wDays = typeof daysSinceLastWeight === 'function' ? daysSinceLastWeight() : 999;
+      weightSection = `
+        <div style="margin-bottom:10px;padding:10px 12px;background:rgba(255,255,255,.02);border:1px dashed var(--ln);border-radius:var(--r)">
+          <div style="font-size:11px;color:var(--t3)">⚖️ 体重记录不足（需2条以上）</div>
+          <div style="font-size:10px;color:var(--t3);margin-top:2px">${wDays < 999 ? wDays + '天前记录过一次，建议每1-2天体重快录' : '还没有体重记录，概况页→体重快录'}</div>
+        </div>`;
+    }
+
+    // ── 训练执行率（近7天 vs 计划5次/周）──────────────
+    const trainCount7 = sessions7.length;
+    const trainCount14_prev = sessions14.filter(s => {
+      const age = Date.now() - new Date(s.trained_at).getTime();
+      return age >= 7 * 864e5 && age < 14 * 864e5;
+    }).length;
+    const execRate = Math.min(100, Math.round(trainCount7 / 5 * 100));
+    const execColor = execRate >= 80 ? 'var(--ac)' : execRate >= 60 ? 'var(--info)' : 'var(--wa)';
+    const execDelta = trainCount7 - trainCount14_prev;
+    const execDeltaStr = execDelta > 0 ? `↑${execDelta}` : execDelta < 0 ? `↓${Math.abs(execDelta)}` : '→';
+
+    // ── 蛋白质达标率（近7天，按天统计）──────────────
+    const PT_TARGET = typeof PT === 'function' ? PT() : 168;
+    const dayMap = {};
+    foodLogs7.forEach(f => {
+      const day = f.logged_at?.slice(0, 10);
+      if (!day) return;
+      if (!dayMap[day]) dayMap[day] = 0;
+      dayMap[day] += f.protein_g || 0;
+    });
+    const recordedDays = Object.keys(dayMap);
+    const hitDays = recordedDays.filter(d => dayMap[d] >= PT_TARGET).length;
+    const proteinRate = recordedDays.length ? Math.round(hitDays / recordedDays.length * 100) : 0;
+    const proteinColor = proteinRate >= 80 ? 'var(--ac)' : proteinRate >= 50 ? 'var(--info)' : 'var(--wa)';
+
+    // ── 平均睡眠（近7天）────────────────────────────
+    const avgSleep = sleepLogs7.length
+      ? (sleepLogs7.reduce((a, s) => a + (s.duration_h || 0), 0) / sleepLogs7.length).toFixed(1)
+      : null;
+    const sleepColor = !avgSleep ? 'var(--t3)' : parseFloat(avgSleep) >= 7.5 ? 'var(--ac)' : parseFloat(avgSleep) >= 6.5 ? 'var(--t1)' : 'var(--wa)';
+
+    // ── 渲染 ─────────────────────────────────────────
+    const statsRow = `
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px">
+        <div style="background:var(--s2);border:1px solid var(--ln);border-radius:var(--r);padding:10px 8px;text-align:center">
+          <div style="font-family:var(--f1);font-size:18px;font-weight:800;color:${execColor};line-height:1">${trainCount7}</div>
+          <div style="font-size:9px;color:var(--t2);margin-top:3px;font-family:var(--f1);font-weight:500">训练次数</div>
+          <div style="font-size:9px;color:${execColor};margin-top:1px">${execRate}% <span style="color:var(--t3)">${execDeltaStr}</span></div>
+        </div>
+        <div style="background:var(--s2);border:1px solid var(--ln);border-radius:var(--r);padding:10px 8px;text-align:center">
+          <div style="font-family:var(--f1);font-size:18px;font-weight:800;color:${proteinColor};line-height:1">${hitDays}<span style="font-size:12px;font-weight:500;color:var(--t2)">/${recordedDays.length || 7}</span></div>
+          <div style="font-size:9px;color:var(--t2);margin-top:3px;font-family:var(--f1);font-weight:500">蛋白达标天</div>
+          <div style="font-size:9px;color:${proteinColor};margin-top:1px">${proteinRate}%</div>
+        </div>
+        <div style="background:var(--s2);border:1px solid var(--ln);border-radius:var(--r);padding:10px 8px;text-align:center">
+          <div style="font-family:var(--f1);font-size:18px;font-weight:800;color:${sleepColor};line-height:1">${avgSleep || '—'}<span style="font-size:11px;font-weight:500;color:var(--t2)">h</span></div>
+          <div style="font-size:9px;color:var(--t2);margin-top:3px;font-family:var(--f1);font-weight:500">平均睡眠</div>
+          <div style="font-size:9px;color:${sleepColor};margin-top:1px">近7天</div>
+        </div>
+      </div>`;
+
+    // 综合评语
+    const insights = [];
+    if (execRate >= 80 && proteinRate >= 80) insights.push({ c: 'var(--ac)', t: '本周执行优秀，营养与训练双双达标 ⭐' });
+    else if (execRate < 60) insights.push({ c: 'var(--wa)', t: `本周训练 ${trainCount7}/5 次，执行率偏低，注意不要跳课` });
+    else if (proteinRate < 60 && recordedDays.length >= 3) insights.push({ c: 'var(--wa)', t: `近期蛋白达标率 ${proteinRate}%，保肌关键是每天168g` });
+    if (avgSleep && parseFloat(avgSleep) < 6.5) insights.push({ c: 'var(--da)', t: `平均睡眠 ${avgSleep}h 不足，睡眠不足会显著降低肌肉合成` });
+
+    const insightHtml = insights.length ? `
+      <div style="display:flex;flex-direction:column;gap:4px">
+        ${insights.map(i => `
+          <div style="display:flex;align-items:flex-start;gap:6px;font-size:11px;color:var(--t2);line-height:1.45">
+            <div style="width:5px;height:5px;border-radius:50%;background:${i.c};flex-shrink:0;margin-top:4px"></div>
+            <span>${i.t}</span>
+          </div>`).join('')}
+      </div>` : '';
+
+    wrap.innerHTML = `
+      <div style="background:linear-gradient(160deg,rgba(255,255,255,.04),rgba(255,255,255,.01));border:1px solid var(--ln2);border-radius:var(--r2);padding:14px 14px 12px">
+        ${weightSection}
+        ${statsRow}
+        ${insightHtml}
+      </div>`;
+
+    const subEl = document.getElementById('week-insight-sub');
+    if (subEl) subEl.textContent = '近7天';
+
+  } catch (e) {
+    wrap.innerHTML = '<div class="empty">加载失败</div>';
+    console.warn('[weekInsight]', e);
+  }
+}
+
+// 挂到 boot 后执行
+(function hookWeekInsight() {
+  const orig = window.boot;
+  if (typeof orig !== 'function' || orig._wiHooked) {
+    if (typeof orig !== 'function') {
+      setTimeout(hookWeekInsight, 150);
+      return;
+    }
+    // boot已被之前的pack patch过但没加这个，直接追加到已patch的boot
+  }
+  const prevBoot = window.boot;
+  window.boot = async function(...a) {
+    await prevBoot.apply(this, a);
+    renderWeekInsightCard();
+  };
+  window.boot._wiHooked = true;
+})();
+
+// goPage('dash') 时也刷新
+(function hookGoPageDash() {
+  const orig = window.goPage;
+  if (!orig || orig._wiGoHooked) return;
+  window.goPage = function(n) {
+    orig(n);
+    if (n === 'dash') {
+      setTimeout(renderWeekInsightCard, 100);
+      setTimeout(renderDailyChecklist, 50);
+      setTimeout(renderSleepQuickLog, 80);
+    }
+  };
+  window.goPage._wiGoHooked = true;
+})();
+
+// 如果App已经加载
+if (document.getElementById('app') && !document.getElementById('app').classList.contains('off')) {
+  setTimeout(renderWeekInsightCard, 400);
+}
+
+
+// ──────────────────────────────────────────────────────────────────
+// ⑦ 训练动作历史 PR 显示
+//    在每个动作标题旁边显示「PR: 92.5kg」
+//    数据来源：strength_logs 里的最大 e1rm
+// ──────────────────────────────────────────────────────────────────
+
+// PR 缓存（按动作名）
+const _prCache = {};
+
+async function loadExercisePR(name) {
+  if (_prCache[name] !== undefined) return _prCache[name];
+  if (!window.db) return (_prCache[name] = null);
+  try {
+    const rows = await db.getStrengthHistory(name, 30);
+    if (!rows.length) return (_prCache[name] = null);
+    const best = rows.reduce((a, r) => {
+      const e = r.e1rm || r.weight_kg || 0;
+      return e > (a.e1rm || a.weight_kg || 0) ? r : a;
+    }, rows[0]);
+    return (_prCache[name] = { e1rm: best.e1rm || best.weight_kg, weight: best.weight_kg, reps: best.reps, date: best.logged_at });
+  } catch(e) { return (_prCache[name] = null); }
+}
+
+// 失效缓存（完成一次训练后PR可能更新）
+function invalidatePRCache() {
+  Object.keys(_prCache).forEach(k => delete _prCache[k]);
+}
+
+// 在 saveSession 完成后失效缓存
+const _origSaveSession2 = window.saveSession;
+if (typeof _origSaveSession2 === 'function' && !_origSaveSession2._prHooked) {
+  window.saveSession = async function(...a) {
+    await _origSaveSession2.apply(this, a);
+    invalidatePRCache();
+  };
+  window.saveSession._prHooked = true;
+}
+
+// 覆盖 renderExercises：在原有渲染后，异步填入PR badge
+const _origRenderExercises = window.renderExercises;
+window.renderExercises = function() {
+  if (typeof _origRenderExercises === 'function') _origRenderExercises();
+  // 异步：对每个复合动作填入PR
+  if (!window.db || !S.workout?.length) return;
+  S.workout.forEach(async (ex, i) => {
+    if (!ex.name || ex.is_bodyweight) return;
+    const pr = await loadExercisePR(ex.name);
+    if (!pr) return;
+    const nameEl = document.querySelector(`#exc-${i} .exc-name`);
+    if (!nameEl) return;
+    // 已经有PR badge就不重复插入
+    if (nameEl.querySelector('.pr-badge')) return;
+    const currentBest = Math.max(...(ex.sets_data || []).filter(s => s.done && s.w > 0).map(s => s.w), 0);
+    const isNewPR = currentBest > 0 && currentBest >= pr.weight;
+    const badge = document.createElement('span');
+    badge.className = 'pr-badge';
+    badge.style.cssText = `
+      font-family:var(--f1);font-size:9px;font-weight:700;
+      padding:1px 6px;border-radius:8px;margin-left:6px;
+      vertical-align:middle;white-space:nowrap;
+      background:${isNewPR ? 'rgba(226,255,92,.15)' : 'rgba(180,154,255,.1)'};
+      color:${isNewPR ? 'var(--ac)' : 'var(--pu)'};
+      border:1px solid ${isNewPR ? 'rgba(226,255,92,.3)' : 'rgba(180,154,255,.2)'};
+    `;
+    badge.textContent = isNewPR ? `🏆 PR!` : `PR ${pr.e1rm ? pr.e1rm.toFixed(1) : pr.weight}kg`;
+    badge.title = pr.e1rm
+      ? `历史最佳 E1RM: ${pr.e1rm.toFixed(1)}kg（${pr.weight}kg × ${pr.reps}次）`
+      : `历史最佳: ${pr.weight}kg × ${pr.reps}次`;
+    nameEl.appendChild(badge);
+  });
+};
+
+// completeSet 完成时检查是否突破PR并实时更新badge
+const _origCompleteSet2 = window.completeSet;
+window.completeSet = function(exIdx, setIdx) {
+  if (typeof _origCompleteSet2 === 'function') _origCompleteSet2(exIdx, setIdx);
+  // 检查是否创造PR（异步不阻塞）
+  const ex = S.workout?.[exIdx];
+  if (!ex || ex.is_bodyweight) return;
+  const set = ex.sets_data?.[setIdx];
+  if (!set?.done || !set.w) return;
+  loadExercisePR(ex.name).then(pr => {
+    if (!pr) return;
+    const newE1rm = calcE1RM ? calcE1RM(set.w, set.r || 8) : set.w;
+    if (newE1rm > (pr.e1rm || pr.weight || 0)) {
+      // 突破PR！更新badge并toast
+      const nameEl = document.querySelector(`#exc-${exIdx} .exc-name`);
+      const badge = nameEl?.querySelector('.pr-badge');
+      if (badge) {
+        badge.textContent = '🏆 新PR!';
+        badge.style.background = 'rgba(226,255,92,.2)';
+        badge.style.color = 'var(--ac)';
+        badge.style.borderColor = 'rgba(226,255,92,.4)';
+        badge.style.animation = 'prPulse .4s ease';
+      }
+      if (!document.getElementById('pr-anim')) {
+        const s = document.createElement('style');
+        s.id = 'pr-anim';
+        s.textContent = '@keyframes prPulse{0%{transform:scale(1)}50%{transform:scale(1.2)}100%{transform:scale(1)}}';
+        document.head.appendChild(s);
+      }
+      if (navigator.vibrate) navigator.vibrate([40, 30, 40]);
+      toast(`🏆 ${ex.name} 新PR！E1RM ${newE1rm.toFixed(1)}kg`);
+      // 更新缓存
+      _prCache[ex.name] = { e1rm: newE1rm, weight: set.w, reps: set.r || 8 };
+    }
+  });
+};
+
+
+// ═══════════════════════════════════════════════════════════════════
+// FIX PACK v4.3
+// ① 补剂打卡每日自动重置
+// ② 常用食物长按选份量
+// ═══════════════════════════════════════════════════════════════════
+
+// ──────────────────────────────────────────────────────────────────
+// ① 补剂每日自动重置
+//    每天凌晨自动把所有补剂 on→false
+//    打开 App 时检测日期变化，比较 form_supps_date 和今日
+// ──────────────────────────────────────────────────────────────────
+
+function checkSuppsDailyReset() {
+  const today = new Date().toDateString();
+  const lastDate = localStorage.getItem('form_supps_date');
+  if (lastDate === today) return; // 今天已经重置过，不重置
+
+  // 日期变了 → 把所有补剂的 on 重置为 false
+  const supps = S.supps || [];
+  let changed = false;
+  supps.forEach(s => {
+    if (s.on) { s.on = false; changed = true; }
+  });
+
+  if (changed) {
+    // 写回 localStorage
+    localStorage.setItem('form_supps', JSON.stringify(supps));
+    // 刷新渲染
+    if (typeof renderSupps === 'function') renderSupps();
+    // 刷新打卡清单
+    if (typeof renderDailyChecklist === 'function') renderDailyChecklist();
+  }
+
+  // 记录今日已重置
+  localStorage.setItem('form_supps_date', today);
+}
+
+// 在 boot 后、以及页面切换到 dash 时检查
+(function hookSuppReset() {
+  // 挂到已有的 boot patch 链上
+  const prev = window.boot;
+  if (typeof prev !== 'function' || prev._suppResetHooked) {
+    if (typeof prev !== 'function') {
+      setTimeout(hookSuppReset, 200); return;
+    }
+  }
+  const _p = window.boot;
+  window.boot = async function(...a) {
+    await _p.apply(this, a);
+    checkSuppsDailyReset();
+  };
+  window.boot._suppResetHooked = true;
+})();
+
+// 已加载的情况下直接运行
+if (document.getElementById('app') && !document.getElementById('app').classList.contains('off')) {
+  checkSuppsDailyReset();
+}
+
+// 每次打开 App 时（visibilitychange）也检查，处理跨夜仍开着 App 的情况
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    checkSuppsDailyReset();
+    // 同时刷新今日状态卡（可能隔夜了）
+    if (typeof renderTodayStatusCard === 'function') {
+      setTimeout(renderTodayStatusCard, 100);
+    }
+  }
+});
+
+
+// ──────────────────────────────────────────────────────────────────
+// ② 常用食物长按选份量（×0.5 / ×1 / ×1.5 / ×2）
+//    短按仍是加1份（原有行为不变）
+//    长按（500ms）弹出份量选择器
+// ──────────────────────────────────────────────────────────────────
+
+// 覆盖 renderFavFoods 的 chip 渲染，加入长按支持
+const _origRenderFavFoods2 = window.renderFavFoods;
+window.renderFavFoods = function() {
+  if (typeof _origRenderFavFoods2 === 'function') _origRenderFavFoods2();
+
+  // 给每个 fav-chip 绑定长按事件
+  const wrap = document.getElementById('fav-food-list');
+  if (!wrap) return;
+  const chips = wrap.querySelectorAll('.fav-chip');
+  chips.forEach((chip, i) => {
+    if (chip.dataset.lpBound) return;
+    chip.dataset.lpBound = '1';
+    chip.dataset.favIdx = i;
+
+    let pressTimer = null;
+    let didLongPress = false;
+
+    // 长按开始
+    chip.addEventListener('pointerdown', () => {
+      didLongPress = false;
+      pressTimer = setTimeout(() => {
+        didLongPress = true;
+        showFavPortionPicker(parseInt(chip.dataset.favIdx), chip);
+      }, 480);
+    });
+
+    // 松开或离开取消计时
+    const cancel = () => { clearTimeout(pressTimer); };
+    chip.addEventListener('pointerup', cancel);
+    chip.addEventListener('pointerleave', cancel);
+
+    // 如果是长按，阻止 click 事件触发 quickAddFav
+    chip.addEventListener('click', e => {
+      if (didLongPress) { e.stopImmediatePropagation(); e.preventDefault(); }
+    }, true);
+  });
+};
+
+function showFavPortionPicker(favIdx, anchorEl) {
+  // 关闭已有的选择器
+  document.getElementById('fav-portion-picker')?.remove();
+
+  const favs = typeof loadFavFoods === 'function' ? loadFavFoods() : [];
+  const food = favs[favIdx];
+  if (!food) return;
+
+  const portions = [
+    { label: '½ 份', mult: 0.5 },
+    { label: '1 份', mult: 1.0 },
+    { label: '1.5 份', mult: 1.5 },
+    { label: '2 份', mult: 2.0 },
+  ];
+
+  const picker = document.createElement('div');
+  picker.id = 'fav-portion-picker';
+
+  // 定位到 chip 附近
+  const rect = anchorEl.getBoundingClientRect();
+  const above = rect.top > 160; // 判断在屏幕上半还是下半
+  picker.style.cssText = `
+    position:fixed;
+    left:${Math.min(rect.left, window.innerWidth - 220)}px;
+    ${above
+      ? `bottom:${window.innerHeight - rect.top + 6}px;`
+      : `top:${rect.bottom + 6}px;`}
+    width:210px;
+    background:var(--s1);
+    border:1px solid var(--ln2);
+    border-radius:var(--r2);
+    box-shadow:0 8px 32px rgba(0,0,0,.55);
+    z-index:800;
+    overflow:hidden;
+    animation:fadeInUp .15s ease;
+  `;
+
+  if (!document.getElementById('portion-anim')) {
+    const s = document.createElement('style');
+    s.id = 'portion-anim';
+    s.textContent = '@keyframes fadeInUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}';
+    document.head.appendChild(s);
+  }
+
+  picker.innerHTML = `
+    <div style="padding:10px 12px 6px;font-family:var(--f1);font-size:11px;font-weight:600;
+      color:var(--t2);border-bottom:1px solid var(--ln);letter-spacing:.06em">
+      ${food.name}
+    </div>
+    ${portions.map(p => {
+      const protein = Math.round(food.protein_g * p.mult);
+      const kcal = Math.round((food.kcal || food.protein_g * 4 + (food.carbs_g||0) * 4 + (food.fat_g||0) * 9) * p.mult);
+      return `<button onclick="quickAddFavPortion(${favIdx}, ${p.mult})"
+        style="display:flex;align-items:center;justify-content:space-between;width:100%;
+          padding:10px 12px;background:none;border:none;border-bottom:1px solid var(--ln);
+          cursor:pointer;text-align:left;transition:background .1s"
+        onmouseover="this.style.background='rgba(255,255,255,.04)'"
+        onmouseout="this.style.background='none'">
+        <span style="font-family:var(--f1);font-size:13px;font-weight:600;color:var(--t1)">${p.label}</span>
+        <span style="font-size:11px;color:var(--t2)">
+          <span style="color:var(--ac);font-weight:600">${protein}g蛋</span>
+          · ${kcal}kcal
+        </span>
+      </button>`;
+    }).join('')}
+    <button onclick="document.getElementById('fav-portion-picker')?.remove()"
+      style="width:100%;padding:9px;background:none;border:none;
+        font-size:12px;color:var(--t3);cursor:pointer">取消</button>
+  `;
+
+  document.body.appendChild(picker);
+
+  // 点外部关闭
+  setTimeout(() => {
+    document.addEventListener('pointerdown', function close(e) {
+      if (!picker.contains(e.target)) {
+        picker.remove();
+        document.removeEventListener('pointerdown', close);
+      }
+    });
+  }, 50);
+
+  if (navigator.vibrate) navigator.vibrate(30);
+}
+
+window.quickAddFavPortion = async function(favIdx, multiplier) {
+  document.getElementById('fav-portion-picker')?.remove();
+
+  const favs = typeof loadFavFoods === 'function' ? loadFavFoods() : [];
+  const base = favs[favIdx];
+  if (!base) return;
+
+  const f = {
+    name: multiplier === 1 ? base.name : `${base.name} ×${multiplier}`,
+    protein_g: Math.round(base.protein_g * multiplier * 10) / 10,
+    carbs_g:   Math.round((base.carbs_g   || 0) * multiplier * 10) / 10,
+    fat_g:     Math.round((base.fat_g     || 0) * multiplier * 10) / 10,
+    kcal:      Math.round((base.kcal      || base.protein_g*4 + (base.carbs_g||0)*4 + (base.fat_g||0)*9) * multiplier),
+  };
+
+  const ts = typeof getLogTimestamp === 'function' ? getLogTimestamp() : new Date().toISOString();
+  const entry = { ...f, id: Date.now() + Math.random(), time: nt(), meal_type: S_mealType || '早餐', logged_at: ts };
+
+  const isDietTodayNow = typeof isDietToday === 'function' ? isDietToday() : (typeof S_dietDate !== 'undefined' ? S_dietDate === 'today' : true);
+  if (isDietTodayNow && typeof addFoodEntry === 'function') addFoodEntry(entry);
+
+  if (db) {
+    const row = await dbOp('饮食保存', () => db.addFoodLog({ ...f, time_tag: S_mealType || '早餐', logged_at: ts }));
+    if (isDietTodayNow && row?.id) {
+      const fe = S.foods[S.foods.length - 1];
+      if (fe) fe.dbId = row.id;
+    }
+  }
+
+  if (!isDietTodayNow && typeof loadBackfillFood === 'function') loadBackfillFood(S_dietDate);
+
+  const portionLabel = multiplier === 0.5 ? '½份' : multiplier === 1 ? '1份' : `${multiplier}份`;
+  toast(`✓ ${base.name} ${portionLabel} · +${f.protein_g}g蛋白`);
+
+  // 刷新打卡清单
+  if (typeof renderDailyChecklist === 'function') renderDailyChecklist();
+};
+
