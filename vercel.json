@@ -1,0 +1,12 @@
+{
+  "outputDirectory": "public",
+  "crons": [
+    { "path": "/api/notify?hour=7",           "schedule": "55 23 * * *" },
+    { "path": "/api/notify?hour=9",           "schedule": "30 1 * * *"  },
+    { "path": "/api/notify?hour=12",          "schedule": "30 4 * * *"  },
+    { "path": "/api/notify?hour=19",          "schedule": "30 11 * * *" },
+    { "path": "/api/notify?hour=22",          "schedule": "30 14 * * *" },
+    { "path": "/api/notify?hour=23",          "schedule": "30 15 * * *" },
+    { "path": "/api/notify?hour=22&weekly=1", "schedule": "0 14 * * 0"  }
+  ]
+}
