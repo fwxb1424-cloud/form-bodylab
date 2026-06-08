@@ -1,39 +1,16 @@
 {
-  "crons": [
-    {
-      "path": "/api/notify?hour=7",
-      "schedule": "55 23 * * *",
-      "comment": "07:55 BJ — 有氧日起床提醒（内部判断非有氧日自动跳过）"
-    },
-    {
-      "path": "/api/notify?hour=9",
-      "schedule": "30 1 * * *",
-      "comment": "09:30 BJ — 晨间简报（所有日）"
-    },
-    {
-      "path": "/api/notify?hour=12",
-      "schedule": "30 4 * * *",
-      "comment": "12:30 BJ — 午餐蛋白质检查"
-    },
-    {
-      "path": "/api/notify?hour=19",
-      "schedule": "30 11 * * *",
-      "comment": "19:30 BJ — 练前餐提醒（内部判断非力量日自动跳过）"
-    },
-    {
-      "path": "/api/notify?hour=22",
-      "schedule": "30 14 * * *",
-      "comment": "22:30 BJ — 训练后补给提醒（内部判断非力量日自动跳过）"
-    },
-    {
-      "path": "/api/notify?hour=23",
-      "schedule": "30 15 * * *",
-      "comment": "23:30 BJ — 睡前收尾复盘（所有日）"
-    },
-    {
-      "path": "/api/notify?hour=22&weekly=1",
-      "schedule": "0 14 * * 0",
-      "comment": "周日 22:00 BJ — 本周执行率复盘"
+  "functions": {
+    "api/notify.js": {
+      "runtime": "edge"
     }
+  },
+  "crons": [
+    { "path": "/api/notify?hour=7",          "schedule": "55 23 * * *" },
+    { "path": "/api/notify?hour=9",          "schedule": "30 1 * * *"  },
+    { "path": "/api/notify?hour=12",         "schedule": "30 4 * * *"  },
+    { "path": "/api/notify?hour=19",         "schedule": "30 11 * * *" },
+    { "path": "/api/notify?hour=22",         "schedule": "30 14 * * *" },
+    { "path": "/api/notify?hour=23",         "schedule": "30 15 * * *" },
+    { "path": "/api/notify?hour=22&weekly=1","schedule": "0 14 * * 0"  }
   ]
 }
