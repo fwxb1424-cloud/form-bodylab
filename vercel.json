@@ -1,5 +1,4 @@
 {
-  "outputDirectory": "public",
   "crons": [
     { "path": "/api/notify?hour=7",           "schedule": "55 23 * * *" },
     { "path": "/api/notify?hour=9",           "schedule": "30 1 * * *"  },
