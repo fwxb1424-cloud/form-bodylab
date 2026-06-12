@@ -10,10 +10,9 @@
 <link rel="manifest" href="manifest.json">
 <title>FORM</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="macros.js"></script>
 <script src="db.js"></script>
 <script src="sync-store.js"></script>
-<script src="nutrition-ui.js"></script>
+<script src="macros.js"></script>
 <script src="ai-provider.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,400&family=DM+Sans:wght@400;500&display=swap');
@@ -3064,9 +3063,8 @@ async function checkStrengthStall(){
   }
 })();
 </script>
-</body>
-</html>
 
+<script>
 // ═══════════════════════════════════════════════════════════════════
 // FEATURE PACK v4.1 — 功能升级包
 // 包含：① 组间自动计时浮层  ② 概况页睡眠快录  ③ 常用食物置顶
@@ -4382,3 +4380,6 @@ window.quickAddFavPortion = async function(favIdx, multiplier) {
   if (typeof renderDailyChecklist === 'function') renderDailyChecklist();
 };
 
+</script>
+</body>
+</html>
