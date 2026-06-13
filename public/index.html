@@ -1130,8 +1130,10 @@ body{
 
     <!-- ══ 形体 ══ -->
     <div class="page" id="pg-body">
-      <div class="ph"><div class="ph-ey">形体追踪</div><div class="ph-h1">身体数据</div><div class="ph-sub">围度 · 成分 · 睡眠 · 力量</div></div>
-      <div class="s" style="margin-top:12px"><div class="slbl">成分</div>
+      <div class="ph"><div class="ph-ey">形体追踪</div><div class="ph-h1">身体数据</div><div class="ph-sub">成分 · 围度 · 力量 · 睡眠</div></div>
+
+      <!-- 成分 -->
+      <div class="s" style="margin-top:12px"><div class="slbl">身体成分</div>
         <div class="comp-row"><div class="cp m"><div class="cp-l">肌肉量</div><div class="cp-v" id="muscle-val">40.4</div><div class="cp-u">kg</div></div><div class="cp f"><div class="cp-l">体脂率</div><div class="cp-v" id="fat-val">17.8</div><div class="cp-u">%</div></div></div>
         <div class="in-row"><input type="number" step="0.1" placeholder="肌肉量 kg" id="in-muscle" class="ni" style="flex:1"><input type="number" step="0.1" placeholder="体脂 %" id="in-fat" class="ni" style="flex:1"><button class="upd-btn" onclick="updateComp()">更新</button></div>
       </div>
@@ -1142,6 +1144,11 @@ body{
           <div class="chart-leg"><div class="cl"><div class="cl-line" style="background:var(--ac)"></div>肌肉量</div><div class="cl"><div class="cl-line" style="background:var(--wa);"></div>体脂</div></div>
         </div>
       </div>
+
+      <!-- 围度 -->
+      <div class="s" style="margin-top:8px"><div class="slbl">围度</div><div class="mg" id="mg"></div></div>
+
+      <!-- 力量 -->
       <div class="s" style="margin-top:8px">
         <div class="chart-wrap">
           <div class="chart-title" style="display:flex;align-items:center;gap:7px">力量趋势 E1RM<select class="str-sel" id="str-sel" onchange="loadStrChart()" style="flex:1;margin:0;font-size:12px;padding:5px 8px"><option>臥推</option><option>深蹲</option><option>硬举</option><option>过头推举</option><option>划船</option></select><button class="upd-btn" onclick="toggleStrEntry()" style="font-size:11px">记录</button></div>
@@ -1154,24 +1161,11 @@ body{
           <div id="str-log" style="margin-top:7px"></div>
         </div>
       </div>
-      <div class="s" style="margin-top:8px">
-        <div class="chart-wrap">
-          <div class="chart-title">睡眠记录</div>
-          <div style="margin-bottom:9px"><div style="font-family:var(--f1);font-size:10px;font-weight:500;color:var(--t2);margin-bottom:5px">时长</div><div style="display:flex;align-items:center;gap:9px"><input type="range" class="sleep-sl" id="sleep-dur" min="4" max="10" step="0.5" value="7.5" oninput="document.getElementById('slv').textContent=this.value+'h'"><span style="font-family:var(--f1);font-size:13px;font-weight:600;color:var(--ac);width:36px;text-align:right" id="slv">7.5h</span></div></div>
-          <div style="margin-bottom:9px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
-            <div><div style="font-family:var(--f1);font-size:10px;font-weight:500;color:var(--t2);margin-bottom:5px">入睡时间 <span style="color:var(--t3);font-weight:400">（影响GH分泌）</span></div><input type="time" id="sleep-start" value="23:00" style="width:100%;background:var(--s2);border:1px solid var(--ln2);border-radius:var(--r);padding:8px 10px;color:var(--t1);font-family:var(--f1);font-size:13px;outline:none"></div>
-            <div><div style="font-family:var(--f1);font-size:10px;font-weight:500;color:var(--t2);margin-bottom:5px">起床时间</div><input type="time" id="sleep-end" value="07:00" style="width:100%;background:var(--s2);border:1px solid var(--ln2);border-radius:var(--r);padding:8px 10px;color:var(--t1);font-family:var(--f1);font-size:13px;outline:none" oninput="calcSleepDur()"></div>
-          </div>
-          <div style="margin-bottom:9px"><div style="font-family:var(--f1);font-size:10px;font-weight:500;color:var(--t2);margin-bottom:5px">质量</div><div class="sqb-row" id="sqb-row"><button class="sqb" onclick="setSleepQ(1)">差</button><button class="sqb" onclick="setSleepQ(2)">一般</button><button class="sqb on" onclick="setSleepQ(3)">良好</button><button class="sqb" onclick="setSleepQ(4)">极佳</button></div></div>
-          <button class="upd-btn" style="width:100%;padding:8px;text-align:center" onclick="saveSleep()">记录昨晚睡眠</button>
-          <div id="sleep-log" style="margin-top:8px"></div>
-        </div>
-      </div>
-      <div class="s" style="margin-top:8px"><div class="slbl">围度</div><div class="mg" id="mg"></div></div>
+
+      <!-- 睡眠看板 -->
       <div class="s" style="margin-top:8px;padding-bottom:4px">
-        <div class="slbl">补剂管理</div>
-        <div id="body-supps"></div>
-        <div class="add-supp-r"><input class="as-n" type="text" id="as-n" placeholder="补剂名称"><input class="as-d" type="text" id="as-d" placeholder="用量（如 5g）"><button class="as-btn" onclick="addSupp()">添加</button></div>
+        <div class="slbl">睡眠记录</div>
+        <div id="sleep-log"><div class="empty">暂无记录</div></div>
       </div>
     </div>
 
@@ -2774,7 +2768,8 @@ function calcSleepDur(){
 }
 
 async function saveSleep(){
-  const dur=parseFloat(document.getElementById('sleep-dur').value);
+  var sl=document.getElementById('sleep-dur');if(!sl)return;
+  var dur=parseFloat(sl.value);
   const startTime=document.getElementById('sleep-start')?.value||'';
   const endTime=document.getElementById('sleep-end')?.value||'';
   const notes=startTime?`入睡${startTime}${endTime?' 起床'+endTime:''}` :'';
