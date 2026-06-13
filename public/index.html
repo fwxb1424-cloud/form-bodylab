@@ -770,12 +770,12 @@ body{
       <div id="dash-alerts-wrap"></div>
       <!-- 快速操作 -->
       <div class="s" id="dash-quick-actions" style="margin-top:8px">
+        <div style="font-size:10px;color:var(--t2);margin-bottom:6px">快捷操作</div>
         <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
           <input type="number" step="0.1" placeholder="体重 kg" id="dash-quick-weight" style="flex:1;min-width:80px;background:var(--s2);border:1px solid var(--ln2);border-radius:10px;padding:8px 10px;color:var(--t1);font-family:var(--f1);font-size:12px;outline:none;-webkit-appearance:none" onkeydown="if(event.key==='Enter')quickSaveWeight()" onfocus="this.select()">
-          <button onclick="quickSaveWeight()" style="background:rgba(226,255,92,.1);border:1px solid rgba(226,255,92,.2);color:var(--ac);cursor:pointer;padding:8px 14px;border-radius:10px;font-family:var(--f1);font-size:11px;font-weight:600;white-space:nowrap">保存体重</button>
-          <button onclick="quickLogTraining()" id="dash-quick-train-btn" style="background:rgba(106,172,255,.1);border:1px solid rgba(106,172,255,.18);color:var(--info);cursor:pointer;padding:8px 14px;border-radius:10px;font-family:var(--f1);font-size:11px;font-weight:600;white-space:nowrap">✊ 练了</button>
-          <button onclick="quickLogRest()" id="dash-quick-rest-btn" style="background:rgba(180,154,255,.08);border:1px solid rgba(180,154,255,.15);color:var(--pu);cursor:pointer;padding:8px 14px;border-radius:10px;font-family:var(--f1);font-size:11px;font-weight:600;white-space:nowrap">😴 休息</button>
-          <button onclick="toggleNotifyPause()" id="dash-pause-btn" style="background:none;border:1px solid var(--ln);color:var(--t2);cursor:pointer;padding:8px 12px;border-radius:10px;font-family:var(--f1);font-size:10px;font-weight:500;white-space:nowrap">🔕</button>
+          <button onclick="quickSaveWeight()" style="background:rgba(226,255,92,.1);border:1px solid rgba(226,255,92,.2);color:var(--ac);cursor:pointer;padding:8px 14px;border-radius:10px;font-family:var(--f1);font-size:11px;font-weight:600;white-space:nowrap">保存</button>
+          <button onclick="goPage('train')" style="background:rgba(106,172,255,.1);border:1px solid rgba(106,172,255,.18);color:#6aacff;cursor:pointer;padding:8px 14px;border-radius:10px;font-family:var(--f1);font-size:11px;font-weight:600;white-space:nowrap">🏋️ 去训练</button>
+          <button onclick="quickLogRest()" id="dash-quick-rest-btn" style="background:rgba(180,154,255,.08);border:1px solid rgba(180,154,255,.15);color:var(--pu);cursor:pointer;padding:8px 14px;border-radius:10px;font-family:var(--f1);font-size:11px;font-weight:600;white-space:nowrap">😴 今天休息</button>
         </div>
       </div>
 <!-- 今日状态卡 -->
@@ -1043,66 +1043,49 @@ body{
 
     <!-- ══ 计划 ══ -->
     <div class="page" id="pg-plan">
-      <div class="ph"><div class="ph-ey">长线规划</div><div class="ph-h1">训练计划</div><div class="ph-sub">减脂期 W1–W11 · 动态队列执行</div></div>
+      <div class="ph"><div class="ph-ey">训练计划</div><div class="ph-h1">我的计划</div><div class="ph-sub">锁定方案 · 队列执行 · 减脂保肌</div></div>
+
+      <!-- 当前锁定计划总览 -->
+      <div class="s" style="margin-top:12px">
+        <div class="slbl">已锁定的训练方案</div>
+        <div id="plan-locked-overview"><div class="empty">暂无锁定方案。去「训练」页生成方案后点🔒锁定。</div></div>
+      </div>
+
+      <!-- 训练队列 -->
+      <div class="s" style="margin-top:8px">
+        <div class="slbl">训练队列（循环顺序）<span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t2);font-size:10px">高亮 = 下次训练推荐</span></div>
+        <div id="plan-week-grid"></div>
+      </div>
 
       <!-- 本周执行率 -->
-      <div class="s" style="margin-top:12px">
+      <div class="s" style="margin-top:8px">
         <div class="slbl">本周执行情况 <span id="plan-week-badge" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ac);font-size:10px"></span></div>
         <div id="week-exec-board"><div class="empty">连接云端后显示</div></div>
       </div>
 
-      <!-- 周期进度 -->
+      <!-- 训练时段 -->
       <div class="s" style="margin-top:8px">
-        <div class="slbl">训练时段</div>
+        <div class="slbl">训练时段（用于通知推送）</div>
         <div style="display:flex;gap:6px">
           <button class="ds-btn" id="ts-morning" onclick="setTrainingSlot('morning')">🌅 早间（7–9点）</button>
           <button class="ds-btn" id="ts-evening" onclick="setTrainingSlot('evening')">🌆 晚间（18–20点）</button>
         </div>
-        <div style="font-size:10px;color:var(--t2);margin-top:4px;line-height:1.5">选择你的习惯训练时间。只影响手机通知推送时间（早间6:30 / 晚间17:00），不影响训练内容。</div>
+        <div style="font-size:10px;color:var(--t2);margin-top:4px;line-height:1.5">选择你习惯的训练时段。同步到手机通知脚本后，提醒会在对应时间段前推送。</div>
       </div>
+
+      <!-- 减脂期进度 -->
       <div class="s" style="margin-top:8px">
         <div class="slbl">减脂期进度</div>
         <div id="plan-phase-progress"></div>
-        <button onclick="doResetPlan()" style="margin-top:8px;width:100%;background:rgba(232,88,88,.06);border:1px solid rgba(232,88,88,.18);color:var(--da);cursor:pointer;padding:10px;border-radius:var(--r);font-family:var(--f1);font-size:12px;font-weight:600">🔄 重新开始 · 计划归零</button>
-        <div style="font-size:9px;color:var(--t3);margin-top:3px;text-align:center">起始日设为今天 · 清除所有累积调整 · 清除 checkpoint 历史</div>
+        <button onclick="doResetPlan()" style="margin-top:8px;width:100%;background:rgba(232,88,88,.06);border:1px solid rgba(232,88,88,.18);color:var(--da);cursor:pointer;padding:10px;border-radius:var(--r);font-family:var(--f1);font-size:12px;font-weight:600">🔄 重新开始（计划归零）</button>
       </div>
 
-      <!-- 11周计划 · 体重检查点 -->
+      <!-- 体重检查点 -->
       <div class="s" style="margin-top:8px">
-        <div class="slbl">本周体重检查点 <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t2);font-size:10px">周日复盘 · 7日均值</span></div>
+        <div class="slbl">本周体重检查点 <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t2);font-size:10px">周日复盘对照</span></div>
         <div id="plan-checkpoint"></div>
       </div>
-
-      <!-- 本周训练结构 -->
-      <div class="s" style="margin-top:8px">
-        <div class="slbl">训练结构（队列顺序）<span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t2);font-size:10px">高亮=下次推荐</span></div>
-        <div id="plan-week-grid"></div>
-      </div>
-
-      <!-- AI计划（折叠区） -->
-      <div class="s" style="margin-top:8px"><div class="slbl">当前AI计划</div><div class="plan-hero ph-empty" id="plan-hero"><div style="font-size:13px;color:var(--t2)">点下方「AI生成」叠加AI周期方案</div></div></div>
-      <div class="s" style="margin-top:8px"><div class="slbl">每周结构（AI）</div><div class="pw-card" id="week-card"><div class="empty">生成计划后显示</div></div></div>
-      <div class="s" style="margin-top:8px"><div class="slbl">里程碑</div><div class="card" id="ms-card"><div class="empty">生成计划后显示</div></div></div>
-      <div class="s" style="margin-top:8px">
-        <div class="slbl">生成新周期计划</div>
-        <div class="card">
-          <label class="pf-lbl">核心目标</label>
-          <select class="pf-sel" id="pf-goal"><option>增肌减脂（Recomp）</option><option>纯增肌（Bulk）</option><option selected>减脂保肌（Cut）</option><option>力量提升</option></select>
-          <label class="pf-lbl">周期长度</label>
-          <select class="pf-sel" id="pf-wks"><option value="8" selected>8 周</option><option value="10">10 周</option><option value="12">12 周</option><option value="16">16 周</option></select>
-          <label class="pf-lbl">特殊限制（伤病/偏好，可空）</label>
-          <textarea class="pf-ta" id="pf-res" rows="2" placeholder="左踝腓外侧韧带滑脱，规避大重量自由深蹲"></textarea>
-          <button class="gen-btn" id="gen-plan-btn" onclick="genPlan()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            AI 生成周期计划
-          </button>
-        </div>
-      </div>
-      <div class="s" style="margin-top:8px">
-        <div class="slbl">手动输入计划</div>
-        <div class="card">
-          <textarea class="pf-ta" id="manual-plan" rows="4" placeholder="自由描述计划调整，例：&#10;下周肩日前加一个划船机侧举递减组&#10;卧推目标：8周内从85kg推到92.5kg"></textarea>
-          <button class="ghost-btn" style="margin-top:0" onclick="saveManualPlan()">保存手动计划</button>
+    </div>
         </div>
       </div>
       <div class="s" style="margin-top:8px">
@@ -1354,7 +1337,7 @@ async function boot(){
     const _origGoPage=window.goPage;
     window.goPage=function(n){
       _origGoPage(n);
-      if(n==='plan'){ renderWeekExecBoard(); renderPlanWeekGrid(); renderPhaseProgress(); refreshTrainingSlotUI(); }
+      if(n==='plan'){ renderLockedPlansOverview(); renderWeekExecBoard(); renderPlanWeekGrid(); renderPhaseProgress(); refreshTrainingSlotUI(); }
       if(n==='dash'){ renderTodayStatusCard(); renderPhaseTrigger(); setTimeout(renderDashAlerts,30); setTimeout(fillDashTrainCount,200); setTimeout(renderWeeklyMiniCard,100); renderPauseButton(); }
       if(n==='coach'){ _renderCoach(); }
       if(n==='body'){ if(typeof loadStrChart==='function') loadStrChart(); }
@@ -3462,6 +3445,32 @@ function handleCheckpointAction(arg){
   if(typeof renderTodayStatusCard==='function')renderTodayStatusCard();
 }
 
+// ── 锁定计划总览 ──────────────────────────────────────────
+function renderLockedPlansOverview(){
+  const container=document.getElementById('plan-locked-overview');
+  if(!container)return;
+  const templates=getPlanTemplates();
+  const keys=Object.keys(templates);
+  if(!keys.length){
+    container.innerHTML='<div class="empty">暂无锁定方案。去「训练」页生成方案后点🔒锁定。</div>';
+    return;
+  }
+  const labels={push:'推日',pull:'拉日',legs:'腿日',shoulder:'肩日',chest:'胸日',back:'背日',arms:'手臂日'};
+  container.innerHTML=keys.map(k=>{
+    const exs=templates[k];
+    const label=labels[k]||k;
+    const exNames=exs.slice(0,5).map(e=>e.name).join(' · ');
+    const more=exs.length>5?` +${exs.length-5}个动作`:'';
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;margin-bottom:4px;background:var(--s3);border-radius:10px;border:1px solid var(--ln)">
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--t1);margin-bottom:2px">🔒 ${label} · ${exs.length}个动作</div>
+        <div style="font-size:10px;color:var(--t2)">${exNames}${more}</div>
+      </div>
+      <button onclick="deletePlanTemplate('${k}');renderLockedPlansOverview();toast('已解锁 ${label}')" style="font-size:10px;color:var(--da);background:none;border:1px solid rgba(232,88,88,.2);border-radius:8px;padding:3px 8px;cursor:pointer;white-space:nowrap">解锁</button>
+    </div>`;
+  }).join('');
+}
+
 // ── 睡眠缓存 ──────────────────────────────────────────
 function cacheSleepData(dur, bedtime){
   localStorage.setItem('form_last_sleep',JSON.stringify({duration_h:dur,bedtime,ts:Date.now()}));
@@ -3492,7 +3501,7 @@ async function checkStrengthStall(){
     window._goPageHooked=true;
     window.goPage=function(n){
       orig(n);
-      if(n==='plan'){renderWeekExecBoard();renderPlanWeekGrid();renderPhaseProgress();renderPlanCheckpoint();}
+      if(n==='plan'){renderLockedPlansOverview();renderWeekExecBoard();renderPlanWeekGrid();renderPhaseProgress();renderPlanCheckpoint();}
       if(n==='dash'){renderTodayStatusCard();renderPhaseTrigger();}
       if(n==='body'){loadStrChart();}
       // v4.3: 打开复盘页自动运行上次选定的周期
