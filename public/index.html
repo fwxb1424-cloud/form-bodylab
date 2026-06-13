@@ -1636,6 +1636,7 @@ function renderMuscleSelector(){
 }
 
 function selectMuscle(id,label,silent){
+  try{
   // v4.3: 有进行中内容时，切换肌群前确认
   if(!silent && id !== S.todayMuscle && S.workout && S.workout.length > 0){
     const hasProgress = S.workout.some(e => e.done || e.sets_data?.some(s=>s.done));
@@ -1676,6 +1677,7 @@ function selectMuscle(id,label,silent){
   }
   if(!silent) toast(`已选：${label}${S.isTrain?' · 饮食切训练日':''}`);
   if(typeof scheduleTrainAutosave==='function')scheduleTrainAutosave();
+  }catch(e){toast('选择失败：'+e.message);}
 }
 
 // ══ RPE ══
