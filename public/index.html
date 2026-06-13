@@ -1631,7 +1631,7 @@ function renderMuscleSelector(){
     const isRec = m.id === recommended;
     const recBadge = isRec ? '<span style="font-size:9px;opacity:.7;margin-left:3px">推荐</span>' : '';
     return `<button class="ms-btn ${m.rest?'rest-btn':''} ${S.todayMuscle===m.id?'on':''} ${isRec&&S.todayMuscle!==m.id?'ms-rec':''}"
-      onclick="selectMuscle('${m.id}','${m.label}')">${m.label}${recBadge}</button>`;
+      onclick="if(typeof selectMuscle!=='function'){if(typeof toast==='function')toast('selectMuscle未定义');return}selectMuscle('${m.id}','${m.label}')">${m.label}${recBadge}</button>`;
   }).join('');
 }
 
@@ -4913,7 +4913,20 @@ async function askCoach(){
   if(!input)return;
   const text=input.value.trim();
   if(!text)return;
-  if(!window.AI){toast('AI 未初始化');return;}
+
+  // 尝试多种方式获取 AI 实例
+  let ai = window.AI || (typeof AI !== 'undefined' ? AI : null);
+  if(!ai){
+    const ds = localStorage.getItem('form_ds');
+    if(ds && typeof AIProvider !== 'undefined'){
+      ai = new AIProvider(ds, localStorage.getItem('form_gm')||null);
+      window.AI = ai;
+    }else{
+      toast('请先设置 DeepSeek API Key\n点底部「重设 API Keys」');
+      return;
+    }
+  }
+
   input.value='';
   _coachMsgs.push({role:'user',text});
   _coachMsgs.push({role:'coach',text:'思考中...',saved:false});
@@ -4921,7 +4934,7 @@ async function askCoach(){
   try{
     const profile=typeof buildProfile==='function'?buildProfile(S):'';
     const system=typeof PROMPTS!=='undefined'&&PROMPTS.coach?PROMPTS.coach(profile):'';
-    const r=await AI.call('coach',{system,userMsg:text});
+    const r=await ai.call('coach',{system,userMsg:text});
     _coachMsgs[_coachMsgs.length-1]={role:'coach',text:r._err?`错误：${(r._raw||'').slice(0,100)}`:(r._raw||'未收到回复'),saved:false};
   }catch(e){
     _coachMsgs[_coachMsgs.length-1]={role:'coach',text:`错误：${e.message}`,saved:false};
