@@ -1363,7 +1363,7 @@ async function boot(){
     window.goPage=function(n){
       _origGoPage(n);
       if(n==='plan'){ renderLockedPlansOverview(); renderWeekExecBoard(); renderPlanWeekGrid(); renderPhaseProgress(); refreshTrainingSlotUI(); }
-      if(n==='dash'){ updateDashStatusBar(); renderDailyChecklist(); renderTodayStatusCard(); renderPhaseTrigger(); setTimeout(renderDashAlerts,30); setTimeout(fillDashTrainCount,200); setTimeout(renderWeeklyMiniCard,100); renderPauseButton(); }
+      if(n==='dash'){ ensureConnections(); updateDashStatusBar(); renderDailyChecklist(); renderTodayStatusCard(); renderPhaseTrigger(); setTimeout(renderDashAlerts,30); setTimeout(fillDashTrainCount,200); setTimeout(renderWeeklyMiniCard,100); renderPauseButton(); }
       if(n==='coach'){ _renderCoach(); }
       if(n==='body'){ if(typeof loadStrChart==='function') loadStrChart(); }
     };
@@ -1411,6 +1411,8 @@ function updateCarbBtn(){
 async function updateGapRec(){
   const wrap=document.getElementById('gap-rec-wrap');
   if(!wrap)return;
+  // 自动恢复 AI 连接
+  if((!AI||!AI.ds)&&typeof AIProvider!=='undefined'){const ds=localStorage.getItem('form_ds');if(ds)try{window.AI=AI=new AIProvider(ds,localStorage.getItem('form_gm')||null);}catch(e){}}
   if(!AI||!AI.ds){wrap.innerHTML=renderSimpleGapRec();return;}
   try{
     const r=await AI.call('advice',{
@@ -1447,6 +1449,11 @@ function updateTokenUI(){
 }
 
 // ══ DASH ══
+// 自动恢复数据库和 AI 连接（首页渲染时触发）
+async function ensureConnections(){
+  if(!window.db&&typeof DB!=='undefined'){const su=localStorage.getItem('form_su');const sk=localStorage.getItem('form_sk');if(su&&sk){try{window.db=db=new DB(su,sk);await db.init();}catch(e){console.warn('db auto-recover failed');}}}
+  if((!window.AI||!window.AI.ds)&&typeof AIProvider!=='undefined'){const ds=localStorage.getItem('form_ds');if(ds){try{window.AI=AI=new AIProvider(ds,localStorage.getItem('form_gm')||null);}catch(e){console.warn('AI auto-recover failed');}}}
+}
 function renderDash(){
   const p=S.protein,pct=Math.min(Math.round(p/PT()*100),100);
   document.getElementById('ring-fill').style.strokeDashoffset=188-188*pct/100;
@@ -3395,6 +3402,11 @@ window.quickAddFav=async function(i){const favs=loadFavFoods();const f=favs[i];i
 // ── 执行率看板（修正：不计入未来天、区分调整） ────────
 async function renderWeekExecBoard(){
   const container=document.getElementById('week-exec-board');if(!container)return;
+  // 自动恢复数据库连接
+  if(!window.db&&typeof DB!=='undefined'){
+    const su=localStorage.getItem('form_su');const sk=localStorage.getItem('form_sk');
+    if(su&&sk){try{window.db=db=new DB(su,sk);await db.init();if(typeof boot==='function')await boot();}catch(e){console.warn('db recovery failed',e);}}
+  }
   if(!window.db){container.innerHTML='<div class="empty">数据库未连接 · 请检查 Supabase 设置</div>';return;}
   const today=new Date();const dow=today.getDay();
   const monday=new Date(today);monday.setDate(today.getDate()-(dow===0?6:dow-1));monday.setHours(0,0,0,0);
@@ -3622,7 +3634,7 @@ async function checkStrengthStall(){
     window.goPage=function(n){
       orig(n);
       if(n==='plan'){renderLockedPlansOverview();renderWeekExecBoard();renderPlanWeekGrid();renderPhaseProgress();renderPlanCheckpoint();}
-      if(n==='dash'){updateDashStatusBar();renderDailyChecklist();renderTodayStatusCard();renderPhaseTrigger();}
+      if(n==='dash'){ensureConnections();updateDashStatusBar();renderDailyChecklist();renderTodayStatusCard();renderPhaseTrigger();}
       if(n==='body'){loadStrChart();}
       // v4.3: 打开复盘页自动运行上次选定的周期
       if(n==='rev'){
