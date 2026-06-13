@@ -3497,12 +3497,16 @@ async function _sendCoachMsg(text){
   _renderCoach();
 }
 
-// 强制剥离markdown格式（防御性后处理）
+// 强制剥离markdown并修复换行（防御性后处理）
 function _cleanCoachText(t){
-  return t.replace(/\*\*(.+?)\*\*/g,'$1')         // **加粗** → 加粗
-           .replace(/^###?\s+/gm,'')               // # ## ### 标题
-           .replace(/^[-*]\s+/gm,'')               // - 或 * 列表标记
-           .replace(/`{1,3}(.+?)`{1,3}/g,'$1');    // `代码`
+  return t.replace(/\*\*(.+?)\*\*/g,'$1')           // **加粗** → 加粗
+           .replace(/^###?\s+/gm,'')                 // # ## ### 标题
+           .replace(/^[-*]\s+/gm,'')                 // - 或 * 列表标记
+           .replace(/`{1,3}(.+?)`{1,3}/g,'$1')      // `代码`
+           .replace(/\n{3,}/g,'\n\n')                // 压缩多余空行
+           // 在序数词/分段提示前加空行
+           .replace(/([。！？》])(第[一二三四五六七八九十]、)/g,'$1\n\n$2')
+           .replace(/([。！？》])(另外、|总结|关键[是在于]|最后|总之|所以)/g,'$1\n\n$2');
 }
 
 // 全屏教练页发送
