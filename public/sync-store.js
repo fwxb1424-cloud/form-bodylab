@@ -58,9 +58,15 @@ const PLAN_11WEEK = {
   kcalStep: 100,
 };
 
+/** 可覆盖的 11 周计划起始日：优先读 localStorage，否则用硬编码常量 */
+function getPlanStartDate() {
+  return localStorage.getItem('form_plan_start_date') || PLAN_11WEEK.startDate;
+}
+
 /** 当前处于11周计划的第几周、是否diet break、本周目标体重等 */
 function getElevenWeekStatus() {
-  const start = new Date(PLAN_11WEEK.startDate + 'T00:00:00');
+  const startDate = getPlanStartDate();
+  const start = new Date(startDate + 'T00:00:00');
   const diffDays = Math.floor((Date.now() - start.getTime()) / 86400000);
   let weekNum = Math.floor(diffDays / 7) + 1;
   const done = weekNum > PLAN_11WEEK.totalWeeks;
@@ -81,6 +87,19 @@ function getElevenWeekStatus() {
     totalDays: PLAN_11WEEK.totalWeeks * 7,
     daysElapsed: Math.max(0, diffDays),
   };
+}
+
+/** 重新开始 11 周计划：起始日设为今天，清除所有累积调整和历史 */
+function resetElevenWeekPlan() {
+  const today = new Date().toISOString().slice(0, 10);
+  localStorage.setItem('form_plan_start_date', today);
+  localStorage.setItem('form_kcal_adjustment', '0');
+  localStorage.setItem('form_diet_break_overgain', '0');
+  localStorage.removeItem('form_checkpoint_history');
+  localStorage.setItem('form_queue_anchor', JSON.stringify({ date: today, index: 0 }));
+  localStorage.setItem('form_cycle_start', new Date().toISOString());
+  if (typeof syncPlanStateToCloud === 'function') syncPlanStateToCloud();
+  if (typeof toast === 'function') toast('🎯 已重置！今天是第1周第1天，计划已归零');
 }
 
 /** 当前累积的kcal微调（周日复盘后用 applyKcalAdjustment 修改） */
@@ -200,7 +219,7 @@ async function syncPlanStateToCloud() {
     profile.diet_break_overgain = localStorage.getItem('form_diet_break_overgain') === '1';
     profile.training_slot = getTrainingSlot();
     profile.notify_paused_until = localStorage.getItem('form_notify_paused_until') || '0';
-    profile.plan_11week = PLAN_11WEEK; // 静态配置也存一份，Widget不用硬编码
+    profile.plan_11week = { ...PLAN_11WEEK, startDate: getPlanStartDate() }; // 静态配置 + 动态起始日
     profile.updated_at = new Date().toISOString();
     await db.saveSettings({ profile_json: JSON.stringify(profile), supps_json: existing?.supps_json });
   } catch (e) {
@@ -856,6 +875,8 @@ window.isPlanMode = isPlanMode;
 // 11周计划
 window.PLAN_11WEEK = PLAN_11WEEK;
 window.getElevenWeekStatus = getElevenWeekStatus;
+window.getPlanStartDate = getPlanStartDate;
+window.resetElevenWeekPlan = resetElevenWeekPlan;
 window.getKcalAdjustment = getKcalAdjustment;
 window.setKcalAdjustment = setKcalAdjustment;
 window.applyKcalAdjustment = applyKcalAdjustment;

@@ -1063,6 +1063,8 @@ body{
       <div class="s" style="margin-top:8px">
         <div class="slbl">减脂期进度</div>
         <div id="plan-phase-progress"></div>
+        <button onclick="doResetPlan()" style="margin-top:8px;width:100%;background:rgba(232,88,88,.06);border:1px solid rgba(232,88,88,.18);color:var(--da);cursor:pointer;padding:10px;border-radius:var(--r);font-family:var(--f1);font-size:12px;font-weight:600">🔄 重新开始 · 计划归零</button>
+        <div style="font-size:9px;color:var(--t3);margin-top:3px;text-align:center">起始日设为今天 · 清除所有累积调整 · 清除 checkpoint 历史</div>
       </div>
 
       <!-- 11周计划 · 体重检查点 -->
@@ -3227,6 +3229,15 @@ function renderPlanWeekGrid(){
     </div>`;
   }).join('');
 }
+function doResetPlan(){
+  if(!confirm('确定要重新开始吗？\n\n起始日改为今天、清除所有 kcal 微调、清除 checkpoint 历史、锚点重置。\n\n体重/训练/饮食数据不会删除。'))return;
+  if(typeof resetElevenWeekPlan==='function')resetElevenWeekPlan();
+  if(typeof renderPhaseProgress==='function')renderPhaseProgress();
+  if(typeof renderPlanCheckpoint==='function')renderPlanCheckpoint();
+  if(typeof renderWeekExecBoard==='function')renderWeekExecBoard();
+  if(typeof renderTodayStatusCard==='function')renderTodayStatusCard();
+}
+
 function refreshTrainingSlotUI(){
   const slot=typeof getTrainingSlot==='function'?getTrainingSlot():'morning';
   ['morning','evening'].forEach(s=>{
