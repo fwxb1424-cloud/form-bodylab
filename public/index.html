@@ -3452,18 +3452,6 @@ async function askCoach(){
   const text=input.value.trim();
   if(!text)return;
 
-  let ai = window.AI || (typeof AI !== 'undefined' ? AI : null);
-  if(!ai){
-    const ds = localStorage.getItem('form_ds');
-    if(ds && typeof AIProvider !== 'undefined'){
-      ai = new AIProvider(ds, localStorage.getItem('form_gm')||null);
-      window.AI = ai;
-    }else{
-      toast('请先设置 DeepSeek API Key — 点底部重设API Keys');
-      return;
-    }
-  }
-
   input.value='';
   _coachMsgs.push({role:'user',text});
   _coachMsgs.push({role:'coach',text:'思考中...',saved:false});
@@ -3471,7 +3459,7 @@ async function askCoach(){
   try{
     const profile=typeof buildProfile==='function'?buildProfile(window.S):'';
     const system=typeof PROMPTS!=='undefined'&&PROMPTS.coach?PROMPTS.coach(profile):'';
-    const r=await ai.call('coach',{system,userMsg:text});
+    const r=await AI.call('coach',{system,userMsg:text});
     _coachMsgs[_coachMsgs.length-1]={role:'coach',text:r._err?`错误：${(r._raw||'').slice(0,100)}`:(r._raw||'未收到回复'),saved:false};
   }catch(e){
     _coachMsgs[_coachMsgs.length-1]={role:'coach',text:`错误：${e.message}`,saved:false};
