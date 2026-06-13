@@ -771,6 +771,8 @@ body{
         </div>
       </div>
 
+      <!-- ═══════ 优先级 1：今日状态 + 快捷操作 ═══════ -->
+
       <!-- 今日状态条 -->
       <div class="s" style="margin-top:8px">
         <div id="dash-status-bar" style="display:flex;align-items:center;gap:8px;padding:12px 14px;background:linear-gradient(135deg,rgba(255,255,255,.04),rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.08);border-radius:var(--r2);font-family:var(--f1);box-shadow:0 2px 20px rgba(0,0,0,.25)">
@@ -801,16 +803,7 @@ body{
         </div>
       </div>
 
-      <!-- 微复盘提醒 -->
-      <div id="dash-alerts-wrap"></div>
-
-      <!-- 今日任务清单（静态容器） -->
-      <div class="s" style="margin-top:7px" id="dash-checklist-section">
-        <div class="slbl">今日任务</div>
-        <div id="dash-checklist"><div class="empty">加载中…</div></div>
-      </div>
-
-      <!-- 快捷操作 -->
+      <!-- 快捷操作（体重 + 去训练 + 休息） -->
       <div class="s" id="dash-quick-actions" style="margin-top:8px">
         <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
           <input type="number" step="0.1" placeholder="体重 kg" id="dash-quick-weight" style="flex:1;min-width:80px;background:var(--s2);border:1px solid var(--ln2);border-radius:10px;padding:8px 10px;color:var(--t1);font-family:var(--f1);font-size:12px;outline:none;-webkit-appearance:none" onkeydown="if(event.key==='Enter')quickSaveWeight()" onfocus="this.select()">
@@ -820,13 +813,10 @@ body{
         </div>
       </div>
 
-      <!-- 今日状态卡 -->
-      <div id="today-status-card"></div>
-      <div id="phase-trigger-wrap"></div>
-      <div id="sc-wrap"></div>
+      <!-- ═══════ 优先级 2：蛋白质 + 今日数据 ═══════ -->
 
-      <!-- 蛋白质 -->
-      <div class="s"><div class="slbl">蛋白质</div>
+      <!-- 蛋白质进度环 -->
+      <div class="s" style="margin-top:8px"><div class="slbl">蛋白质</div>
         <div class="pc">
           <div class="rw">
             <svg width="76" height="76" viewBox="0 0 76 76"><circle cx="38" cy="38" r="30" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="5"/><circle id="ring-fill" cx="38" cy="38" r="30" fill="none" stroke="#E2FF5C" stroke-width="5" stroke-linecap="round" stroke-dasharray="188" stroke-dashoffset="188" style="transition:stroke-dashoffset .9s ease"/></svg>
@@ -841,27 +831,41 @@ body{
         </div>
       </div>
 
-      <!-- 今日快照 -->
-      <div class="s" style="margin-top:7px"><div class="slbl">今日数据</div>
+      <!-- 热量 + 容量 -->
+      <div class="s" style="margin-top:7px">
         <div class="sg"><div class="si"><div class="si-l">热量</div><div class="si-v" id="d-kcal" style="font-size:17px">0</div><div class="si-u">kcal</div></div><div class="si"><div class="si-l">训练容量</div><div class="si-v" id="d-vol" style="font-size:17px">0</div><div class="si-u">kg·reps</div></div></div>
       </div>
 
-      <!-- 补强建议 -->
-      <div class="s" style="margin-top:7px"><div class="slbl">今日补强建议</div><div id="gap-rec-wrap"><div style="font-size:12px;color:var(--t2);padding:10px 0">连接 API 后自动分析营养缺口</div></div></div>
+      <!-- ═══════ 优先级 3：提醒 + 任务 ═══════ -->
 
-      <!-- 基准线 -->
-      <div class="s" style="margin-top:7px"><div class="slbl">基准线</div>
-        <div class="sg"><div class="si ac"><div class="si-l">肌肉量</div><div class="si-v" id="d-muscle">40.4</div><div class="si-u">kg</div></div><div class="si wa"><div class="si-l">体脂率</div><div class="si-v" id="d-fat">17.8</div><div class="si-u">%</div></div></div>
+      <!-- 微复盘提醒 -->
+      <div id="dash-alerts-wrap"></div>
+
+      <!-- 今日任务 -->
+      <div class="s" style="margin-top:7px" id="dash-checklist-section">
+        <div class="slbl">今日任务</div>
+        <div id="dash-checklist"><div class="empty">加载中…</div></div>
       </div>
 
-      <!-- 补剂 -->
-      <div class="s" style="margin-top:7px"><div class="slbl">补剂打卡</div><div id="dash-supps"></div></div>
+      <!-- 今日状态卡 -->
+      <div id="today-status-card"></div>
+      <div id="phase-trigger-wrap"></div>
+      <div id="sc-wrap"></div>
 
-      <!-- 每周看板 -->
-      <div class="s" style="margin-top:6px"><div class="slbl">本周看板</div><div id="dash-weekly-card"></div></div>
+      <!-- ═══════ 优先级 4：可折叠的次要模块 ═══════ -->
+
+      <div class="s" style="margin-top:8px">
+        <div class="slbl" onclick="var n=document.getElementById('dash-more');n.style.display=n.style.display==='none'?'':'none';this.textContent=n.style.display==='none'?'▸ 更多（补强·基准·补剂·看板）':'▾ 收起'" style="cursor:pointer;color:var(--t2)">▸ 更多（补强·基准·补剂·看板）</div>
+        <div id="dash-more" style="display:none">
+          <div style="margin-top:6px"><div class="slbl">今日补强建议</div><div id="gap-rec-wrap"><div style="font-size:12px;color:var(--t2);padding:10px 0">连接 API 后自动分析营养缺口</div></div></div>
+          <div style="margin-top:6px"><div class="slbl">基准线</div><div class="sg"><div class="si ac"><div class="si-l">肌肉量</div><div class="si-v" id="d-muscle">40.4</div><div class="si-u">kg</div></div><div class="si wa"><div class="si-l">体脂率</div><div class="si-v" id="d-fat">17.8</div><div class="si-u">%</div></div></div></div>
+          <div style="margin-top:7px"><div class="slbl">补剂打卡</div><div id="dash-supps"></div></div>
+          <div style="margin-top:6px"><div class="slbl">本周看板</div><div id="dash-weekly-card"></div></div>
+        </div>
+      </div>
 
       <!-- 快捷入口 -->
-      <div class="s" style="margin-top:6px;padding-bottom:2px"><div style="display:flex;gap:5px;justify-content:center;flex-wrap:wrap"><button class="adj-btn" onclick="goPage('plan')" style="font-size:10px;padding:3px 9px;border-radius:12px;border:1px solid var(--ln);background:var(--s2);color:var(--t2);cursor:pointer;font-family:var(--f1)">📋 计划</button><button class="adj-btn" onclick="goPage('mem')" style="font-size:10px;padding:3px 9px;border-radius:12px;border:1px solid var(--ln);background:var(--s2);color:var(--t2);cursor:pointer;font-family:var(--f1)">🧠 记忆</button><button class="adj-btn" onclick="goPage('rev')" style="font-size:10px;padding:3px 9px;border-radius:12px;border:1px solid var(--ln);background:var(--s2);color:var(--t2);cursor:pointer;font-family:var(--f1)">📊 复盘</button></div></div>
+      <div class="s" style="margin-top:8px;padding-bottom:2px"><div style="display:flex;gap:5px;justify-content:center;flex-wrap:wrap"><button class="adj-btn" onclick="goPage('plan')" style="font-size:10px;padding:3px 9px;border-radius:12px;border:1px solid var(--ln);background:var(--s2);color:var(--t2);cursor:pointer;font-family:var(--f1)">📋 计划</button><button class="adj-btn" onclick="goPage('mem')" style="font-size:10px;padding:3px 9px;border-radius:12px;border:1px solid var(--ln);background:var(--s2);color:var(--t2);cursor:pointer;font-family:var(--f1)">🧠 记忆</button><button class="adj-btn" onclick="goPage('rev')" style="font-size:10px;padding:3px 9px;border-radius:12px;border:1px solid var(--ln);background:var(--s2);color:var(--t2);cursor:pointer;font-family:var(--f1)">📊 复盘</button></div></div>
       <div class="s" style="margin-top:8px;padding-bottom:4px;text-align:center"><button class="rl" onclick="resetSetup()">重设 API Keys</button></div>
     </div>
 
