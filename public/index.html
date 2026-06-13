@@ -1317,7 +1317,6 @@ async function boot(){
   ['dash-date','train-date','train-badge'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=ds;});
   renderMuscleSelector();renderSupps();renderMeasures();renderChart();
   updateTCTag();updateCarbBtn();
-  initNutritionModule();
   if(typeof loadAppStateLocally==='function')loadAppStateLocally();
   if(typeof updateTrainDateUI==='function')updateTrainDateUI();
   if(typeof restoreLocalProfileOnBoot==='function')restoreLocalProfileOnBoot();
