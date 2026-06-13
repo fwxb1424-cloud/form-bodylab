@@ -1690,6 +1690,7 @@ function setRPE(n){S.rpe=n;renderRPE();toast(`RPE ${n}`);if(typeof scheduleTrain
 // ── 当前选中的餐次 ───────────────────────────────────────
 let S_mealType = '早餐'; // 默认早餐，按时段自动初始化
 let S_dietDate = 'today'; // 'today' | 'yesterday'
+let S_trainDate = 'today';
 
 function autoSelectMealType(){
   const h = new Date().getHours();
@@ -1716,6 +1717,12 @@ window.selectMealType = function(type, btn){
 };
 
 // ── 日期切换：今天 / 补录昨天 ──────────────────────────
+window.switchTrainDate = function(mode){
+  // 训练页补录模式切换（与 switchDietDate 对应）
+  S_trainDate = mode === 'today' ? 'today' : parseInt(mode);
+  if(typeof updateTrainDateUI === 'function') updateTrainDateUI();
+};
+
 window.switchDietDate = function(mode){
   S_dietDate = mode;
   const barEl = document.getElementById('backfill-bar');
