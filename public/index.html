@@ -787,8 +787,11 @@ body{
             <div><div style="font-size:10px;color:var(--t2);margin-bottom:4px">起床</div><input type="time" id="dsq-wake" style="width:100%;background:var(--s3);border:1px solid var(--ln2);border-radius:8px;padding:8px;color:var(--t1);font-size:14px;font-weight:600;outline:none" oninput="calcDashSleepDur()"></div>
           </div>
           <div style="text-align:center;font-size:20px;font-weight:800;color:var(--ac);margin-bottom:8px" id="dsq-dur">—</div>
-          <div style="display:flex;gap:5px;margin-bottom:10px">
-            ${['😴差','😐一般','🙂良好','😄极佳'].map((q,i)=>`<button onclick="setDashSleepQ(${i+1},this)" data-q="${i+1}" style="flex:1;font-size:11px;padding:6px 0;border-radius:8px;border:1px solid var(--ln);background:var(--s3);color:var(--t2);cursor:pointer">${q}</button>`).join('')}
+          <div style="display:flex;gap:5px;margin-bottom:10px" id="dsq-quality-btns">
+            <button onclick="setDashSleepQ(1,this)" data-q="1" style="flex:1;font-size:11px;padding:6px 0;border-radius:8px;border:1px solid var(--ln);background:var(--s3);color:var(--t2);cursor:pointer">😴差</button>
+            <button onclick="setDashSleepQ(2,this)" data-q="2" style="flex:1;font-size:11px;padding:6px 0;border-radius:8px;border:1px solid var(--ln);background:var(--s3);color:var(--t2);cursor:pointer">😐一般</button>
+            <button onclick="setDashSleepQ(3,this)" data-q="3" style="flex:1;font-size:11px;padding:6px 0;border-radius:8px;border:1px solid var(--ln);background:rgba(226,255,92,.15);color:var(--ac);cursor:pointer">🙂良好</button>
+            <button onclick="setDashSleepQ(4,this)" data-q="4" style="flex:1;font-size:11px;padding:6px 0;border-radius:8px;border:1px solid var(--ln);background:var(--s3);color:var(--t2);cursor:pointer">😄极佳</button>
           </div>
           <button onclick="saveDashSleep()" style="width:100%;padding:11px;background:var(--ac);color:#08090A;border:none;border-radius:var(--r);font-size:13px;font-weight:700;cursor:pointer">记录睡眠</button>
         </div>
@@ -1641,6 +1644,7 @@ async function quickLogRest(){
   if(!window.db){toast('数据库未连接，请刷新页面重新设置');return;}
   btn.textContent='...';btn.disabled=true;
   try{
+    S.todayMuscle='rest';renderDashStatusBar();
     if(typeof markTodayAs==='function')markTodayAs('rest');
     if(typeof syncPlanStateToCloud==='function')syncPlanStateToCloud();
     toast('✓ 已标记为休息日');
@@ -1750,7 +1754,7 @@ function renderMuscleSelector(){
   const recommended = getNextRecommended();
   const isBackfill = S_trainDate !== 'today';
   document.getElementById('muscle-sel').innerHTML = MUSCLE_OPTIONS.map(m=>{
-    const isRec = m.id === recommended && !isBackfill; // 补录时不显示推荐
+    const isRec = m.id === recommended && !isBackfill && !S.todayMuscle; // 补录/已选时不推荐
     const recBadge = isRec ? '<span style="font-size:9px;opacity:.7;margin-left:3px">推荐</span>' : '';
     return `<button class="ms-btn ${m.rest?'rest-btn':''} ${S.todayMuscle===m.id?'on':''} ${isRec&&S.todayMuscle!==m.id?'ms-rec':''}"
       onclick="if(typeof selectMuscle!=='function'){if(typeof toast==='function')toast('selectMuscle未定义');return}selectMuscle('${m.id}','${m.label}')">${m.label}${recBadge}</button>`;
@@ -1799,6 +1803,7 @@ function selectMuscle(id,label,silent){
   }
   if(!silent) toast(`已选：${label}${S.isTrain?' · 饮食切训练日':''}`);
   if(typeof scheduleTrainAutosave==='function')scheduleTrainAutosave();
+  renderDashStatusBar(); // 同步首页状态条
   }catch(e){toast('选择失败：'+e.message);}
 }
 
