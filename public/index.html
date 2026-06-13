@@ -4910,8 +4910,10 @@ function renderCoachChat() {
 }
 
 async function sendCoachMsg() {
+  try {
   const input = document.getElementById('coach-input');
   const btn = document.getElementById('coach-send-btn');
+  if (!input || !btn) { toast('聊天界面加载异常，请刷新'); return; }
   const text = input.value.trim();
   if (!text) return;
   if (!window.AI) { toast('AI 未初始化，请先配置 API Key'); return; }
@@ -4940,7 +4942,9 @@ async function sendCoachMsg() {
   renderCoachChat();
   btn.disabled = false;
   btn.textContent = '发送';
-  document.getElementById('coach-input').focus();
+  const focusInput = document.getElementById('coach-input');
+  if (focusInput) focusInput.focus();
+  } catch(e) { toast('发送失败：' + e.message); }
 }
 
 async function saveCoachMemory(i) {
@@ -4964,6 +4968,11 @@ async function saveCoachMemory(i) {
     toast('保存失败：' + e.message);
   }
 }
+
+window.openCoachChat = openCoachChat;
+window.closeCoachChat = closeCoachChat;
+window.sendCoachMsg = sendCoachMsg;
+window.saveCoachMemory = saveCoachMemory;
 
 </script>
 <!-- AI 教练聊天弹窗 -->
