@@ -183,7 +183,7 @@ function buildProfile(S) {
 训练偏好：杠铃卧推起手 · 蝴蝶机夹胸 · 宽窄下拉+宽窄划船 · 面拉收尾 · 器械/史密斯肩推 · 划船机躺姿侧平举 · 倒蹬+臀推+握姿腿弯举
 骨架特点：窄肩小骨架，优先视觉扩宽训练（侧束+背宽）
 当前时间：星期${dayNames[now.getDay()]} ${tc.label}（${tc.hint}）
-今日类型：${S.isTrain?'训练日':'休息日'} · RPE ${S.rpe}/10
+今日类型：${S.isTrain?'训练日':'休息日'}
 今日摄入：蛋白质${Math.round(S.protein)}g · 热量${Math.round(S.kcal)}kcal
 ${recentCtx}
 ${strengthCtx}
@@ -211,7 +211,7 @@ function buildRecentTrainContext(S) {
       return `    ${e.name}: ${bestSet?bestSet.w+'kg×'+bestSet.r+'次×'+doneSets.length+'组':e.weight_kg+'kg×'+e.reps+'×'+e.sets+'组（计划）'} | 容量${Math.round(actualVol)}`;
     }).join('\n');
     const date = new Date(sess.trained_at).toLocaleDateString('zh-CN',{month:'numeric',day:'numeric'});
-    return `  ${label}（${date}，容量${Math.round(sess.volume||0)}kg·r，RPE ${sess.rpe||'—'}）：\n${exSummary}`;
+    return `  ${label}（${date}，容量${Math.round(sess.volume||0)}kg·r）：\n${exSummary}`;
   }).join('\n');
   return lines ? `\n最近各类型训练实际数据：\n${lines}` : '';
 }
@@ -260,7 +260,7 @@ ${customRequest?`用户特别要求：${customRequest}`:''}
 - 如果某动作上次记录了问题（左肩不适、力竭提前等），本次调整或替换
 - 双杠臂屈伸：is_bodyweight=true，weight_kg写0，reps写目标次数，notes里说明「自重（85kg），如用辅助机写-辅助重量」
 - 容量方向：减脂期控制在计划范围内（推日≤19组），不要无脑堆量
-- RPE≥8时减1组或降5%重量；RPE≤5时+2.5kg或+1次
+- 如果上次训练容量过高导致恢复不足，减1组或降5%重量；轻松完成则+2.5kg或+1次
 
 计划动作顺序（${muscleGroup}）：
 推日：杠铃卧推→史密斯上斜→双杠（或绳索下压）→蝴蝶机夹胸→哑铃侧平举→绳索三头下压
@@ -275,7 +275,7 @@ ${customRequest?`用户特别要求：${customRequest}`:''}
   "muscle_groups":"目标肌群（精确）",
   "intensity":"High/Medium/Low",
   "estimated_duration":"分钟数",
-  "volume_note":"本次容量策略说明（结合上次数据和当前RPE）",
+  "volume_note":"本次容量策略说明（结合上次数据和恢复状态）",
   "next_session_hint":"下次训练的重点提示（一句话）",
   "exercises":[{
     "name":"动作中文名",
@@ -283,7 +283,6 @@ ${customRequest?`用户特别要求：${customRequest}`:''}
     "reps":"8-12",
     "weight_kg":数字（基于历史，双杠写0）,
     "muscle":"针对肌群",
-    "rpe_target":整数,
     "is_compound":true/false,
     "is_bodyweight":false,
     "notes":"技术要点+进步方向（20字内）"
@@ -420,12 +419,16 @@ ${profile}
 ${profile}
 
 对话规则：
-1. 你已经看到了上方用户的完整数据（体格、今日目标、训练史、力量记录、体重趋势、记忆库）。回答时**必须引用具体数据**，不要泛泛而谈。比如"你上周推日容量1870kg·r，这不是平台期，是热量缺口导致的"而不是"可能跟饮食有关"。
-2. 语气：像高级教练，直接、科学、零废话。不要免责声明。用"你"不用"您"。
-3. 当用户表达沮丧、难过、自责等负面情绪时，先共情（一两句话足够），再给数据和分析。不要跳过情绪直接批评。不要用"不可接受""浪费""失败"这类词汇。用数据说服，不用指责说服。
-4. 每条回答控制在150–300字，如果用户要求详细展开可以更长。
-5. 回答最后可以追加一句**可执行建议**（用户可以选择保存到记忆）。
-6. 如果用户问的问题需要查最新数据但你当前没有，直接说"建议打开App查看具体数字"。
+1. 你已经看到了上方用户的完整数据。回答时必须引用具体数据，不要泛泛而谈。
+2. 语气：像高级教练，直接、科学、零废话。用"你"不用"您"。
+3. 当用户表达负面情绪时，先共情（一两句足够），再给数据和分析。禁止用"不可接受""浪费""失败"等指责性词汇。
+4. 格式要求（重要）：
+   - 禁止使用markdown：不要用**加粗**、不要用- 列表、不要用# 标题
+   - 分点用自然方式：第一、第二、第三；或用1. 2. 3.
+   - 重要内容换行表达，不要加星号
+   - 像微信聊天一样说话，不是写文档
+5. 结构化回答：先给核心判断（1-2句），再分点给具体分析和数据引用，最后给可执行建议。
+6. 每条约150-300字。如果用户要求详细展开可以更长。
 7. 不要编造数据。只基于上方档案里的真实数字回答。
 8. 中文回答。`,
 };

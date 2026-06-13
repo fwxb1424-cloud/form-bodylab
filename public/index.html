@@ -759,7 +759,7 @@ body{
 
     <!-- ══ 概况 ══ -->
     <div class="page on" id="pg-dash">
-      <div class="ph"><div class="ph-ey">FORM · Body Lab</div><div class="ph-h1" style="display:flex;align-items:center;justify-content:space-between"><span>今日概况</span><div style="display:flex;gap:4px;align-items:center"><button onclick="goPage('coach')" style="background:linear-gradient(135deg,rgba(226,255,92,.12),rgba(180,154,255,.08));border:1px solid rgba(226,255,92,.2);color:var(--ac);cursor:pointer;padding:5px 12px;border-radius:20px;font-family:var(--f1);font-size:11px;font-weight:600;white-space:nowrap" title="AI教练">🧠 教练</button><button onclick="toggleMoreMenu()" style="background:none;border:none;color:var(--t2);cursor:pointer;padding:4px 10px;border-radius:8px;font-size:20px;letter-spacing:3px;line-height:1" title="更多">⋯</button></div></div><div class="ph-sub" id="dash-date"></div>
+      <div class="ph"><div class="ph-ey">FORM · Body Lab</div><div class="ph-h1" style="display:flex;align-items:center;justify-content:space-between"><span>今日概况</span><button onclick="toggleMoreMenu()" style="background:none;border:none;color:var(--t2);cursor:pointer;padding:4px 10px;border-radius:8px;font-size:20px;letter-spacing:3px;line-height:1;margin-left:auto" title="更多">⋯</button></div><div class="ph-sub" id="dash-date"></div>
         <div id="more-menu" style="display:none;margin-top:8px;padding:2px 0;flex-wrap:wrap;gap:5px">
           <button class="tc-pill" onclick="goPage('plan');hideMoreMenu()" style="cursor:pointer;border:1px solid var(--ln2);background:var(--s3);padding:3px 10px;font-size:11px;font-family:var(--f1);color:var(--t1);border-radius:10px">📋 计划</button>
           <button class="tc-pill" onclick="goPage('mem');hideMoreMenu()" style="cursor:pointer;border:1px solid var(--ln2);background:var(--s3);padding:3px 10px;font-size:11px;font-family:var(--f1);color:var(--t1);border-radius:10px">🧠 记忆</button>
@@ -959,11 +959,6 @@ body{
         </div>
       </div>
 
-      <!-- RPE -->
-      <div class="s" style="margin-top:8px">
-        <div class="slbl">今日 RPE（主观疲劳）</div>
-        <div class="rpe-r"><span class="rpe-l">RPE</span><div class="rpbtns" id="rpe-btns"></div></div>
-      </div>
 
       <!-- vol summary -->
       <div class="s" style="margin-top:8px">
@@ -1308,7 +1303,7 @@ async function boot(){
   document.getElementById('app').classList.remove('off');
   const ds=todayStr();
   ['dash-date','train-date','train-badge'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=ds;});
-  renderMuscleSelector();renderRPE();renderSupps();renderMeasures();renderChart();
+  renderMuscleSelector();renderSupps();renderMeasures();renderChart();
   updateTCTag();updateCarbBtn();
   initNutritionModule();
   if(typeof loadAppStateLocally==='function')loadAppStateLocally();
@@ -1636,8 +1631,9 @@ function getNextRecommended(){
 
 function renderMuscleSelector(){
   const recommended = getNextRecommended();
+  const isBackfill = S_trainDate !== 'today';
   document.getElementById('muscle-sel').innerHTML = MUSCLE_OPTIONS.map(m=>{
-    const isRec = m.id === recommended;
+    const isRec = m.id === recommended && !isBackfill; // 补录时不显示推荐
     const recBadge = isRec ? '<span style="font-size:9px;opacity:.7;margin-left:3px">推荐</span>' : '';
     return `<button class="ms-btn ${m.rest?'rest-btn':''} ${S.todayMuscle===m.id?'on':''} ${isRec&&S.todayMuscle!==m.id?'ms-rec':''}"
       onclick="if(typeof selectMuscle!=='function'){if(typeof toast==='function')toast('selectMuscle未定义');return}selectMuscle('${m.id}','${m.label}')">${m.label}${recBadge}</button>`;
@@ -1690,8 +1686,8 @@ function selectMuscle(id,label,silent){
 }
 
 // ══ RPE ══
-function renderRPE(){document.getElementById('rpe-btns').innerHTML=[1,2,3,4,5,6,7,8,9,10].map(n=>`<button class="rb ${S.rpe===n?'on':''}" onclick="setRPE(${n})">${n}</button>`).join('');}
-function setRPE(n){S.rpe=n;renderRPE();toast(`RPE ${n}`);if(typeof scheduleTrainAutosave==='function')scheduleTrainAutosave();}
+function renderRPE(){/* RPE UI removed */ var el=document.getElementById('rpe-btns'); if(el)el.innerHTML='';}
+function setRPE(n){S.rpe=n;}
 
 // ══ DIET ══
 
@@ -1726,10 +1722,24 @@ window.selectMealType = function(type, btn){
 
 // ── 日期切换：今天 / 补录昨天 ──────────────────────────
 window.switchTrainDate = function(mode){
-  // 训练页补录模式切换（与 switchDietDate 对应）
+  // 训练页补录模式切换
   S_trainDate = mode === 'today' ? 'today' : parseInt(mode);
-  if(typeof updateTrainDateUI === 'function') updateTrainDateUI();
+  updateTrainDateUI();
 };
+
+function updateTrainDateUI(){
+  const isBackfill = S_trainDate !== 'today';
+  const bar = document.getElementById('train-backfill-bar');
+  const todayBtn = document.getElementById('ts-today');
+  const genBtn = document.querySelector('#pg-train .ghost-btn');
+  // 补录模式 vs 今天
+  if(bar) bar.classList.toggle('hidden', !isBackfill);
+  if(todayBtn) todayBtn.classList.toggle('on', !isBackfill);
+  // 更新"生成"按钮文字
+  if(genBtn) genBtn.textContent = isBackfill ? '生成该日训练方案' : '生成今日训练方案';
+  // 重新渲染肌群选择器（补录时隐藏推荐高亮）
+  renderMuscleSelector();
+}
 
 window.switchDietDate = function(mode){
   S_dietDate = mode;
@@ -4981,6 +4991,7 @@ window.importPlanFoods = function() {
   toast(added > 0 ? `✓ 已导入 ${added} 个常用食物` : '已是最新，无新增');
 };
 
-// ══ AI 教练（Dash 内嵌版）═════════════════════════════════</script>
+// ══ AI 教练（Dash 内嵌版）═════════════════════════════════
+</script>
 </body>
 </html>
