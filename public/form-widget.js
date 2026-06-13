@@ -7,8 +7,8 @@
 //   3. 编辑Widget → 选择此脚本 → 刷新模式选「不刷新」（iOS会按系统节奏刷新，约15分钟）
 //   4. 想立即刷新：点一下Widget会触发系统刷新（不保证立即生效）
 
-const SUPABASE_URL = "https://YOUR-PROJECT.supabase.co";
-const SUPABASE_ANON_KEY = "YOUR-ANON-KEY";
+const SUPABASE_URL = "https://urduzohozghrfgwsvamy.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVyZHV6b2hvemdocmZnd3N2YW15Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwMjcyMDQsImV4cCI6MjA5NDYwMzIwNH0.wSbZiY6rxd7jVrFD0EsaC0hIIbeP3UiacBlL7YFiZ50";
 
 // ── 与 sync-store.js 保持一致的常量（手动同步，改动后请双边都改）──
 const PLAN_QUEUE_DEF = ['push', 'pull', 'cardio', 'legs', 'shoulder', 'cardio', 'rest'];
