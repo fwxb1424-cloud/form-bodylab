@@ -3452,6 +3452,27 @@ async function askCoach(){
   const text=input.value.trim();
   if(!text)return;
 
+  // 如果 AI 未初始化，尝试从 localStorage 恢复
+  if(!AI || typeof AI.call !== 'function'){
+    _coachMsgs.push({role:'user',text});
+    const ds=localStorage.getItem('form_ds');
+    const gm=localStorage.getItem('form_gm');
+    if(ds && typeof AIProvider !== 'undefined'){
+      try{
+        window.AI=AI=new AIProvider(ds,gm||null);
+        _coachMsgs.push({role:'coach',text:'已重新连接 AI，请再问一次。',saved:false});
+        _renderCoach();
+      }catch(e){
+        _coachMsgs.push({role:'coach',text:`AI 初始化失败：${e.message}。请刷新页面重新设置。`,saved:false});
+        _renderCoach();
+      }
+    }else{
+      _coachMsgs.push({role:'coach',text:'未找到 API Key。请在设置页面输入 DeepSeek Key。',saved:false});
+      _renderCoach();
+    }
+    return;
+  }
+
   input.value='';
   _coachMsgs.push({role:'user',text});
   _coachMsgs.push({role:'coach',text:'思考中...',saved:false});
