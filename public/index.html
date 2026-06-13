@@ -766,11 +766,29 @@ body{
           <button class="tc-pill" onclick="goPage('rev');hideMoreMenu()" style="cursor:pointer;border:1px solid var(--ln2);background:var(--s3);padding:3px 10px;font-size:11px;font-family:var(--f1);color:var(--t1);border-radius:10px">📊 复盘</button>
         </div>
       </div>
+
+      <!-- 今日状态条：时段 + 睡眠 + 今日任务 -->
+      <div class="s" style="margin-top:8px">
+        <div id="dash-status-bar" style="display:flex;align-items:center;gap:6px;padding:10px 12px;background:var(--s2);border:1px solid var(--ln);border-radius:var(--r);font-family:var(--f1)">
+          <button onclick="toggleDashSlot()" id="dash-slot-btn" style="font-size:13px;font-weight:600;border:none;border-radius:18px;padding:5px 14px;cursor:pointer;white-space:nowrap">🌅 早间</button>
+          <div style="width:1px;height:18px;background:var(--ln2);flex-shrink:0"></div>
+          <div id="dash-sleep-badge" style="flex:1;font-size:12px;color:var(--t2);min-width:0">🛌 昨晚 —</div>
+          <div style="width:1px;height:18px;background:var(--ln2);flex-shrink:0"></div>
+          <div id="dash-today-label" style="font-size:12px;font-weight:600;color:var(--ac);white-space:nowrap">加载中…</div>
+        </div>
+      </div>
+
       <!-- 微复盘提醒 -->
       <div id="dash-alerts-wrap"></div>
-      <!-- 快速操作 -->
+
+      <!-- 今日任务清单（静态容器） -->
+      <div class="s" style="margin-top:7px" id="dash-checklist-section">
+        <div class="slbl">今日任务</div>
+        <div id="dash-checklist"><div class="empty">加载中…</div></div>
+      </div>
+
+      <!-- 快捷操作 -->
       <div class="s" id="dash-quick-actions" style="margin-top:8px">
-        <div style="font-size:10px;color:var(--t2);margin-bottom:6px">快捷操作</div>
         <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
           <input type="number" step="0.1" placeholder="体重 kg" id="dash-quick-weight" style="flex:1;min-width:80px;background:var(--s2);border:1px solid var(--ln2);border-radius:10px;padding:8px 10px;color:var(--t1);font-family:var(--f1);font-size:12px;outline:none;-webkit-appearance:none" onkeydown="if(event.key==='Enter')quickSaveWeight()" onfocus="this.select()">
           <button onclick="quickSaveWeight()" style="background:rgba(226,255,92,.1);border:1px solid rgba(226,255,92,.2);color:var(--ac);cursor:pointer;padding:8px 14px;border-radius:10px;font-family:var(--f1);font-size:11px;font-weight:600;white-space:nowrap">保存</button>
@@ -778,11 +796,13 @@ body{
           <button onclick="quickLogRest()" id="dash-quick-rest-btn" style="background:rgba(180,154,255,.08);border:1px solid rgba(180,154,255,.15);color:var(--pu);cursor:pointer;padding:8px 14px;border-radius:10px;font-family:var(--f1);font-size:11px;font-weight:600;white-space:nowrap">😴 今天休息</button>
         </div>
       </div>
-<!-- 今日状态卡 -->
+
+      <!-- 今日状态卡 -->
       <div id="today-status-card"></div>
-      <!-- 阶段触发器 -->
       <div id="phase-trigger-wrap"></div>
       <div id="sc-wrap"></div>
+
+      <!-- 蛋白质 -->
       <div class="s"><div class="slbl">蛋白质</div>
         <div class="pc">
           <div class="rw">
@@ -797,19 +817,27 @@ body{
           </div>
         </div>
       </div>
+
+      <!-- 今日快照 -->
+      <div class="s" style="margin-top:7px"><div class="slbl">今日数据</div>
+        <div class="sg"><div class="si"><div class="si-l">热量</div><div class="si-v" id="d-kcal" style="font-size:17px">0</div><div class="si-u">kcal</div></div><div class="si"><div class="si-l">训练容量</div><div class="si-v" id="d-vol" style="font-size:17px">0</div><div class="si-u">kg·reps</div></div></div>
+      </div>
+
+      <!-- 补强建议 -->
+      <div class="s" style="margin-top:7px"><div class="slbl">今日补强建议</div><div id="gap-rec-wrap"><div style="font-size:12px;color:var(--t2);padding:10px 0">连接 API 后自动分析营养缺口</div></div></div>
+
+      <!-- 基准线 -->
       <div class="s" style="margin-top:7px"><div class="slbl">基准线</div>
         <div class="sg"><div class="si ac"><div class="si-l">肌肉量</div><div class="si-v" id="d-muscle">40.4</div><div class="si-u">kg</div></div><div class="si wa"><div class="si-l">体脂率</div><div class="si-v" id="d-fat">17.8</div><div class="si-u">%</div></div></div>
       </div>
-      <div class="s" style="margin-top:7px"><div class="slbl">今日快照</div>
-        <div class="sg"><div class="si"><div class="si-l">热量</div><div class="si-v" id="d-kcal" style="font-size:17px">0</div><div class="si-u">kcal</div></div><div class="si"><div class="si-l">训练容量</div><div class="si-v" id="d-vol" style="font-size:17px">0</div><div class="si-u">kg·reps</div></div></div>
-      </div>
-      <div class="s" style="margin-top:7px"><div class="slbl">今日补强建议</div><div id="gap-rec-wrap"><div style="font-size:12px;color:var(--t2);padding:10px 0">连接 API 后自动分析营养缺口</div></div></div>
-      <div class="s" style="margin-top:7px"><div class="slbl">API 用量</div>
-        <div class="tok-row"><div class="tok-i"><div class="tok-l">今日</div><div class="tok-v ac" id="tok-today">¥0.000</div></div><div class="tok-i"><div class="tok-l">本月</div><div class="tok-v" id="tok-month">¥0.00</div></div><div class="tok-i"><div class="tok-l">总计</div><div class="tok-v" id="tok-total">¥0.00</div></div></div>
-      </div>
+
+      <!-- 补剂 -->
       <div class="s" style="margin-top:7px"><div class="slbl">补剂打卡</div><div id="dash-supps"></div></div>
+
       <!-- 每周看板 -->
       <div class="s" style="margin-top:6px"><div class="slbl">本周看板</div><div id="dash-weekly-card"></div></div>
+
+      <!-- 快捷入口 -->
       <div class="s" style="margin-top:6px;padding-bottom:2px"><div style="display:flex;gap:5px;justify-content:center;flex-wrap:wrap"><button class="adj-btn" onclick="goPage('plan')" style="font-size:10px;padding:3px 9px;border-radius:12px;border:1px solid var(--ln);background:var(--s2);color:var(--t2);cursor:pointer;font-family:var(--f1)">📋 计划</button><button class="adj-btn" onclick="goPage('mem')" style="font-size:10px;padding:3px 9px;border-radius:12px;border:1px solid var(--ln);background:var(--s2);color:var(--t2);cursor:pointer;font-family:var(--f1)">🧠 记忆</button><button class="adj-btn" onclick="goPage('rev')" style="font-size:10px;padding:3px 9px;border-radius:12px;border:1px solid var(--ln);background:var(--s2);color:var(--t2);cursor:pointer;font-family:var(--f1)">📊 复盘</button></div></div>
       <div class="s" style="margin-top:8px;padding-bottom:4px;text-align:center"><button class="rl" onclick="resetSetup()">重设 API Keys</button></div>
     </div>
@@ -1338,7 +1366,7 @@ async function boot(){
     window.goPage=function(n){
       _origGoPage(n);
       if(n==='plan'){ renderLockedPlansOverview(); renderWeekExecBoard(); renderPlanWeekGrid(); renderPhaseProgress(); refreshTrainingSlotUI(); }
-      if(n==='dash'){ renderTodayStatusCard(); renderPhaseTrigger(); setTimeout(renderDashAlerts,30); setTimeout(fillDashTrainCount,200); setTimeout(renderWeeklyMiniCard,100); renderPauseButton(); }
+      if(n==='dash'){ renderDashStatusBar(); renderDailyChecklist(); renderTodayStatusCard(); renderPhaseTrigger(); setTimeout(renderDashAlerts,30); setTimeout(fillDashTrainCount,200); setTimeout(renderWeeklyMiniCard,100); renderPauseButton(); }
       if(n==='coach'){ _renderCoach(); }
       if(n==='body'){ if(typeof loadStrChart==='function') loadStrChart(); }
     };
@@ -1434,6 +1462,48 @@ function renderDash(){
   const gap=Math.max(0,PT()-p),el=document.getElementById('dash-gap');
   if(gap<=0){el.textContent='✓ 今日已达标';el.className='pi-g ok';}
   else{el.textContent=`⚠ 缺口 ${Math.round(gap)}g`;el.className='pi-g';}
+}
+
+// ── 首页状态条（时段 + 睡眠 + 今日任务）──
+function renderDashStatusBar(){
+  // 时段按钮
+  const slotBtn=document.getElementById('dash-slot-btn');
+  if(slotBtn){
+    const slot=(typeof getTrainingSlot==='function'?getTrainingSlot():'morning')||'morning';
+    slotBtn.textContent=slot==='morning'?'🌅 早间':'🌆 晚间';
+    slotBtn.style.background=slot==='morning'?'rgba(255,200,100,.12)':'rgba(130,160,255,.12)';
+    slotBtn.style.color=slot==='morning'?'#ffb444':'#8eb8ff';
+  }
+  // 睡眠
+  const sleepBadge=document.getElementById('dash-sleep-badge');
+  if(sleepBadge){
+    try{
+      const c=JSON.parse(localStorage.getItem('form_last_sleep')||'null');
+      if(c&&c.duration_h){
+        const hrs=c.duration_h;
+        const color=hrs<6?'var(--wa)':hrs>=8?'var(--ac)':'var(--t1)';
+        const icon=hrs<6?'😴':hrs>=8?'👍':'🛌';
+        sleepBadge.innerHTML=`${icon} 昨晚 <b style="color:${color}">${hrs}h</b>${c.bedtime?' · '+c.bedtime+'睡':''}`;
+      }else{
+        sleepBadge.innerHTML='🛌 昨晚 <span style="color:var(--t3)">未记录</span>';
+      }
+    }catch(e){sleepBadge.innerHTML='🛌 —';}
+  }
+  // 今日训练标签
+  const todayLabel=document.getElementById('dash-today-label');
+  if(todayLabel){
+    const t=typeof getTodayQueueType==='function'?getTodayQueueType():null;
+    if(t==='rest'){todayLabel.textContent='😴 休息日';todayLabel.style.color='var(--pu)';}
+    else if(t==='cardio'){todayLabel.textContent='🚴 有氧日';todayLabel.style.color='var(--info)';}
+    else if(t){todayLabel.textContent='💪 '+(TRAIN_LABEL_MAP[t]||t);todayLabel.style.color='var(--ac)';}
+    else{todayLabel.textContent='选肌群';todayLabel.style.color='var(--t2)';}
+  }
+}
+function toggleDashSlot(){
+  const cur=(typeof getTrainingSlot==='function'?getTrainingSlot():'morning')||'morning';
+  const next=cur==='morning'?'evening':'morning';
+  if(typeof setTrainingSlot==='function')setTrainingSlot(next);
+  renderDashStatusBar();
 }
 
 async function renderDashAlerts(){
@@ -3502,7 +3572,7 @@ async function checkStrengthStall(){
     window.goPage=function(n){
       orig(n);
       if(n==='plan'){renderLockedPlansOverview();renderWeekExecBoard();renderPlanWeekGrid();renderPhaseProgress();renderPlanCheckpoint();}
-      if(n==='dash'){renderTodayStatusCard();renderPhaseTrigger();}
+      if(n==='dash'){renderDashStatusBar();renderDailyChecklist();renderTodayStatusCard();renderPhaseTrigger();}
       if(n==='body'){loadStrChart();}
       // v4.3: 打开复盘页自动运行上次选定的周期
       if(n==='rev'){
@@ -3945,7 +4015,8 @@ window.saveSleepQuick = async function() {
 
 // 在 boot 时把睡眠快录插到概况页合适位置
 function injectSleepQuickLog() {
-  // 找补剂打卡 section，在它前面插入睡眠快录
+  // 状态条已有睡眠摘要，不再重复注入
+  if (document.getElementById('dash-status-bar')) return;
   const suppSection = document.querySelector('#pg-dash .s:has(#dash-supps)');
   if (!suppSection || document.getElementById('dash-sleep-quick')) return;
 
@@ -4086,7 +4157,7 @@ function getDailyChecklistItems() {
 }
 
 function renderDailyChecklist() {
-  const wrap = document.getElementById('daily-checklist-wrap');
+  const wrap = document.getElementById('dash-checklist') || document.getElementById('daily-checklist-wrap');
   if (!wrap) return;
 
   const items = getDailyChecklistItems();
@@ -4136,9 +4207,10 @@ function renderDailyChecklist() {
 }
 
 function injectDailyChecklist() {
+  // 静态容器已存在，无需注入
+  if (document.getElementById('dash-checklist')) return;
   if (document.getElementById('daily-checklist-wrap')) return;
 
-  // 插到「今日状态卡」下面，「阶段触发器」前面
   const statusCard = document.getElementById('today-status-card');
   if (!statusCard) return;
 
