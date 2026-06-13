@@ -1300,6 +1300,8 @@ async function doSetup(){
     window.AI=AI=null;
     err.textContent='连接失败：'+e.message;
     btn.textContent='开始使用 →';
+    // 失败时显示 setup 页面，让用户能看到错误
+    document.getElementById('setup').classList.remove('off');
   }
 }
 function resetSetup(){
@@ -1409,7 +1411,7 @@ function updateCarbBtn(){
 async function updateGapRec(){
   const wrap=document.getElementById('gap-rec-wrap');
   if(!wrap)return;
-  if(!AI||!AI.ds){wrap.innerHTML='<div style="font-size:12px;color:var(--t2)">设置 API Key 后自动生成建议</div>';return;}
+  if(!AI||!AI.ds){wrap.innerHTML=renderSimpleGapRec();return;}
   try{
     const r=await AI.call('advice',{
       system:PROMPTS.gapRec(prof()),
@@ -3274,8 +3276,8 @@ async function fillLastWeights(){
 // ── 今日状态卡 ──────────────────────────────────────────
 async function renderTodayStatusCard(){
   const wrap=document.getElementById('today-status-card');if(!wrap)return;
-  // v4.3: 优先用锚点推算，降级用旧方法
-  const next=typeof getTodayQueueType==='function'?getTodayQueueType():getNextRecommended();
+  // v4.3: 优先用用户选择的肌群，降级用锚点推算
+  const next=S.todayMuscle||localStorage.getItem('form_today_muscle')||(typeof getTodayQueueType==='function'?getTodayQueueType():getNextRecommended());
   const opt=MUSCLE_OPTIONS.find(m=>m.id===next)||{label:'训练日',id:next};
   const isTrainDay=!['rest','cardio'].includes(next);
   const tgt=typeof macroTargets==='function'?macroTargets():{protein:168,kcal:2220,carbs:220};
@@ -3393,7 +3395,7 @@ window.quickAddFav=async function(i){const favs=loadFavFoods();const f=favs[i];i
 // ── 执行率看板（修正：不计入未来天、区分调整） ────────
 async function renderWeekExecBoard(){
   const container=document.getElementById('week-exec-board');if(!container)return;
-  if(!window.db){container.innerHTML='<div class="empty">连接云端后显示</div>';return;}
+  if(!window.db){container.innerHTML='<div class="empty">数据库未连接 · 请检查 Supabase 设置</div>';return;}
   const today=new Date();const dow=today.getDay();
   const monday=new Date(today);monday.setDate(today.getDate()-(dow===0?6:dow-1));monday.setHours(0,0,0,0);
   const sunday=new Date(monday);sunday.setDate(monday.getDate()+6);sunday.setHours(23,59,59,999);
