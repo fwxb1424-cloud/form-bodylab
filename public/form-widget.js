@@ -190,132 +190,131 @@ function addProgressBar(parent, pct, widthPt, color) {
 
 async function createWidget() {
   const w = new ListWidget();
-  w.backgroundColor = new Color("#0d0d10");
-  w.setPadding(14, 16, 14, 16);
+  w.backgroundColor = new Color("#08080c");
+  w.setPadding(16, 18, 14, 18);
 
   const ACCENT = new Color("#7CFFB2");
   const WARN = new Color("#FFC857");
   const PURPLE = new Color("#B49AFF");
-  const DIM = new Color("#ffffff", 0.5);
+  const INFO = new Color("#6AACFF");
+  const DIM = new Color("#ffffff", 0.45);
+  const FAINT = new Color("#ffffff", 0.22);
   const WHITE = Color.white();
 
   let data;
-  try {
-    data = await fetchData();
-  } catch (e) {
-    const errText = w.addText(`数据加载失败\n${e.message || e}`);
-    errText.textColor = WARN;
-    errText.font = Font.systemFont(12);
+  try { data = await fetchData(); }
+  catch (e) {
+    const t = w.addText(`数据加载失败\n${e.message || e}`);
+    t.textColor = WARN; t.font = Font.systemFont(12);
     return w;
   }
 
   const tgt = calcTargets(data.profile);
   const proteinPct = tgt.protein ? data.food.protein / tgt.protein : 0;
   const kcalPct = tgt.kcal ? data.food.kcal / tgt.kcal : 0;
-  const weekday = ['周日','周一','周二','周三','周四','周五','周六'][new Date().getDay()];
+  const wd = ['周日','周一','周二','周三','周四','周五','周六'][new Date().getDay()];
+  const icons = {push:'💪',pull:'🔙',cardio:'🚴',legs:'🦵',shoulder:'👆',rest:'😴'};
+  const icon = icons[tgt.todayType] || '';
 
-  // ── 第一行：今日类型 + 星期 ──
-  const row1 = w.addStack();
-  row1.centerAlignContent();
-  const dayLabel = row1.addText(`今日 · ${tgt.label}`);
-  dayLabel.font = Font.boldSystemFont(15);
-  dayLabel.textColor = WHITE;
+  // ══ 头部：图标 + 类型 + 日期 ══
+  const hdr = w.addStack(); hdr.centerAlignContent();
+  const hIcon = hdr.addText(icon + ' ');
+  hIcon.font = Font.systemFont(17);
+  const hLabel = hdr.addText(tgt.label);
+  hLabel.font = Font.boldSystemFont(17);
+  hLabel.textColor = WHITE;
   if (tgt.isDietBreak) {
-    row1.addSpacer(6);
-    const badge = row1.addText("Diet Break");
-    badge.font = Font.boldSystemFont(10);
-    badge.textColor = PURPLE;
+    hdr.addSpacer(6);
+    const db = hdr.addText('Diet Break');
+    db.font = Font.boldSystemFont(10);
+    db.textColor = PURPLE;
   }
-  row1.addSpacer();
-  const wd = row1.addText(weekday);
-  wd.font = Font.systemFont(13);
-  wd.textColor = DIM;
+  hdr.addSpacer();
+  const hWD = hdr.addText(wd);
+  hWD.font = Font.systemFont(13);
+  hWD.textColor = DIM;
 
-  w.addSpacer(10);
+  // 副标题：热量目标
+  w.addSpacer(3);
+  const sub = w.addText(`${tgt.kcal}kcal · 蛋白${tgt.protein}g · 碳水${tgt.carbs}g · 脂肪${tgt.fat}g`);
+  sub.font = Font.systemFont(10);
+  sub.textColor = FAINT;
 
-  // ── 蛋白质 ──
-  const proteinRow = w.addStack();
-  proteinRow.centerAlignContent();
-  const pLabel = proteinRow.addText("蛋白  ");
-  pLabel.font = Font.systemFont(12);
-  pLabel.textColor = DIM;
-  addProgressBar(proteinRow, proteinPct, 110, ACCENT);
-  proteinRow.addSpacer(8);
-  const pVal = proteinRow.addText(`${Math.round(data.food.protein)}/${tgt.protein}g`);
-  pVal.font = Font.mediumSystemFont(12);
-  pVal.textColor = WHITE;
+  w.addSpacer(14);
 
-  w.addSpacer(6);
+  // ══ 蛋白 + 热量 双进度条 ══
+  const pRow = w.addStack(); pRow.centerAlignContent();
+  const pLab = pRow.addText('蛋白 ');
+  pLab.font = Font.systemFont(12); pLab.textColor = DIM;
+  addProgressBar(pRow, proteinPct, 115, ACCENT);
+  pRow.addSpacer(7);
+  const pVal = pRow.addText(`${Math.round(data.food.protein)}/${tgt.protein}`);
+  pVal.font = Font.mediumSystemFont(12); pVal.textColor = WHITE;
 
-  // ── 热量 ──
-  const kcalRow = w.addStack();
-  kcalRow.centerAlignContent();
-  const kLabel = kcalRow.addText("热量  ");
-  kLabel.font = Font.systemFont(12);
-  kLabel.textColor = DIM;
-  addProgressBar(kcalRow, kcalPct, 110, kcalPct > 1.05 ? WARN : ACCENT);
-  kcalRow.addSpacer(8);
-  const kVal = kcalRow.addText(`${Math.round(data.food.kcal)}/${tgt.kcal}`);
-  kVal.font = Font.mediumSystemFont(12);
-  kVal.textColor = WHITE;
+  w.addSpacer(5);
 
+  const kRow = w.addStack(); kRow.centerAlignContent();
+  const kLab = kRow.addText('热量 ');
+  kLab.font = Font.systemFont(12); kLab.textColor = DIM;
+  addProgressBar(kRow, kcalPct, 115, kcalPct > 1.05 ? WARN : ACCENT);
+  kRow.addSpacer(7);
+  const kVal = kRow.addText(`${Math.round(data.food.kcal)}/${tgt.kcal}`);
+  kVal.font = Font.mediumSystemFont(12); kVal.textColor = WHITE;
+
+  w.addSpacer(14);
+
+  // 分割线
+  const div = w.addStack(); div.size = new Size(0, 1);
+  div.backgroundColor = new Color('#ffffff', 0.07);
   w.addSpacer(12);
 
-  // ── 分割线 ──
-  const div1 = w.addStack();
-  div1.size = new Size(0, 1);
-  div1.backgroundColor = new Color("#ffffff", 0.08);
-  w.addSpacer(10);
+  // ══ 底部三列：体重 / 睡眠 / 训练 ══
+  const bot = w.addStack(); bot.centerAlignContent();
+  // 体重
+  const wCol = bot.addStack(); wCol.layoutHorizontally();
+  const wLab = bot.addText(`体重\n`);
+  wLab.font = Font.systemFont(10); wLab.textColor = DIM;
+  const wVal = bot.addText(data.weight != null ? `${data.weight.toFixed(1)}` : '--');
+  wVal.font = Font.boldSystemFont(16); wVal.textColor = WHITE;
+  const wUnit = bot.addText(' kg');
+  wUnit.font = Font.systemFont(9); wUnit.textColor = DIM;
 
-  // ── 睡眠 + 体重 ──
-  const row3 = w.addStack();
-  row3.centerAlignContent();
-  const sleepLabel = row3.addText("睡眠  ");
-  sleepLabel.font = Font.systemFont(12);
-  sleepLabel.textColor = DIM;
-  const sleepVal = row3.addText(data.sleepH != null ? `${Number(data.sleepH).toFixed(1)}h` : "--");
-  sleepVal.font = Font.mediumSystemFont(13);
-  sleepVal.textColor = (data.sleepH != null && data.sleepH >= 7) ? ACCENT : WHITE;
-  row3.addSpacer();
-  const weightLabel = row3.addText("体重  ");
-  weightLabel.font = Font.systemFont(12);
-  weightLabel.textColor = DIM;
-  const weightVal = row3.addText(data.weight != null ? `${Number(data.weight).toFixed(1)}kg` : "--");
-  weightVal.font = Font.mediumSystemFont(13);
-  weightVal.textColor = WHITE;
+  bot.addSpacer();
 
-  w.addSpacer(8);
+  // 睡眠
+  const sCol = bot.addStack(); sCol.layoutHorizontally();
+  const sLab = bot.addText(`睡眠\n`);
+  sLab.font = Font.systemFont(10); sLab.textColor = DIM;
+  const sH = data.sleepH;
+  const sVal = bot.addText(sH != null ? `${sH.toFixed(1)}` : '--');
+  sVal.font = Font.boldSystemFont(16);
+  sVal.textColor = (sH != null && sH >= 7) ? ACCENT : (sH != null && sH >= 6) ? WARN : WHITE;
+  const sUnit = bot.addText(' h');
+  sUnit.font = Font.systemFont(9); sUnit.textColor = DIM;
 
-  // ── 本周训练 ──
-  const row4 = w.addStack();
-  row4.centerAlignContent();
-  const trainLabel = row4.addText("近7天训练  ");
-  trainLabel.font = Font.systemFont(12);
-  trainLabel.textColor = DIM;
-  addProgressBar(row4, data.trainedThisWeek / WEEKLY_TRAIN_TARGET, 80, PURPLE);
-  row4.addSpacer(8);
-  const trainVal = row4.addText(`${data.trainedThisWeek}/${WEEKLY_TRAIN_TARGET}次`);
-  trainVal.font = Font.mediumSystemFont(12);
-  trainVal.textColor = WHITE;
+  bot.addSpacer();
 
-  // ── 11周计划进度 ──
+  // 训练
+  const tCol = bot.addStack(); tCol.layoutHorizontally();
+  const tLab = bot.addText(`近7天\n`);
+  tLab.font = Font.systemFont(10); tLab.textColor = DIM;
+  const tNum = data.trainedThisWeek;
+  const tVal = bot.addText(`${tNum}/6`);
+  tVal.font = Font.boldSystemFont(16);
+  tVal.textColor = tNum >= 5 ? ACCENT : tNum >= 3 ? WARN : new Color('#E85858');
+  const tUnit = bot.addText(' 训');
+  tUnit.font = Font.systemFont(9); tUnit.textColor = DIM;
+
+  // ══ 11周计划进度条 ══
   if (tgt.week && !tgt.week.done) {
-    w.addSpacer(6);
-    const planRow = w.addStack();
-    const planText = planRow.addText(`11周计划 第${tgt.week.weekNum}周 · 本周目标 ${tgt.week.targetWeight}kg`);
-    planText.font = Font.systemFont(11);
-    planText.textColor = DIM;
-  }
-
-  // ── 体重未录提醒 ──
-  if (data.daysSinceWeight >= 1) {
-    w.addSpacer(10);
-    const warnRow = w.addStack();
-    const warnText = warnRow.addText(
-      data.daysSinceWeight >= 999 ? "⚠️ 尚无体重记录" : `⚠️ 体重已 ${data.daysSinceWeight} 天未录`
-    );
-    warnText.font = Font.systemFont(11);
-    warnText.textColor = WARN;
+    w.addSpacer(12);
+    const pp = w.addStack(); pp.centerAlignContent();
+    const ppLab = pp.addText(`W${tgt.week.weekNum}/11 `);
+    ppLab.font = Font.systemFont(9); ppLab.textColor = DIM;
+    addProgressBar(pp, tgt.week.weekNum / 11, 100, PURPLE);
+    pp.addSpacer(6);
+    const ppVal = pp.addText(`${tgt.week.targetWeight}kg`);
+    ppVal.font = Font.systemFont(9); ppVal.textColor = FAINT;
   }
 
   return w;
