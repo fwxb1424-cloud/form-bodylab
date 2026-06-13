@@ -803,7 +803,7 @@ body{
       <div class="s" style="margin-top:7px"><div class="slbl">今日快照</div>
         <div class="sg"><div class="si"><div class="si-l">热量</div><div class="si-v" id="d-kcal" style="font-size:17px">0</div><div class="si-u">kcal</div></div><div class="si"><div class="si-l">训练容量</div><div class="si-v" id="d-vol" style="font-size:17px">0</div><div class="si-u">kg·reps</div></div></div>
       </div>
-      <div class="s" style="margin-top:7px"><div class="slbl">今日补强建议</div><div id="gap-rec-wrap"><div class="think" style="margin:0"><div class="dots"><span></span><span></span><span></span></div><span class="think-txt">计算中…</span></div></div></div>
+      <div class="s" style="margin-top:7px"><div class="slbl">今日补强建议</div><div id="gap-rec-wrap"><div style="font-size:12px;color:var(--t2);padding:10px 0">连接 API 后自动分析营养缺口</div></div></div>
       <div class="s" style="margin-top:7px"><div class="slbl">API 用量</div>
         <div class="tok-row"><div class="tok-i"><div class="tok-l">今日</div><div class="tok-v ac" id="tok-today">¥0.000</div></div><div class="tok-i"><div class="tok-l">本月</div><div class="tok-v" id="tok-month">¥0.00</div></div><div class="tok-i"><div class="tok-l">总计</div><div class="tok-v" id="tok-total">¥0.00</div></div></div>
       </div>
@@ -1054,7 +1054,7 @@ body{
           <button class="ds-btn" id="ts-morning" onclick="setTrainingSlot('morning')">🌅 早间（7–9点）</button>
           <button class="ds-btn" id="ts-evening" onclick="setTrainingSlot('evening')">🌆 晚间（18–20点）</button>
         </div>
-        <div style="font-size:10px;color:var(--t3);margin-top:3px">切换时段会自动更新提醒文案的出门和训练时间</div>
+        <div style="font-size:10px;color:var(--t2);margin-top:4px;line-height:1.5">选择你的习惯训练时间。只影响手机通知推送时间（早间6:30 / 晚间17:00），不影响训练内容。</div>
       </div>
       <div class="s" style="margin-top:8px">
         <div class="slbl">减脂期进度</div>
@@ -1521,12 +1521,18 @@ async function quickLogTraining(){
 
 async function quickLogRest(){
   const btn=document.getElementById('dash-quick-rest-btn');
-  if(!window.db){toast('数据库未连接');return;}
+  // 尝试恢复数据库连接
+  if(!window.db && typeof DB !== 'undefined'){
+    const su=localStorage.getItem('form_su');
+    const sk=localStorage.getItem('form_sk');
+    if(su && sk){ try{ window.db=db=new DB(su,sk); await db.init(); }catch(e){} }
+  }
+  if(!window.db){toast('数据库未连接，请刷新页面重新设置');return;}
   btn.textContent='...';btn.disabled=true;
   try{
     if(typeof markTodayAs==='function')markTodayAs('rest');
     if(typeof syncPlanStateToCloud==='function')syncPlanStateToCloud();
-    toast('✓ 已标记为休息日 · 锚点已更新');
+    toast('✓ 已标记为休息日');
     if(typeof renderDash==='function')renderDash();
     if(typeof renderTodayStatusCard==='function')renderTodayStatusCard();
     if(typeof renderMuscleSelector==='function')renderMuscleSelector();
