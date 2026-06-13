@@ -3419,6 +3419,71 @@ async function checkStrengthStall(){
     if(err)err.textContent='本机 Key 已丢失（常见于换网址/主屏幕）。请重新填写 Supabase 与 DeepSeek。';
   }
 })();
+
+// ══ AI 教练（Dash 内嵌版，Block 5 全局作用域）═════════════════
+const _coachMsgs = [];
+
+function toggleCoach(){
+  const w=document.getElementById('dash-coach-wrap');
+  if(!w)return;
+  w.style.display=w.style.display==='none'?'block':'none';
+  if(w.style.display==='block'&&_coachMsgs.length===0){
+    document.getElementById('dash-coach-msgs').innerHTML='<div style="color:var(--t3);font-size:12px;text-align:center;padding:10px">我是你的专属AI教练，已读取你的全部数据。<br>试试问："我减脂进度正常吗"、"今天蛋白怎么安排"</div>';
+  }
+}
+
+function _renderCoach(){
+  const el=document.getElementById('dash-coach-msgs');
+  if(!el||_coachMsgs.length===0)return;
+  el.innerHTML=_coachMsgs.map((m,i)=>`<div style="margin-bottom:8px;padding:8px 11px;border-radius:10px;font-size:12px;line-height:1.55;${m.role==='user'?'background:rgba(226,255,92,.06);border:1px solid rgba(226,255,92,.12)':'background:var(--s3);border:1px solid var(--ln)'}"><div>${m.text.replace(/\n/g,'<br>')}</div>${m.role==='coach'?`<div style="margin-top:5px;font-size:9px;color:var(--t3)">FORM Coach · <button onclick="_saveCoach(${i})" style="font-size:9px;color:${m.saved?'var(--t2)':'var(--ac)'};background:none;border:1px solid ${m.saved?'var(--ln)':'rgba(226,255,92,.2)'};border-radius:6px;padding:1px 7px;cursor:pointer">${m.saved?'✓ 已保存':'保存到记忆'}</button></div>`:''}</div>`).join('');
+  el.scrollTop=el.scrollHeight;
+}
+
+async function askCoach(){
+  const input=document.getElementById('dash-coach-input');
+  if(!input)return;
+  const text=input.value.trim();
+  if(!text)return;
+
+  let ai = window.AI || (typeof AI !== 'undefined' ? AI : null);
+  if(!ai){
+    const ds = localStorage.getItem('form_ds');
+    if(ds && typeof AIProvider !== 'undefined'){
+      ai = new AIProvider(ds, localStorage.getItem('form_gm')||null);
+      window.AI = ai;
+    }else{
+      toast('请先设置 DeepSeek API Key — 点底部重设API Keys');
+      return;
+    }
+  }
+
+  input.value='';
+  _coachMsgs.push({role:'user',text});
+  _coachMsgs.push({role:'coach',text:'思考中...',saved:false});
+  _renderCoach();
+  try{
+    const profile=typeof buildProfile==='function'?buildProfile(window.S):'';
+    const system=typeof PROMPTS!=='undefined'&&PROMPTS.coach?PROMPTS.coach(profile):'';
+    const r=await ai.call('coach',{system,userMsg:text});
+    _coachMsgs[_coachMsgs.length-1]={role:'coach',text:r._err?`错误：${(r._raw||'').slice(0,100)}`:(r._raw||'未收到回复'),saved:false};
+  }catch(e){
+    _coachMsgs[_coachMsgs.length-1]={role:'coach',text:`错误：${e.message}`,saved:false};
+  }
+  _renderCoach();
+}
+
+async function _saveCoach(i){
+  const m=_coachMsgs[i];
+  if(!m||m.role!=='coach'||m.saved)return;
+  try{
+    const txt=m.text.slice(0,200);
+    if(typeof saveMemoQ==='function')await saveMemoQ(`教练建议：${txt}`,'short');
+    else if(window.db)await window.db.addMemory(`教练建议：${txt}`,'short');
+    else{toast('记忆库不可用');return;}
+    _coachMsgs[i].saved=true;_renderCoach();toast('✓ 已存入记忆库');
+  }catch(e){toast('保存失败：'+e.message);}
+}
+
 </script>
 
 <script>
@@ -4890,71 +4955,6 @@ window.importPlanFoods = function() {
   toast(added > 0 ? `✓ 已导入 ${added} 个常用食物` : '已是最新，无新增');
 };
 
-// ══ AI 教练（Dash 内嵌版）═════════════════════════════════
-const _coachMsgs = [];
-
-function toggleCoach(){
-  const w=document.getElementById('dash-coach-wrap');
-  if(!w)return;
-  w.style.display=w.style.display==='none'?'block':'none';
-  if(w.style.display==='block'&&_coachMsgs.length===0){
-    document.getElementById('dash-coach-msgs').innerHTML='<div style="color:var(--t3);font-size:12px;text-align:center;padding:10px">我是你的专属AI教练，已读取你的全部数据。<br>试试问："我减脂进度正常吗"、"今天蛋白怎么安排"</div>';
-  }
-}
-
-function _renderCoach(){
-  const el=document.getElementById('dash-coach-msgs');
-  if(!el||_coachMsgs.length===0)return;
-  el.innerHTML=_coachMsgs.map((m,i)=>`<div style="margin-bottom:8px;padding:8px 11px;border-radius:10px;font-size:12px;line-height:1.55;${m.role==='user'?'background:rgba(226,255,92,.06);border:1px solid rgba(226,255,92,.12)':'background:var(--s3);border:1px solid var(--ln)'}"><div>${m.text.replace(/\n/g,'<br>')}</div>${m.role==='coach'?`<div style="margin-top:5px;font-size:9px;color:var(--t3)">FORM Coach · <button onclick="_saveCoach(${i})" style="font-size:9px;color:${m.saved?'var(--t2)':'var(--ac)'};background:none;border:1px solid ${m.saved?'var(--ln)':'rgba(226,255,92,.2)'};border-radius:6px;padding:1px 7px;cursor:pointer">${m.saved?'✓ 已保存':'保存到记忆'}</button></div>`:''}</div>`).join('');
-  el.scrollTop=el.scrollHeight;
-}
-
-async function askCoach(){
-  const input=document.getElementById('dash-coach-input');
-  if(!input)return;
-  const text=input.value.trim();
-  if(!text)return;
-
-  // 尝试多种方式获取 AI 实例
-  let ai = window.AI || (typeof AI !== 'undefined' ? AI : null);
-  if(!ai){
-    const ds = localStorage.getItem('form_ds');
-    if(ds && typeof AIProvider !== 'undefined'){
-      ai = new AIProvider(ds, localStorage.getItem('form_gm')||null);
-      window.AI = ai;
-    }else{
-      toast('请先设置 DeepSeek API Key\n点底部「重设 API Keys」');
-      return;
-    }
-  }
-
-  input.value='';
-  _coachMsgs.push({role:'user',text});
-  _coachMsgs.push({role:'coach',text:'思考中...',saved:false});
-  _renderCoach();
-  try{
-    const profile=typeof buildProfile==='function'?buildProfile(S):'';
-    const system=typeof PROMPTS!=='undefined'&&PROMPTS.coach?PROMPTS.coach(profile):'';
-    const r=await ai.call('coach',{system,userMsg:text});
-    _coachMsgs[_coachMsgs.length-1]={role:'coach',text:r._err?`错误：${(r._raw||'').slice(0,100)}`:(r._raw||'未收到回复'),saved:false};
-  }catch(e){
-    _coachMsgs[_coachMsgs.length-1]={role:'coach',text:`错误：${e.message}`,saved:false};
-  }
-  _renderCoach();
-}
-
-async function _saveCoach(i){
-  const m=_coachMsgs[i];
-  if(!m||m.role!=='coach'||m.saved)return;
-  try{
-    const txt=m.text.slice(0,200);
-    if(typeof saveMemoQ==='function')await saveMemoQ(`教练建议：${txt}`,'short');
-    else if(window.db)await window.db.addMemory(`教练建议：${txt}`,'short');
-    else{toast('记忆库不可用');return;}
-    _coachMsgs[i].saved=true;_renderCoach();toast('✓ 已存入记忆库');
-  }catch(e){toast('保存失败：'+e.message);}
-}
-
-</script>
+// ══ AI 教练（Dash 内嵌版）═════════════════════════════════</script>
 </body>
 </html>
