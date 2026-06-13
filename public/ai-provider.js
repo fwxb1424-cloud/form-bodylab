@@ -15,6 +15,7 @@ const SCENE = {
   plan:'main', analysis:'long', advice:'main', review:'main',
   coach:'long',
 };
+const SCENE_TEXT = new Set(['coach']); // 自然语言场景，不解析JSON
 
 // ── Token Tracker ─────────────────────────────────────
 class TokenTracker {
@@ -64,6 +65,10 @@ class AIProvider {
       catch(e2){ throw new Error('主力和降级都失败：'+e2.message); }
     }
     if(raw._u) this.tracker.record({scene,mk,i:raw._u.i||0,o:raw._u.o||0});
+    // 自然语言场景（如教练对话）不解析JSON，直接返回原文
+    if(SCENE_TEXT.has(scene)){
+      return {_raw:raw._t||'',_err:false};
+    }
     const parsed=this._json(raw._t||'');
     if(useCache&&userMsg&&!imageBase64&&!parsed._err) this.cache.set(scene,userMsg,parsed);
     return parsed;
