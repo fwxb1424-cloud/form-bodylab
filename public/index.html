@@ -813,6 +813,11 @@ body{
         </div>
       </div>
 
+      <!-- 今日训练大看板 -->
+      <div id="today-status-card"></div>
+      <div id="phase-trigger-wrap"></div>
+      <div id="sc-wrap"></div>
+
       <!-- ═══════ 优先级 2：蛋白质 + 今日数据 ═══════ -->
 
       <!-- 蛋白质进度环 -->
@@ -846,11 +851,6 @@ body{
         <div class="slbl">今日任务</div>
         <div id="dash-checklist"><div class="empty">加载中…</div></div>
       </div>
-
-      <!-- 今日状态卡 -->
-      <div id="today-status-card"></div>
-      <div id="phase-trigger-wrap"></div>
-      <div id="sc-wrap"></div>
 
       <!-- ═══════ 优先级 4：可折叠的次要模块 ═══════ -->
 
@@ -3321,10 +3321,10 @@ async function renderTodayStatusCard(){
       const isLate=bed&&parseInt(bed.split(':')[0])>=23;
       const warn=hrs<6.5?' ⚠ 偏少':(isLate?' ⚠ 偏晚':'');
       const color=(hrs<6.5||isLate)?'var(--wa)':'var(--ac)';
-      sleepHtml=`<div class="tc-sleep-row"><span class="tc-sleep-label">昨晚睡眠</span><span style="font-family:var(--f1);font-size:12px;font-weight:600;color:${color}">${hrs}h${bed?' · ↓'+bed:''}${warn}</span><button onclick="goPage('body')" style="font-size:10px;color:var(--t2);background:none;border:none;cursor:pointer">更新</button></div>`;
+      sleepHtml=`<div class="tc-sleep-row"><span class="tc-sleep-label">昨晚睡眠</span><span style="font-family:var(--f1);font-size:12px;font-weight:600;color:${color}">${hrs}h${bed?' · ↓'+bed:''}${warn}</span><button onclick="toggleDashSleepForm()" style="font-size:10px;color:var(--t2);background:none;border:none;cursor:pointer">更新</button></div>`;
     }catch(e){}
   }else{
-    sleepHtml=`<div class="tc-sleep-row"><span class="tc-sleep-label">昨晚睡眠</span><button onclick="goPage('body')" style="font-size:11px;color:var(--t2);background:rgba(255,255,255,.05);border:1px solid var(--ln);border-radius:10px;padding:3px 10px;cursor:pointer">+ 记录睡眠</button></div>`;
+    sleepHtml=`<div class="tc-sleep-row"><span class="tc-sleep-label">昨晚睡眠</span><button onclick="toggleDashSleepForm()" style="font-size:11px;color:var(--t2);background:rgba(255,255,255,.05);border:1px solid var(--ln);border-radius:10px;padding:3px 10px;cursor:pointer">+ 记录睡眠</button></div>`;
   }
   // 体测提醒
   const lastStatTs=localStorage.getItem('form_last_stat_ts');
