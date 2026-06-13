@@ -1260,7 +1260,7 @@ window.S = {
   protein:0,carbs:0,fat:0,kcal:0,
   foods:[],foodId:0,
   volume:0,workout:[],rpe:5,
-  todayMuscle:'',
+  todayMuscle:(localStorage.getItem('form_today_muscle_date')===new Date().toDateString()?localStorage.getItem('form_today_muscle')||'':''),
   muscle:40.4,fat_pct:17.8,
   measures:{arm:null,waist:null,chest:null,thigh:null},
   supps:JSON.parse(localStorage.getItem('form_supps')||'[{"key":"cr","name":"肌酸","dose":"5g","on":false},{"key":"vit","name":"综合维生素","dose":"1粒","on":false},{"key":"om3","name":"Omega-3","dose":"2粒","on":false}]'),
@@ -1460,45 +1460,42 @@ function renderDash(){
 }
 
 // ── 首页状态条（时段 + 睡眠 + 今日任务）──
+var _TLBL={push:'推日',pull:'拉日',cardio:'有氧日',legs:'腿日',shoulder:'肩日',rest:'休息日'};
 function renderDashStatusBar(){
+  try{
   // 时段按钮
-  const slotBtn=document.getElementById('dash-slot-btn');
+  var slotBtn=document.getElementById('dash-slot-btn');
   if(slotBtn){
-    const slot=(typeof getTrainingSlot==='function'?getTrainingSlot():'morning')||'morning';
+    var slot=(typeof getTrainingSlot==='function'?getTrainingSlot():'morning')||'morning';
     slotBtn.textContent=slot==='morning'?'🌅 早间':'🌆 晚间';
     slotBtn.style.background=slot==='morning'?'rgba(255,200,100,.12)':'rgba(130,160,255,.12)';
     slotBtn.style.color=slot==='morning'?'#ffb444':'#8eb8ff';
   }
   // 睡眠
-  const sleepBadge=document.getElementById('dash-sleep-badge');
+  var sleepBadge=document.getElementById('dash-sleep-badge');
   if(sleepBadge){
     try{
-      const c=JSON.parse(localStorage.getItem('form_last_sleep')||'null');
+      var c=JSON.parse(localStorage.getItem('form_last_sleep')||'null');
       if(c&&c.duration_h){
-        const hrs=c.duration_h;
-        const color=hrs<6?'var(--wa)':hrs>=8?'var(--ac)':'var(--t1)';
-        const icon=hrs<6?'😴':hrs>=8?'👍':'🛌';
-        sleepBadge.innerHTML=`${icon} 昨晚 <b style="color:${color}">${hrs}h</b>${c.bedtime?' · '+c.bedtime+'睡':''}`;
+        var hrs=c.duration_h;
+        var color=hrs<6?'var(--wa)':hrs>=8?'var(--ac)':'var(--t1)';
+        var icon=hrs<6?'😴':hrs>=8?'👍':'🛌';
+        sleepBadge.innerHTML=icon+' 昨晚 <b style="color:'+color+'">'+hrs+'h</b>'+(c.bedtime?' · '+c.bedtime+'睡':'');
       }else{
         sleepBadge.innerHTML='🛌 昨晚 <span style="color:var(--t3)">未记录</span>';
       }
     }catch(e){sleepBadge.innerHTML='🛌 —';}
   }
-  // 今日训练标签（优先显示用户已选的肌群，其次显示队列推荐）
-  const todayLabel=document.getElementById('dash-today-label');
+  // 今日训练标签
+  var todayLabel=document.getElementById('dash-today-label');
   if(todayLabel){
-    const selected=S.todayMuscle;
-    const queued=typeof getTodayQueueType==='function'?getTodayQueueType():null;
-    const t=selected||queued;
-    if(selected){
-      if(selected==='rest'){todayLabel.textContent='😴 休息日';todayLabel.style.color='var(--pu)';}
-      else if(selected==='cardio'){todayLabel.textContent='🚴 有氧日';todayLabel.style.color='var(--info)';}
-      else{todayLabel.textContent='💪 '+(TRAIN_LABEL_MAP[selected]||selected);todayLabel.style.color='var(--ac)';}
-    }else if(t==='rest'){todayLabel.textContent='😴 休息日';todayLabel.style.color='var(--pu)';}
+    var t=S.todayMuscle||localStorage.getItem('form_today_muscle')||'';
+    if(!t&&typeof getTodayQueueType==='function')t=getTodayQueueType();
+    if(t==='rest'||!t){todayLabel.textContent='😴 休息日';todayLabel.style.color='var(--pu)';}
     else if(t==='cardio'){todayLabel.textContent='🚴 有氧日';todayLabel.style.color='var(--info)';}
-    else if(t){todayLabel.textContent='💪 '+(TRAIN_LABEL_MAP[t]||t);todayLabel.style.color='var(--ac)';}
-    else{todayLabel.textContent='选肌群';todayLabel.style.color='var(--t2)';}
+    else{todayLabel.textContent='💪 '+(window.TRAIN_LABEL_MAP?window.TRAIN_LABEL_MAP[t]:_TLBL[t])||t;todayLabel.style.color='var(--ac)';}
   }
+  }catch(e){console.warn('renderDashStatusBar',e);}
 }
 function toggleDashSlot(){
   const cur=(typeof getTrainingSlot==='function'?getTrainingSlot():'morning')||'morning';
@@ -1644,7 +1641,7 @@ async function quickLogRest(){
   if(!window.db){toast('数据库未连接，请刷新页面重新设置');return;}
   btn.textContent='...';btn.disabled=true;
   try{
-    S.todayMuscle='rest';renderDashStatusBar();
+    S.todayMuscle='rest';localStorage.setItem('form_today_muscle','rest');localStorage.setItem('form_today_muscle_date',new Date().toDateString());renderDashStatusBar();
     if(typeof markTodayAs==='function')markTodayAs('rest');
     if(typeof syncPlanStateToCloud==='function')syncPlanStateToCloud();
     toast('✓ 已标记为休息日');
@@ -1771,6 +1768,8 @@ function selectMuscle(id,label,silent){
     }
   }
   S.todayMuscle=id;
+  localStorage.setItem('form_today_muscle',id);
+  localStorage.setItem('form_today_muscle_date',new Date().toDateString()); // 只当天有效
   const isRest=id==='rest';
   const isCardio=id==='cardio';
   S.isTrain=!isRest&&!isCardio;
