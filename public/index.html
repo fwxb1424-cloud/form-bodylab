@@ -772,7 +772,9 @@ body{
         <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
           <input type="number" step="0.1" placeholder="体重 kg" id="dash-quick-weight" style="flex:1;min-width:80px;background:var(--s2);border:1px solid var(--ln2);border-radius:10px;padding:8px 10px;color:var(--t1);font-family:var(--f1);font-size:12px;outline:none;-webkit-appearance:none" onkeydown="if(event.key==='Enter')quickSaveWeight()" onfocus="this.select()">
           <button onclick="quickSaveWeight()" style="background:rgba(226,255,92,.1);border:1px solid rgba(226,255,92,.2);color:var(--ac);cursor:pointer;padding:8px 14px;border-radius:10px;font-family:var(--f1);font-size:11px;font-weight:600;white-space:nowrap">保存体重</button>
-          <button onclick="quickLogTraining()" id="dash-quick-train-btn" style="background:rgba(106,172,255,.1);border:1px solid rgba(106,172,255,.18);color:var(--info);cursor:pointer;padding:8px 14px;border-radius:10px;font-family:var(--f1);font-size:11px;font-weight:600;white-space:nowrap">✊ 我今天练了</button>
+          <button onclick="quickLogTraining()" id="dash-quick-train-btn" style="background:rgba(106,172,255,.1);border:1px solid rgba(106,172,255,.18);color:var(--info);cursor:pointer;padding:8px 14px;border-radius:10px;font-family:var(--f1);font-size:11px;font-weight:600;white-space:nowrap">✊ 练了</button>
+          <button onclick="quickLogRest()" id="dash-quick-rest-btn" style="background:rgba(180,154,255,.08);border:1px solid rgba(180,154,255,.15);color:var(--pu);cursor:pointer;padding:8px 14px;border-radius:10px;font-family:var(--f1);font-size:11px;font-weight:600;white-space:nowrap">😴 休息</button>
+          <button onclick="toggleNotifyPause()" id="dash-pause-btn" style="background:none;border:1px solid var(--ln);color:var(--t2);cursor:pointer;padding:8px 12px;border-radius:10px;font-family:var(--f1);font-size:10px;font-weight:500;white-space:nowrap">🔕</button>
         </div>
       </div>
       <!-- 今日状态卡 -->
@@ -805,6 +807,8 @@ body{
         <div class="tok-row"><div class="tok-i"><div class="tok-l">今日</div><div class="tok-v ac" id="tok-today">¥0.000</div></div><div class="tok-i"><div class="tok-l">本月</div><div class="tok-v" id="tok-month">¥0.00</div></div><div class="tok-i"><div class="tok-l">总计</div><div class="tok-v" id="tok-total">¥0.00</div></div></div>
       </div>
       <div class="s" style="margin-top:7px"><div class="slbl">补剂打卡</div><div id="dash-supps"></div></div>
+      <!-- 每周看板 -->
+      <div class="s" style="margin-top:6px"><div class="slbl">本周看板</div><div id="dash-weekly-card"></div></div>
       <div class="s" style="margin-top:6px;padding-bottom:2px"><div style="display:flex;gap:5px;justify-content:center;flex-wrap:wrap"><button class="adj-btn" onclick="goPage('plan')" style="font-size:10px;padding:3px 9px;border-radius:12px;border:1px solid var(--ln);background:var(--s2);color:var(--t2);cursor:pointer;font-family:var(--f1)">📋 计划</button><button class="adj-btn" onclick="goPage('mem')" style="font-size:10px;padding:3px 9px;border-radius:12px;border:1px solid var(--ln);background:var(--s2);color:var(--t2);cursor:pointer;font-family:var(--f1)">🧠 记忆</button><button class="adj-btn" onclick="goPage('rev')" style="font-size:10px;padding:3px 9px;border-radius:12px;border:1px solid var(--ln);background:var(--s2);color:var(--t2);cursor:pointer;font-family:var(--f1)">📊 复盘</button></div></div>
       <div class="s" style="margin-top:8px;padding-bottom:4px;text-align:center"><button class="rl" onclick="resetSetup()">重设 API Keys</button></div>
     </div>
@@ -1331,7 +1335,7 @@ async function boot(){
     window.goPage=function(n){
       _origGoPage(n);
       if(n==='plan'){ renderWeekExecBoard(); renderPlanWeekGrid(); renderPhaseProgress(); refreshTrainingSlotUI(); }
-      if(n==='dash'){ renderTodayStatusCard(); renderPhaseTrigger(); setTimeout(renderDashAlerts,30); setTimeout(fillDashTrainCount,200); }
+      if(n==='dash'){ renderTodayStatusCard(); renderPhaseTrigger(); setTimeout(renderDashAlerts,30); setTimeout(fillDashTrainCount,200); setTimeout(renderWeeklyMiniCard,100); renderPauseButton(); }
       if(n==='body'){ if(typeof loadStrChart==='function') loadStrChart(); }
     };
   }
@@ -1495,7 +1499,77 @@ async function quickLogTraining(){
     if(typeof renderTodayStatusCard==='function')renderTodayStatusCard();
     if(typeof renderMuscleSelector==='function')renderMuscleSelector();
   }catch(e){toast('记录失败：'+e.message);}
-  btn.textContent='✊ 我今天练了';btn.disabled=false;
+  btn.textContent='✊ 练了';btn.disabled=false;
+}
+
+async function quickLogRest(){
+  const btn=document.getElementById('dash-quick-rest-btn');
+  if(!window.db){toast('数据库未连接');return;}
+  btn.textContent='...';btn.disabled=true;
+  try{
+    if(typeof markTodayAs==='function')markTodayAs('rest');
+    if(typeof syncPlanStateToCloud==='function')syncPlanStateToCloud();
+    toast('✓ 已标记为休息日 · 锚点已更新');
+    if(typeof renderDash==='function')renderDash();
+    if(typeof renderTodayStatusCard==='function')renderTodayStatusCard();
+    if(typeof renderMuscleSelector==='function')renderMuscleSelector();
+  }catch(e){toast('记录失败：'+e.message);}
+  btn.textContent='😴 休息';btn.disabled=false;
+}
+
+function toggleNotifyPause(){
+  const paused=typeof getNotifyPaused==='function'?getNotifyPaused():false;
+  if(paused){
+    if(typeof setNotifyPaused==='function')setNotifyPaused(false);
+    toast('✓ 提醒已恢复');
+  }else{
+    if(typeof setNotifyPaused==='function')setNotifyPaused(true);
+    toast('🔕 提醒暂停 3 天');
+  }
+  renderPauseButton();
+}
+function renderPauseButton(){
+  const btn=document.getElementById('dash-pause-btn');
+  if(!btn)return;
+  const paused=typeof getNotifyPaused==='function'?getNotifyPaused():false;
+  btn.textContent=paused?'🔔':'🔕';
+  btn.title=paused?'恢复提醒':'暂停提醒3天';
+}
+
+async function renderWeeklyMiniCard(){
+  const wrap=document.getElementById('dash-weekly-card');
+  if(!wrap||!window.db)return;
+  try{
+    const since=new Date();since.setDate(since.getDate()-7);since.setHours(0,0,0,0);
+    const [sessions,foods,weights]=await Promise.all([
+      db.getRecentSessions(7).catch(()=>[]),
+      db.getFoodLogsByRange(since.toISOString(),new Date().toISOString()).catch(()=>[]),
+      db.getWeightTrendDays(7).catch(()=>[]),
+    ]);
+    const trainCount=sessions.filter(s=>(Date.now()-new Date(s.trained_at).getTime())<7*864e5).length;
+
+    let proteinDays=0,totalDays=0;
+    const byDay={};
+    foods.forEach(f=>{const d=f.logged_at.slice(0,10);if(!byDay[d])byDay[d]=0;byDay[d]+=(f.protein_g||0);});
+    totalDays=Object.keys(byDay).length||1;
+    Object.values(byDay).forEach(p=>{if(p>=168)proteinDays++;});
+
+    let weightTrend='→';
+    if(weights.length>=4){
+      const first=weights.slice(0,3).reduce((a,r)=>a+r.weight_kg,0)/Math.min(3,weights.slice(0,3).length);
+      const last=weights.slice(-3).reduce((a,r)=>a+r.weight_kg,0)/Math.min(3,weights.slice(-3).length);
+      if(last<first-.2)weightTrend='↓';
+      else if(last>first+.2)weightTrend='↑';
+    }
+
+    wrap.innerHTML=`<div class="card" style="padding:12px 14px">
+      <div style="display:flex;gap:12px;text-align:center">
+        <div style="flex:1"><div style="font-family:var(--f1);font-size:18px;font-weight:700;color:${trainCount>=5?'var(--ac)':trainCount>=3?'var(--wa)':'var(--da)'}">${trainCount}/6</div><div style="font-size:9px;color:var(--t2)">训练</div></div>
+        <div style="flex:1"><div style="font-family:var(--f1);font-size:18px;font-weight:700;color:${proteinDays>=totalDays*.8?'var(--ac)':proteinDays>=totalDays*.5?'var(--wa)':'var(--da)'}">${Math.round(proteinDays/totalDays*100)}%</div><div style="font-size:9px;color:var(--t2)">蛋白达标</div></div>
+        <div style="flex:1"><div style="font-family:var(--f1);font-size:18px;font-weight:700;color:${weightTrend==='↓'?'var(--ac)':weightTrend==='↑'?'var(--wa)':'var(--t1)'}">${weightTrend}</div><div style="font-size:9px;color:var(--t2)">体重趋势</div></div>
+      </div>
+    </div>`;
+  }catch(e){wrap.innerHTML='';}
 }
 
 // ══ SUPPS ══
@@ -4280,6 +4354,8 @@ async function renderWeekInsightCard() {
       setTimeout(renderDailyChecklist, 50);
       setTimeout(renderSleepQuickLog, 80);
       setTimeout(renderDashAlerts, 30);
+      setTimeout(renderWeeklyMiniCard, 100);
+      renderPauseButton();
     }
   };
   window.goPage._wiGoHooked = true;

@@ -139,6 +139,15 @@ async function notify(title,body,sound='default'){
 async function run(){
   const slot=args.shortcutParameter||'test';
   const profile=await getProfile();
+
+  // 检查提醒是否暂停
+  const pausedUntil=profile.notify_paused_until;
+  if(pausedUntil&&pausedUntil!=='0'&&Date.now()<new Date(pausedUntil).getTime()){
+    // 静默退出，不打扰
+    Script.complete();
+    return;
+  }
+
   const tgt=calcTargets(profile);
   const isStrength=STRENGTH_TYPES.includes(tgt.todayType);
   const isCardio=tgt.todayType==='cardio';

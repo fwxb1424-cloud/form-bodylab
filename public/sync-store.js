@@ -167,6 +167,22 @@ function setTrainingSlot(slot) {
   if (typeof toast === 'function') toast(slot === 'morning' ? '✓ 已切换为早间训练' : '✓ 已切换为晚间训练');
 }
 
+// ── 提醒暂停 ───────────────────────────────────────────────
+function getNotifyPaused() {
+  const until = localStorage.getItem('form_notify_paused_until');
+  if (!until || until === '0') return false;
+  return Date.now() < new Date(until).getTime();
+}
+function setNotifyPaused(pause) {
+  if (pause) {
+    const until = new Date(); until.setDate(until.getDate() + 3);
+    localStorage.setItem('form_notify_paused_until', until.toISOString());
+  } else {
+    localStorage.setItem('form_notify_paused_until', '0');
+  }
+  if (typeof syncPlanStateToCloud === 'function') syncPlanStateToCloud();
+}
+
 /**
  * 把当前的队列锚点 + 阶段 + 11周计划微调状态写入 Supabase user_settings.profile_json
  * Widget 无法访问 PWA 的 localStorage，必须靠这份云端快照
@@ -183,6 +199,7 @@ async function syncPlanStateToCloud() {
     profile.kcal_adjustment = getKcalAdjustment();
     profile.diet_break_overgain = localStorage.getItem('form_diet_break_overgain') === '1';
     profile.training_slot = getTrainingSlot();
+    profile.notify_paused_until = localStorage.getItem('form_notify_paused_until') || '0';
     profile.plan_11week = PLAN_11WEEK; // 静态配置也存一份，Widget不用硬编码
     profile.updated_at = new Date().toISOString();
     await db.saveSettings({ profile_json: JSON.stringify(profile), supps_json: existing?.supps_json });
@@ -847,6 +864,8 @@ window.syncPlanStateToCloud = syncPlanStateToCloud;
 window.syncQueueAnchor = syncQueueAnchor;
 window.getTrainingSlot = getTrainingSlot;
 window.setTrainingSlot = setTrainingSlot;
+window.getNotifyPaused = getNotifyPaused;
+window.setNotifyPaused = setNotifyPaused;
 // 队列锚点 API
 window.getQueueAnchor = getQueueAnchor;
 window.setQueueAnchor = setQueueAnchor;
