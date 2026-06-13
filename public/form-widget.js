@@ -35,6 +35,12 @@ const COLE_PLAN = {
     rest:  { protein: 168, carbs: 255, fat: 90, kcal: 2420 },
   },
 };
+const PLAN_11WEEK_FALLBACK = {
+  startDate: '2026-06-12', totalWeeks: 11, dietBreakWeek: 6,
+  weeklyTargetWeights: [84.35,83.70,83.05,82.40,81.75,81.75,81.10,80.45,79.80,79.15,78.50],
+  dietBreakMacros: { kcal: 2900, protein: 180, carbs: 320, fat: 100 },
+  dietBreakOverGainKcal: 2700,
+};
 const WEEKLY_TRAIN_TARGET = 6;
 
 // ── 工具函数 ──────────────────────────────────────────────
@@ -137,8 +143,9 @@ function calcTargets(profile) {
   let isDietBreak = false;
 
   // cut 阶段有 11 周计划时，走动态逻辑（diet break / kcal 微调）
-  if (phase === 'cut' && profile.plan_11week) {
-    const plan11 = profile.plan_11week;
+  // 云端优先，首次使用前用本地兜底
+  const plan11 = profile.plan_11week || PLAN_11WEEK_FALLBACK;
+  if (phase === 'cut') {
     week = getElevenWeekStatus(plan11);
     if (week.isDietBreak) {
       const overGain = !!profile.diet_break_overgain;
@@ -157,17 +164,6 @@ function calcTargets(profile) {
           kcal: nums.kcal + adj,
         };
       }
-    }
-  } else if (phase === 'cut') {
-    // cut 但没有 11 周计划（计划结束后继续减脂）：继续用 cut + 累积调整
-    const adj = profile.kcal_adjustment || 0;
-    if (adj !== 0) {
-      nums = {
-        protein: nums.protein,
-        fat: nums.fat,
-        carbs: Math.max(0, nums.carbs + Math.round(adj / 4)),
-        kcal: nums.kcal + adj,
-      };
     }
   }
 

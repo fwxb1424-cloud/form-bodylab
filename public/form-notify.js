@@ -80,8 +80,9 @@ function calcTargets(profile){
   let nums=isTrain?plan.train:plan.rest;
   let week=null,isDietBreak=false;
 
-  if(phase==='cut'&&profile.plan_11week){
-    const plan11=profile.plan_11week;
+  const PLAN11_FALLBACK={startDate:'2026-06-12',totalWeeks:11,dietBreakWeek:6,weeklyTargetWeights:[84.35,83.70,83.05,82.40,81.75,81.75,81.10,80.45,79.80,79.15,78.50],dietBreakMacros:{kcal:2900,protein:180,carbs:320,fat:100},dietBreakOverGainKcal:2700};
+  if(phase==='cut'){
+    const plan11=profile.plan_11week||PLAN11_FALLBACK;
     week=getElevenWeekStatus(plan11);
     if(week.isDietBreak){
       const overGain=!!profile.diet_break_overgain;
@@ -93,9 +94,6 @@ function calcTargets(profile){
       const adj=profile.kcal_adjustment||0;
       if(adj!==0)nums={protein:nums.protein,fat:nums.fat,carbs:Math.max(0,nums.carbs+Math.round(adj/4)),kcal:nums.kcal+adj};
     }
-  }else if(phase==='cut'){
-    const adj=profile.kcal_adjustment||0;
-    if(adj!==0)nums={protein:nums.protein,fat:nums.fat,carbs:Math.max(0,nums.carbs+Math.round(adj/4)),kcal:nums.kcal+adj};
   }
 
   return{label,todayType,isTrain,isDietBreak,week,...nums};
