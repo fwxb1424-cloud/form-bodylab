@@ -1313,47 +1313,42 @@ function resetSetup(){
 async function boot(){
   document.getElementById('setup').classList.add('off');
   document.getElementById('app').classList.remove('off');
-  const ds=todayStr();
-  ['dash-date','train-date','train-badge'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=ds;});
-  renderMuscleSelector();renderSupps();renderMeasures();renderChart();
-  updateTCTag();updateCarbBtn();
-  if(typeof loadAppStateLocally==='function')loadAppStateLocally();
-  if(typeof updateTrainDateUI==='function')updateTrainDateUI();
-  if(typeof restoreLocalProfileOnBoot==='function')restoreLocalProfileOnBoot();
-  if(typeof loadTodayFoodFromLocal==='function')loadTodayFoodFromLocal();
-  if(typeof renderFoodList==='function')renderFoodList();
-  if(typeof renderChart==='function')renderChart();
-  if(typeof renderMeasures==='function')renderMeasures();
-  if(typeof loadAllFromCloud==='function')await loadAllFromCloud();
-  else{await loadMemories();await loadActivePlan();await loadRecentCmp();await loadStrChart();await loadSleepLog();if(typeof loadTodayFood==='function')await loadTodayFood();}
-  renderDash();
-  if(typeof refreshAppStatus==='function')refreshAppStatus();
-  updateGapRec();
-  setTimeout(runSmartCard, 600);
-  updateTokenUI();
-  if(typeof window._initCycleModule==='function') window._initCycleModule();
-  if(typeof autoSelectMealType==='function') autoSelectMealType();
+  var ds=todayStr();
+  ['dash-date','train-date','train-badge'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent=ds;});
+  // 每个函数独立 try，任一个失败不影响其他
+  var safeCall=function(fn){if(typeof fn==='function')try{fn();}catch(e){console.warn('boot call failed',e);}};
+  var safeAwait=async function(fn){if(typeof fn==='function')try{await fn();}catch(e){console.warn('boot await failed',e);}};
+  safeCall(renderMuscleSelector);safeCall(renderSupps);safeCall(renderMeasures);safeCall(renderChart);
+  safeCall(updateTCTag);safeCall(updateCarbBtn);
+  safeCall(loadAppStateLocally);
+  safeCall(updateTrainDateUI);
+  safeCall(restoreLocalProfileOnBoot);
+  safeCall(loadTodayFoodFromLocal);
+  safeCall(renderFoodList);
+  safeCall(renderChart);
+  safeCall(renderMeasures);
+  if(typeof loadAllFromCloud==='function'){try{await loadAllFromCloud();}catch(e){console.warn('loadAllFromCloud failed',e);}}
+  else{await safeAwait(loadMemories);await safeAwait(loadActivePlan);await safeAwait(loadRecentCmp);await safeAwait(loadStrChart);await safeAwait(loadSleepLog);safeCall(loadTodayFood);}
+  safeCall(renderDash);
+  safeCall(refreshAppStatus);
+  try{updateGapRec();}catch(e){}
+  try{setTimeout(runSmartCard,600);}catch(e){}
+  safeCall(updateTokenUI);
+  safeCall(window._initCycleModule);
+  safeCall(autoSelectMealType);
 
   // ── 新功能初始化 ──
-  // 概况页
-  if(typeof renderTodayStatusCard==='function') renderTodayStatusCard();
-  if(typeof renderPhaseTrigger==='function') renderPhaseTrigger();
-  // 常用食物
-  if(typeof renderFavFoods==='function') renderFavFoods();
-  // 计划页
-  if(typeof renderPlanWeekGrid==='function') renderPlanWeekGrid();
-  if(typeof renderPhaseProgress==='function') renderPhaseProgress();
-  if(typeof renderWeekExecBoard==='function') renderWeekExecBoard();
-  // 训练页：自动预选下一个训练
+  safeCall(renderTodayStatusCard);
+  safeCall(renderPhaseTrigger);
+  safeCall(renderFavFoods);
+  safeCall(renderPlanWeekGrid);
+  safeCall(renderPhaseProgress);
+  safeCall(renderWeekExecBoard);
   if(!S.todayMuscle && typeof getNextRecommended==='function'){
-    const next=getNextRecommended();
-    const opt=(window.MUSCLE_OPTIONS||[]).find(m=>m.id===next);
-    if(opt && typeof selectMuscle==='function') selectMuscle(opt.id, opt.label, true);
+    try{var next=getNextRecommended();var opt=(window.MUSCLE_OPTIONS||[]).find(function(m){return m.id===next;});if(opt && typeof selectMuscle==='function') selectMuscle(opt.id, opt.label, true);}catch(e){}
   }
-  // 力量停滞检测（延迟执行不阻塞启动）
-  setTimeout(()=>{ if(typeof checkStrengthStall==='function') checkStrengthStall(); }, 5000);
-  // 同步计划状态到云端（供Widget读取，延迟执行不阻塞启动）
-  setTimeout(()=>{ if(typeof syncPlanStateToCloud==='function') syncPlanStateToCloud().catch(()=>{}); }, 2000);
+  setTimeout(function(){ if(typeof checkStrengthStall==='function') try{checkStrengthStall();}catch(e){} }, 5000);
+  setTimeout(function(){ if(typeof syncPlanStateToCloud==='function') syncPlanStateToCloud().catch(function(){}); }, 2000);
 
   // goPage钩子（只注册一次）
   if(!window._goPageHooked){
