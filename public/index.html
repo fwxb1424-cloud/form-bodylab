@@ -1361,7 +1361,7 @@ async function boot(){
     window.goPage=function(n){
       _origGoPage(n);
       if(n==='plan'){ renderLockedPlansOverview(); renderWeekExecBoard(); renderPlanWeekGrid(); renderPhaseProgress(); refreshTrainingSlotUI(); }
-      if(n==='dash'){ renderDashStatusBar(); renderDailyChecklist(); renderTodayStatusCard(); renderPhaseTrigger(); setTimeout(renderDashAlerts,30); setTimeout(fillDashTrainCount,200); setTimeout(renderWeeklyMiniCard,100); renderPauseButton(); }
+      if(n==='dash'){ updateDashStatusBar(); renderDailyChecklist(); renderTodayStatusCard(); renderPhaseTrigger(); setTimeout(renderDashAlerts,30); setTimeout(fillDashTrainCount,200); setTimeout(renderWeeklyMiniCard,100); renderPauseButton(); }
       if(n==='coach'){ _renderCoach(); }
       if(n==='body'){ if(typeof loadStrChart==='function') loadStrChart(); }
     };
@@ -1460,48 +1460,30 @@ function renderDash(){
 }
 
 // ── 首页状态条（时段 + 睡眠 + 今日任务）──
-var _TLBL={push:'推日',pull:'拉日',cardio:'有氧日',legs:'腿日',shoulder:'肩日',rest:'休息日'};
-function renderDashStatusBar(){
-  try{
+// 首页状态条 —— 直读 localStorage + S 对象，不走间接调用
+function updateDashStatusBar(){
   // 时段按钮
-  var slotBtn=document.getElementById('dash-slot-btn');
-  if(slotBtn){
-    var slot=(typeof getTrainingSlot==='function'?getTrainingSlot():'morning')||'morning';
-    slotBtn.textContent=slot==='morning'?'🌅 早间':'🌆 晚间';
-    slotBtn.style.background=slot==='morning'?'rgba(255,200,100,.12)':'rgba(130,160,255,.12)';
-    slotBtn.style.color=slot==='morning'?'#ffb444':'#8eb8ff';
-  }
+  var b=document.getElementById('dash-slot-btn');
+  if(b){var s=(typeof getTrainingSlot==='function'?getTrainingSlot():'')||localStorage.getItem('form_training_slot')||'morning';b.textContent=s==='morning'?'🌅 早间':'🌆 晚间';b.style.background=s==='morning'?'rgba(255,200,100,.12)':'rgba(130,160,255,.12)';b.style.color=s==='morning'?'#ffb444':'#8eb8ff';}
   // 睡眠
-  var sleepBadge=document.getElementById('dash-sleep-badge');
-  if(sleepBadge){
-    try{
-      var c=JSON.parse(localStorage.getItem('form_last_sleep')||'null');
-      if(c&&c.duration_h){
-        var hrs=c.duration_h;
-        var color=hrs<6?'var(--wa)':hrs>=8?'var(--ac)':'var(--t1)';
-        var icon=hrs<6?'😴':hrs>=8?'👍':'🛌';
-        sleepBadge.innerHTML=icon+' 昨晚 <b style="color:'+color+'">'+hrs+'h</b>'+(c.bedtime?' · '+c.bedtime+'睡':'');
-      }else{
-        sleepBadge.innerHTML='🛌 昨晚 <span style="color:var(--t3)">未记录</span>';
-      }
-    }catch(e){sleepBadge.innerHTML='🛌 —';}
+  var sb=document.getElementById('dash-sleep-badge');
+  if(sb){try{var sc=JSON.parse(localStorage.getItem('form_last_sleep')||'null');if(sc&&sc.duration_h){var h=sc.duration_h;sb.innerHTML=(h<6?'😴':h>=8?'👍':'🛌')+' 昨晚 <b style=\"color:'+(h<6?'var(--wa)':h>=8?'var(--ac)':'var(--t1)')+'\">'+h+'h</b>'+(sc.bedtime?' · '+sc.bedtime+'睡':'');}else{sb.innerHTML='🛌 昨晚 <span style=\"color:var(--t3)\">未记录</span>';}}catch(e){sb.innerHTML='🛌 —';}}
+  // 今日训练
+  var tl=document.getElementById('dash-today-label');
+  if(tl){
+    var t=(S&&S.todayMuscle?S.todayMuscle:'')||localStorage.getItem('form_today_muscle')||'';
+    if(!t&&typeof getTodayQueueType==='function')t=getTodayQueueType()||'';
+    var LBL=window.TRAIN_LABEL_MAP||{push:'推日',pull:'拉日',cardio:'有氧日',legs:'腿日',shoulder:'肩日',rest:'休息日'};
+    if(!t||t==='rest'){tl.textContent='😴 休息日';tl.style.color='var(--pu)';}
+    else if(t==='cardio'){tl.textContent='🚴 有氧日';tl.style.color='var(--info)';}
+    else{tl.textContent='💪 '+(LBL[t]||t);tl.style.color='var(--ac)';}
   }
-  // 今日训练标签
-  var todayLabel=document.getElementById('dash-today-label');
-  if(todayLabel){
-    var t=S.todayMuscle||localStorage.getItem('form_today_muscle')||'';
-    if(!t&&typeof getTodayQueueType==='function')t=getTodayQueueType();
-    if(t==='rest'||!t){todayLabel.textContent='😴 休息日';todayLabel.style.color='var(--pu)';}
-    else if(t==='cardio'){todayLabel.textContent='🚴 有氧日';todayLabel.style.color='var(--info)';}
-    else{todayLabel.textContent='💪 '+(window.TRAIN_LABEL_MAP?window.TRAIN_LABEL_MAP[t]:_TLBL[t])||t;todayLabel.style.color='var(--ac)';}
-  }
-  }catch(e){console.warn('renderDashStatusBar',e);}
 }
 function toggleDashSlot(){
   const cur=(typeof getTrainingSlot==='function'?getTrainingSlot():'morning')||'morning';
   const next=cur==='morning'?'evening':'morning';
   if(typeof setTrainingSlot==='function')setTrainingSlot(next);
-  renderDashStatusBar();
+  updateDashStatusBar();
 }
 
 // ── 首页睡眠快录 ──
@@ -1556,7 +1538,7 @@ async function saveDashSleep(){
   // 更新本地缓存
   localStorage.setItem('form_last_sleep',JSON.stringify({duration_h:Math.round(h*10)/10,bedtime,ts:Date.now()}));
   document.getElementById('dash-sleep-form-wrap').style.display='none';
-  renderDashStatusBar();
+  updateDashStatusBar();
   if(typeof toast==='function')toast('✓ 睡眠已记录');
 }
 
@@ -1641,7 +1623,7 @@ async function quickLogRest(){
   if(!window.db){toast('数据库未连接，请刷新页面重新设置');return;}
   btn.textContent='...';btn.disabled=true;
   try{
-    S.todayMuscle='rest';localStorage.setItem('form_today_muscle','rest');localStorage.setItem('form_today_muscle_date',new Date().toDateString());renderDashStatusBar();
+    S.todayMuscle='rest';localStorage.setItem('form_today_muscle','rest');localStorage.setItem('form_today_muscle_date',new Date().toDateString());updateDashStatusBar();
     if(typeof markTodayAs==='function')markTodayAs('rest');
     if(typeof syncPlanStateToCloud==='function')syncPlanStateToCloud();
     toast('✓ 已标记为休息日');
@@ -1802,7 +1784,7 @@ function selectMuscle(id,label,silent){
   }
   if(!silent) toast(`已选：${label}${S.isTrain?' · 饮食切训练日':''}`);
   if(typeof scheduleTrainAutosave==='function')scheduleTrainAutosave();
-  renderDashStatusBar(); // 同步首页状态条
+  updateDashStatusBar(); // 同步首页状态条
   }catch(e){toast('选择失败：'+e.message);}
 }
 
@@ -3638,7 +3620,7 @@ async function checkStrengthStall(){
     window.goPage=function(n){
       orig(n);
       if(n==='plan'){renderLockedPlansOverview();renderWeekExecBoard();renderPlanWeekGrid();renderPhaseProgress();renderPlanCheckpoint();}
-      if(n==='dash'){renderDashStatusBar();renderDailyChecklist();renderTodayStatusCard();renderPhaseTrigger();}
+      if(n==='dash'){updateDashStatusBar();renderDailyChecklist();renderTodayStatusCard();renderPhaseTrigger();}
       if(n==='body'){loadStrChart();}
       // v4.3: 打开复盘页自动运行上次选定的周期
       if(n==='rev'){
