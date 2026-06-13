@@ -79,6 +79,7 @@ body{
 .pages{flex:1;overflow:hidden;position:relative;}
 .page{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:78px;display:none;overscroll-behavior:none;}
 .page.on{display:block;}
+.page.coach-page.on{display:flex;flex-direction:column;}
 
 /* ─ NAV ───────────────────────────────────────────── */
 .nav{
@@ -777,16 +778,7 @@ body{
           <button onclick="toggleNotifyPause()" id="dash-pause-btn" style="background:none;border:1px solid var(--ln);color:var(--t2);cursor:pointer;padding:8px 12px;border-radius:10px;font-family:var(--f1);font-size:10px;font-weight:500;white-space:nowrap">🔕</button>
         </div>
       </div>
-      <!-- AI 教练 -->
-      <div class="s" id="dash-coach-wrap" style="display:none">
-        <div class="slbl">🧠 问教练 <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t2);font-size:10px">已注入你的全部数据</span></div>
-        <div id="dash-coach-msgs" style="max-height:240px;overflow-y:auto;margin-bottom:6px;font-size:12px;line-height:1.6;color:var(--t1)"></div>
-        <div style="display:flex;gap:5px">
-          <input id="dash-coach-input" placeholder="问教练..." style="flex:1;background:var(--s2);border:1px solid var(--ln2);border-radius:10px;padding:9px 12px;color:var(--t1);font-family:var(--f1);font-size:12px;outline:none" onkeydown="if(event.key==='Enter')askCoach()">
-          <button onclick="askCoach()" style="background:var(--ac);color:#08090A;border:none;border-radius:10px;padding:9px 16px;font-family:var(--f1);font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">发送</button>
-        </div>
-      </div>
-      <!-- 今日状态卡 -->
+<!-- 今日状态卡 -->
       <div id="today-status-card"></div>
       <!-- 阶段触发器 -->
       <div id="phase-trigger-wrap"></div>
@@ -1208,7 +1200,7 @@ body{
     </div>
 
     <!-- ══ 教练 ══ -->
-    <div class="page" id="pg-coach" style="display:flex;flex-direction:column">
+    <div class="page coach-page" id="pg-coach">
       <div class="ph" style="flex-shrink:0">
         <div class="ph-ey">🧠 AI 教练</div>
         <div class="ph-h1">FORM Coach</div>
@@ -3446,23 +3438,7 @@ async function checkStrengthStall(){
 // ══ AI 教练（Dash 内嵌版，Block 5 全局作用域）═════════════════
 const _coachMsgs = [];
 
-function toggleCoach(){
-  const w=document.getElementById('dash-coach-wrap');
-  if(!w)return;
-  w.style.display=w.style.display==='none'?'block':'none';
-  if(w.style.display==='block'&&_coachMsgs.length===0){
-    document.getElementById('dash-coach-msgs').innerHTML='<div style="color:var(--t3);font-size:12px;text-align:center;padding:10px">我是你的专属AI教练，已读取你的全部数据。<br>试试问："我减脂进度正常吗"、"今天蛋白怎么安排"<br><br><button onclick="goPage(\'coach\')" style="color:var(--ac);background:none;border:1px solid rgba(226,255,92,.2);border-radius:12px;padding:4px 14px;cursor:pointer;font-family:var(--f1);font-size:11px">打开完整教练 →</button></div>';
-  }
-}
-
 function _renderCoach(){
-  // 渲染到迷你面板
-  const mini=document.getElementById('dash-coach-msgs');
-  if(mini&&_coachMsgs.length>0){
-    mini.innerHTML=_coachMsgs.map((m,i)=>`<div style="margin-bottom:8px;padding:8px 11px;border-radius:10px;font-size:12px;line-height:1.55;${m.role==='user'?'background:rgba(226,255,92,.06);border:1px solid rgba(226,255,92,.12)':'background:var(--s3);border:1px solid var(--ln)'}"><div>${m.text.replace(/\\n/g,'<br>')}</div>${m.role==='coach'?`<div style="margin-top:5px;font-size:9px;color:var(--t3)">FORM Coach · <button onclick="_saveCoach(${i})" style="font-size:9px;color:${m.saved?'var(--t2)':'var(--ac)'};background:none;border:1px solid ${m.saved?'var(--ln)':'rgba(226,255,92,.2)'};border-radius:6px;padding:1px 7px;cursor:pointer">${m.saved?'✓ 已保存':'保存到记忆'}</button></div>`:''}</div>`).join('');
-    mini.scrollTop=mini.scrollHeight;
-  }
-  // 渲染到全屏教练页
   const full=document.getElementById('coach-msgs');
   if(full){
     if(_coachMsgs.length===0){
@@ -3504,7 +3480,7 @@ async function _sendCoachMsg(text){
     const profile=typeof buildProfile==='function'?buildProfile(window.S):'';
     const system=typeof PROMPTS!=='undefined'&&PROMPTS.coach?PROMPTS.coach(profile):'';
     const r=await AI.call('coach',{system,userMsg:text});
-    _coachMsgs[_coachMsgs.length-1]={role:'coach',text:r._err?`错误：${(r._raw||'').slice(0,100)}`:(r._raw||'未收到回复'),saved:false};
+    _coachMsgs[_coachMsgs.length-1]={role:'coach',text:(r._raw||'未收到回复'),saved:false};
   }catch(e){
     _coachMsgs[_coachMsgs.length-1]={role:'coach',text:`错误：${e.message}`,saved:false};
   }
@@ -3522,15 +3498,6 @@ async function askCoachFull(){
 }
 
 // 迷你面板发送（概况页）
-async function askCoach(){
-  const input=document.getElementById('dash-coach-input');
-  if(!input)return;
-  const text=input.value.trim();
-  if(!text)return;
-  await _sendCoachMsg(text);
-  input.value='';
-}
-
 async function _saveCoach(i){
   const m=_coachMsgs[i];
   if(!m||m.role!=='coach'||m.saved)return;
