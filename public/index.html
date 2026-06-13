@@ -1433,9 +1433,9 @@ function renderSimpleGapRec(){
 // ══ TOKEN UI ══
 function updateTokenUI(){
   if(!AI)return;
-  document.getElementById('tok-today').textContent='¥'+AI.tracker.todayCNY();
-  document.getElementById('tok-month').textContent='¥'+AI.tracker.monthCNY();
-  document.getElementById('tok-total').textContent='¥'+AI.tracker.totalCNY();
+  var t1=document.getElementById('tok-today');if(t1)t1.textContent='¥'+AI.tracker.todayCNY();
+  var t2=document.getElementById('tok-month');if(t2)t2.textContent='¥'+AI.tracker.monthCNY();
+  var t3=document.getElementById('tok-total');if(t3)t3.textContent='¥'+AI.tracker.totalCNY();
 }
 
 // ══ DASH ══
@@ -2648,11 +2648,12 @@ async function genPlan(){
 }
 
 function saveManualPlan(){
-  const txt=document.getElementById('manual-plan').value.trim();if(!txt)return;
+  var ta=document.getElementById('manual-plan');if(!ta)return;
+  var txt=ta.value.trim();if(!txt)return;
   S.activePlan={title:'自定义计划',goal:txt,manual:true};
-  document.getElementById('plan-hero').innerHTML=`<div style="font-family:var(--f1);font-size:10px;font-weight:500;letter-spacing:.12em;color:rgba(155,124,238,.7);margin-bottom:5px;text-transform:uppercase">自定义计划</div><div style="font-size:13px;line-height:1.7;color:var(--t1)">${txt}</div>`;
-  if(db)db.savePlan({title:'自定义计划',goal:txt,phase_json:JSON.stringify(S.activePlan)}).catch(()=>{});
-  document.getElementById('manual-plan').value='';
+  var el=document.getElementById('plan-hero');if(el)el.innerHTML='<div style=\"font-family:var(--f1);font-size:10px;font-weight:500;letter-spacing:.12em;color:rgba(155,124,238,.7);margin-bottom:5px;text-transform:uppercase\">自定义计划</div><div style=\"font-size:13px;line-height:1.7;color:var(--t1)\">'+txt+'</div>';
+  if(db)db.savePlan({title:'自定义计划',goal:txt,phase_json:JSON.stringify(S.activePlan)}).catch(function(){});
+  ta.value='';
   toast('✓ 手动计划已保存');
 }
 
@@ -2665,55 +2666,28 @@ async function loadActivePlan(){
 }
 
 function renderActivePlan(){
-  const plan=S.activePlan;if(!plan)return;
+  var plan=S.activePlan;if(!plan)return;
+  var hero=document.getElementById('plan-hero');if(!hero)return;
   if(plan.manual){
-    document.getElementById('plan-hero').innerHTML=`<div style="font-family:var(--f1);font-size:10px;font-weight:500;letter-spacing:.12em;color:rgba(155,124,238,.7);margin-bottom:5px;text-transform:uppercase">自定义计划</div><div style="font-size:13px;line-height:1.7">${plan.goal}</div>`;
+    hero.innerHTML='<div style="font-family:var(--f1);font-size:10px;font-weight:500;letter-spacing:.12em;color:rgba(155,124,238,.7);margin-bottom:5px;text-transform:uppercase">自定义计划</div><div style="font-size:13px;line-height:1.7">'+plan.goal+'</div>';
     return;
   }
-  document.getElementById('plan-hero').className='plan-hero ph-active';
-  document.getElementById('plan-hero').innerHTML=`
-    <div style="font-family:var(--f1);font-size:10px;font-weight:500;letter-spacing:.12em;color:rgba(155,124,238,.7);margin-bottom:4px;text-transform:uppercase">当前周期</div>
-    <div style="font-family:var(--f1);font-size:16px;font-weight:700;letter-spacing:-.02em;margin-bottom:5px">${plan.title||plan.goal}</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <span style="font-family:var(--f1);font-size:11px;font-weight:500;color:var(--t2)">${plan.duration_weeks}周</span>
-      <span style="color:var(--t3)">·</span>
-      <span style="font-family:var(--f1);font-size:11px;font-weight:500;color:var(--t2)">蛋白质 ${plan.nutrition?.protein_g||170}g/天</span>
-      <span style="color:var(--t3)">·</span>
-      <span style="font-family:var(--f1);font-size:11px;font-weight:500;color:var(--t2)">训练日碳水 ${plan.nutrition?.train_carbs||260}g</span>
-    </div>
-    ${plan.leg_frequency?`<div style="font-size:11px;color:var(--t2);margin-top:5px">腿部：${plan.leg_frequency}</div>`:''}`;
+  hero.className='plan-hero ph-active';
+  hero.innerHTML='<div style="font-family:var(--f1);font-size:10px;font-weight:500;letter-spacing:.12em;color:rgba(155,124,238,.7);margin-bottom:4px;text-transform:uppercase">当前周期</div><div style="font-family:var(--f1);font-size:16px;font-weight:700;letter-spacing:-.02em;margin-bottom:5px">'+(plan.title||plan.goal)+'</div><div style="display:flex;gap:8px;flex-wrap:wrap"><span style="font-family:var(--f1);font-size:11px;font-weight:500;color:var(--t2)">'+plan.duration_weeks+'周</span><span style="color:var(--t3)">·</span><span style="font-family:var(--f1);font-size:11px;font-weight:500;color:var(--t2)">蛋白质 '+(plan.nutrition&&plan.nutrition.protein_g||170)+'g/天</span><span style="color:var(--t3)">·</span><span style="font-family:var(--f1);font-size:11px;font-weight:500;color:var(--t2)">训练日碳水 '+(plan.nutrition&&plan.nutrition.train_carbs||260)+'g</span></div>'+(plan.leg_frequency?'<div style="font-size:11px;color:var(--t2);margin-top:5px">腿部：'+plan.leg_frequency+'</div>':'');
 
-  if(plan.default_split?.week_template){
-    const legDays=['legs'];
-    document.getElementById('week-card').innerHTML=plan.default_split.week_template.map(d=>`
-      <div class="day-row">
-        <span class="day-name">${d.day.replace('周','')}</span>
-        <span class="day-focus">${d.muscle}</span>
-        <span class="day-tag ${d.type==='rest'?'dt-rs':d.muscle.includes('腿')?'dt-leg':'dt-tr'}">${d.type==='rest'?'休息':d.muscle.includes('腿')?'腿日':'训练'}</span>
-      </div>`).join('');
+  var weekCard=document.getElementById('week-card');
+  if(weekCard&&plan.default_split&&plan.default_split.week_template){
+    weekCard.innerHTML=plan.default_split.week_template.map(function(d){
+      return '<div class="day-row"><span class="day-name">'+d.day.replace('周','')+'</span><span class="day-focus">'+d.muscle+'</span><span class="day-tag '+(d.type==='rest'?'dt-rs':d.muscle.includes('腿')?'dt-leg':'dt-tr')+'">'+(d.type==='rest'?'休息':d.muscle.includes('腿')?'腿日':'训练')+'</span></div>';
+    }).join('');
   }
-  if(plan.milestones?.length){
-    document.getElementById('ms-card').innerHTML=plan.milestones.map(m=>`
-      <div class="ms-row"><div class="ms-dot"></div><div class="ms-wk">第${m.week}周</div><div class="ms-b"><div class="ms-t">肌肉 ${m.muscle_target}kg · 体脂 ${m.fat_target}%</div><div class="ms-s">${m.strength_notes||''}</div></div></div>`).join('');
-  }
-  // 同步到训练页：本周重点
-  if(plan.default_split?.week_template){
-    const dow=new Date().getDay();
-    const dayMap={0:'周日',1:'周一',2:'周二',3:'周三',4:'周四',5:'周五',6:'周六'};
-    const todayTemplate=plan.default_split.week_template.find(d=>d.day===dayMap[dow]);
-    if(todayTemplate&&todayTemplate.type!=='rest'){
-      S.activePlan.weekFocus=todayTemplate.muscle;
-      // suggest muscle group for today
-      const match=MUSCLE_OPTIONS.find(m=>todayTemplate.muscle.includes(m.label)||m.label.includes(todayTemplate.muscle.split('+')[0]));
-      if(match&&!S.todayMuscle){
-        document.getElementById('sh-sub').textContent=`计划建议今日练：${todayTemplate.muscle}`;
-      }
-    } else if(todayTemplate?.type==='rest'){
-      document.getElementById('sh-sub').textContent='今日计划为休息日';
-    }
+  var msCard=document.getElementById('ms-card');
+  if(msCard&&plan.milestones&&plan.milestones.length){
+    msCard.innerHTML=plan.milestones.map(function(m){
+      return '<div class="ms-row"><div class="ms-dot"></div><div class="ms-wk">第'+m.week+'周</div><div class="ms-b"><div class="ms-t">肌肉 '+m.muscle_target+'kg · 体脂 '+m.fat_target+'%</div><div class="ms-s">'+(m.strength_notes||'')+'</div></div></div>';
+    }).join('');
   }
 }
-
 async function loadRecentCmp(){
   if(!db)return;
   try{
