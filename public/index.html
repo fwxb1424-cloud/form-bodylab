@@ -384,6 +384,25 @@ body{
 .set-chk-btn.done{background:rgba(226,255,92,.15);border-color:rgba(226,255,92,.4);color:var(--ac);}
 .ms-rec{border-color:rgba(226,255,92,.3)!important;background:rgba(226,255,92,.06)!important;color:var(--ac)!important;}
 .last-w-badge{display:inline-block;font-size:9px;padding:1px 5px;border-radius:6px;background:rgba(106,172,255,.1);color:var(--info);margin-left:4px;vertical-align:middle;}
+/* Dash 微复盘提醒卡片 */
+.dash-alerts{margin:10px 20px 0;display:flex;flex-direction:column;gap:5px;}
+.dash-alerts:empty{display:none;}
+.alert-card{border-radius:var(--r);padding:10px 12px;display:flex;align-items:flex-start;gap:9px;animation:fi .2s ease;}
+.alert-card.red{background:rgba(232,88,88,.06);border:1px solid rgba(232,88,88,.18);}
+.alert-card.yellow{background:rgba(240,150,74,.06);border:1px solid rgba(240,150,74,.16);}
+.alert-card.green{background:rgba(226,255,92,.04);border:1px solid rgba(226,255,92,.12);}
+.alert-icon{font-size:16px;flex-shrink:0;margin-top:1px;}
+.alert-body{flex:1;min-width:0;}
+.alert-title{font-family:var(--f1);font-size:11px;font-weight:600;line-height:1.3;}
+.alert-card.red .alert-title{color:var(--da);}
+.alert-card.yellow .alert-title{color:var(--wa);}
+.alert-card.green .alert-title{color:var(--ac);}
+.alert-desc{font-size:10px;color:var(--t2);margin-top:2px;line-height:1.4;}
+.alert-action{font-family:var(--f1);font-size:10px;font-weight:600;padding:4px 10px;border-radius:8px;border:none;cursor:pointer;flex-shrink:0;margin-top:4px;white-space:nowrap;}
+.alert-card.red .alert-action{background:rgba(232,88,88,.15);color:var(--da);}
+.alert-card.yellow .alert-action{background:rgba(240,150,74,.12);color:var(--wa);}
+.alert-card.green .alert-action{background:rgba(226,255,92,.1);color:var(--ac);}
+.alert-action:active{opacity:.7;}
 /* 今日状态卡 */
 .today-card{margin:10px 20px 0;padding:14px 16px;background:linear-gradient(135deg,rgba(226,255,92,.07),rgba(106,172,255,.04));border:1px solid rgba(226,255,92,.18);border-radius:var(--r2);}
 .tc-row1{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
@@ -717,7 +736,15 @@ body{
 
     <!-- ══ 概况 ══ -->
     <div class="page on" id="pg-dash">
-      <div class="ph"><div class="ph-ey">FORM · Body Lab</div><div class="ph-h1">今日概况</div><div class="ph-sub" id="dash-date"></div></div>
+      <div class="ph"><div class="ph-ey">FORM · Body Lab</div><div class="ph-h1" style="display:flex;align-items:center;justify-content:space-between"><span>今日概况</span><button onclick="toggleMoreMenu()" style="background:none;border:none;color:var(--t2);cursor:pointer;padding:4px 10px;border-radius:8px;font-size:20px;letter-spacing:3px;line-height:1" title="更多">⋯</button></div><div class="ph-sub" id="dash-date"></div>
+        <div id="more-menu" style="display:none;margin-top:8px;padding:2px 0;flex-wrap:wrap;gap:5px">
+          <button class="tc-pill" onclick="goPage('plan');hideMoreMenu()" style="cursor:pointer;border:1px solid var(--ln2);background:var(--s3);padding:3px 10px;font-size:11px;font-family:var(--f1);color:var(--t1);border-radius:10px">📋 计划</button>
+          <button class="tc-pill" onclick="goPage('mem');hideMoreMenu()" style="cursor:pointer;border:1px solid var(--ln2);background:var(--s3);padding:3px 10px;font-size:11px;font-family:var(--f1);color:var(--t1);border-radius:10px">🧠 记忆</button>
+          <button class="tc-pill" onclick="goPage('rev');hideMoreMenu()" style="cursor:pointer;border:1px solid var(--ln2);background:var(--s3);padding:3px 10px;font-size:11px;font-family:var(--f1);color:var(--t1);border-radius:10px">📊 复盘</button>
+        </div>
+      </div>
+      <!-- 微复盘提醒 -->
+      <div id="dash-alerts-wrap"></div>
       <!-- 今日状态卡 -->
       <div id="today-status-card"></div>
       <!-- 阶段触发器 -->
@@ -748,6 +775,7 @@ body{
         <div class="tok-row"><div class="tok-i"><div class="tok-l">今日</div><div class="tok-v ac" id="tok-today">¥0.000</div></div><div class="tok-i"><div class="tok-l">本月</div><div class="tok-v" id="tok-month">¥0.00</div></div><div class="tok-i"><div class="tok-l">总计</div><div class="tok-v" id="tok-total">¥0.00</div></div></div>
       </div>
       <div class="s" style="margin-top:7px"><div class="slbl">补剂打卡</div><div id="dash-supps"></div></div>
+      <div class="s" style="margin-top:6px;padding-bottom:2px"><div style="display:flex;gap:5px;justify-content:center;flex-wrap:wrap"><button class="adj-btn" onclick="goPage('plan')" style="font-size:10px;padding:3px 9px;border-radius:12px;border:1px solid var(--ln);background:var(--s2);color:var(--t2);cursor:pointer;font-family:var(--f1)">📋 计划</button><button class="adj-btn" onclick="goPage('mem')" style="font-size:10px;padding:3px 9px;border-radius:12px;border:1px solid var(--ln);background:var(--s2);color:var(--t2);cursor:pointer;font-family:var(--f1)">🧠 记忆</button><button class="adj-btn" onclick="goPage('rev')" style="font-size:10px;padding:3px 9px;border-radius:12px;border:1px solid var(--ln);background:var(--s2);color:var(--t2);cursor:pointer;font-family:var(--f1)">📊 复盘</button></div></div>
       <div class="s" style="margin-top:8px;padding-bottom:4px;text-align:center"><button class="rl" onclick="resetSetup()">重设 API Keys</button></div>
     </div>
 
@@ -1133,10 +1161,7 @@ body{
     <button class="nb on" data-p="dash" onclick="goPage('dash')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>概况</button>
     <button class="nb" data-p="diet" onclick="goPage('diet')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>饮食</button>
     <button class="nb" data-p="train" onclick="goPage('train')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M6 4v16M18 4v16M6 12h12M2 8h4M18 8h4M2 16h4M18 16h4"/></svg>训练</button>
-    <button class="nb" data-p="plan" onclick="goPage('plan')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>计划</button>
     <button class="nb" data-p="body" onclick="goPage('body')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="12" cy="5" r="2"/><path d="M12 7v8M9 10l3-1 3 1M9 21l3-5 3 5"/></svg>形体</button>
-    <button class="nb" data-p="mem" onclick="goPage('mem')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M12 2a7 7 0 0 1 7 7c0 4-3 6-4 9H9c-1-3-4-5-4-9a7 7 0 0 1 7-7z"/><path d="M9 21h6"/></svg>记忆</button>
-    <button class="nb" data-p="rev" onclick="goPage('rev')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>复盘</button>
   </nav>
 </div>
 
@@ -1268,7 +1293,7 @@ async function boot(){
     window.goPage=function(n){
       _origGoPage(n);
       if(n==='plan'){ renderWeekExecBoard(); renderPlanWeekGrid(); renderPhaseProgress(); }
-      if(n==='dash'){ renderTodayStatusCard(); renderPhaseTrigger(); }
+      if(n==='dash'){ renderTodayStatusCard(); renderPhaseTrigger(); setTimeout(renderDashAlerts,30); setTimeout(fillDashTrainCount,200); }
       if(n==='body'){ if(typeof loadStrChart==='function') loadStrChart(); }
     };
   }
@@ -1278,6 +1303,8 @@ async function boot(){
 function nt(){return new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});}
 function todayStr(){return new Date().toLocaleDateString('zh-CN',{month:'numeric',day:'numeric',weekday:'short'});}
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2400);}
+function toggleMoreMenu(){const m=document.getElementById('more-menu');if(!m)return;const o=m.style.display!=='none';m.style.display=o?'none':'flex';if(!o){const c=e=>{if(!m.contains(e.target)&&e.target.closest('button')?.textContent?.trim()!=='⋯'){m.style.display='none';document.removeEventListener('pointerdown',c);}};setTimeout(()=>document.addEventListener('pointerdown',c),50);}}
+function hideMoreMenu(){const m=document.getElementById('more-menu');if(m)m.style.display='none';}
 function goPage(n){document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));document.getElementById('pg-'+n).classList.add('on');document.querySelector(`[data-p="${n}"]`).classList.add('on');}
 function prof(){return buildProfile(S);}
 function memCtx(){
@@ -1361,6 +1388,37 @@ function renderDash(){
   const gap=Math.max(0,PT()-p),el=document.getElementById('dash-gap');
   if(gap<=0){el.textContent='✓ 今日已达标';el.className='pi-g ok';}
   else{el.textContent=`⚠ 缺口 ${Math.round(gap)}g`;el.className='pi-g';}
+}
+
+async function renderDashAlerts(){
+  const wrap = document.getElementById('dash-alerts-wrap');
+  if(!wrap) return;
+  if(!window.db||typeof runDashAlerts!=='function'){wrap.innerHTML='';return;}
+  try{
+    const alerts = await runDashAlerts();
+    if(!alerts||alerts.length===0){wrap.innerHTML='';return;}
+    wrap.innerHTML=`<div class="dash-alerts">${alerts.map(a=>`
+      <div class="alert-card ${a.level}">
+        <span class="alert-icon">${a.icon}</span>
+        <div class="alert-body">
+          <div class="alert-title">${a.title}</div>
+          <div class="alert-desc">${a.description}</div>
+        </div>
+        <button class="alert-action" onclick="${a.action.replace(/"/g,'&quot;')}">${a.actionLabel}</button>
+      </div>
+    `).join('')}</div>`;
+  }catch(e){wrap.innerHTML='';}
+}
+
+async function fillDashTrainCount(){
+  const el=document.getElementById('dash-7day-train-count');
+  if(!el||!window.db)return;
+  try{
+    const sessions=await db.getRecentSessions(7);
+    const count=sessions.filter(s=>{const age=Date.now()-new Date(s.trained_at).getTime();return age<7*864e5;}).length;
+    el.textContent=count;
+    el.style.color=count>=5?'var(--ac)':count>=3?'var(--wa)':'var(--da)';
+  }catch(e){}
 }
 
 // ══ SUPPS ══
@@ -1628,11 +1686,15 @@ async function addManualFood(){
 }
 
 function addFoodEntry(e){
+  const prevProtein=S.protein;
+  const tgt=typeof PT==='function'?PT():168;
   S.foods.push(e);
   S.protein+=e.protein_g||0;S.carbs+=e.carbs_g||0;S.fat+=e.fat_g||0;S.kcal+=e.kcal||0;
   renderFoodList();updateBars();renderDash();applyNutritionUI();
   if(typeof saveAppStateLocally==='function')saveAppStateLocally();
   if(typeof refreshAppStatus==='function')refreshAppStatus();
+  // 正向反馈：蛋白质刚达标
+  if(prevProtein<tgt&&S.protein>=tgt){setTimeout(()=>toast('🎉 蛋白质今日达标！肌肉合成窗口已激活'),300);}
 }
 
 // 渲染今日食物（按餐次分组）
@@ -2222,6 +2284,8 @@ async function saveSession(){
     await loadRecentCmp();
   }
   if(isToday&&S.todayMuscle&&S.todayMuscle!=='rest'&&typeof setLastTrainType==='function'){setLastTrainType(S.todayMuscle);renderMuscleSelector();}
+  // 正向反馈：近7天训练周完成
+  if(isToday&&S.todayMuscle!=='rest'){setTimeout(async()=>{if(!window.db)return;try{const sessions=await db.getRecentSessions(7);const count=sessions.filter(s=>{const age=Date.now()-new Date(s.trained_at).getTime();return age<7*864e5;}).length;if(count>=6){toast('🎯 近7天训练 6/6 完成！执行率满分 ⭐');}else if(count>=5){toast(`👍 近7天已训练 ${count}/6，继续坚持`);}}catch(e){}},2000);}
   if(typeof clearTrainDraft==='function')clearTrainDraft(S_trainDate);
   S.trainCloudSessionId=null;
   if(notes.trim()&&confirm(`将训后感受存入记忆库（7天）？\n「${notes.slice(0,60)}」`))await saveMemoQ(notes,'short');
@@ -2902,6 +2966,8 @@ async function renderTodayStatusCard(){
     <div class="tc-row2">
       <span class="tc-pill">蛋白 <strong>${Math.round(S.protein)}/${tgt.protein}g</strong> (${proteinPct}%)</span>
       <span class="tc-pill">热量 <strong>${Math.round(S.kcal)}/${tgt.kcal}</strong></span>
+      <span class="tc-pill" id="tc-weight-pill">${(()=>{const lw=typeof getLastWeightRecord==='function'?getLastWeightRecord():null;return lw&&new Date(lw.ts).toDateString()===new Date().toDateString()?`⚖️ <strong>${lw.weight_kg.toFixed(1)}</strong>kg`:`⚖️ 未录`;})()}</span>
+      <span class="tc-pill">💪 近7天 <strong id="dash-7day-train-count">—</strong>/6</span>
     </div>
     ${timeHint?`<div style="font-size:11px;color:var(--ac);margin-top:7px">${timeHint}</div>`:''}
     ${sleepHtml}
@@ -4128,6 +4194,7 @@ async function renderWeekInsightCard() {
       setTimeout(renderWeekInsightCard, 100);
       setTimeout(renderDailyChecklist, 50);
       setTimeout(renderSleepQuickLog, 80);
+      setTimeout(renderDashAlerts, 30);
     }
   };
   window.goPage._wiGoHooked = true;

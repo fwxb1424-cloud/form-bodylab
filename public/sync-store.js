@@ -404,6 +404,18 @@ async function saveQuickWeight(weight_kg, db) {
     date: new Date().toISOString().slice(0, 10),
   }));
   localStorage.setItem('form_last_stat_ts', Date.now().toString());
+
+  // 正向反馈：新低体重
+  try {
+    const rows = await (db?.getWeightTrendDays ? db.getWeightTrendDays(7).catch(() => []) : []);
+    if (rows.length >= 3) {
+      const lowestIn7 = Math.min(...rows.map(r => r.weight_kg));
+      if (weight_kg < lowestIn7 && typeof toast === 'function') {
+        const drop = lowestIn7 - weight_kg;
+        setTimeout(() => toast(`🎉 新低！比 7 日最低轻 ${drop.toFixed(1)}kg`), 500);
+      }
+    }
+  } catch (e) {}
 }
 
 /** 获取最近一次体重记录（含日期） */
@@ -612,6 +624,174 @@ function buildRuleMealPlan(targets, consumed, isTrain) {
   return { headline, meals, remaining: rem };
 }
 
+// ── Dash 微复盘引擎 ──────────────────────────────────────────
+/**
+ * 在概况页加载时运行，返回需显示的提醒数组。
+ * 每个提醒: { id, level, icon, title, description, action, actionLabel }
+ * 非阻塞 — 所有 Promise 失败时静默处理，返回空数组。
+ */
+async function runDashAlerts() {
+  if (!window.db) return [];
+  try {
+    const h = new Date().getHours();
+    const S = window.S || {};
+    const PT = typeof window.PT === 'function' ? window.PT : null;
+    const proteinTarget = PT ? PT() : (S.proteinTarget || 168);
+
+    const [
+      weightTrendRows,
+      latestBodyStat,
+      todayFoodLogs,
+      sleepLogs1,
+      recentSessions7,
+    ] = await Promise.all([
+      window.db.getWeightTrendDays(8).catch(() => []),
+      window.db.getLatestBodyStat().catch(() => null),
+      window.db.getTodayFoodLogs().catch(() => []),
+      window.db.getRecentSleepLogs(1).catch(() => []),
+      window.db.getRecentSessions(7).catch(() => []),
+    ]);
+
+    const alerts = [];
+    const elevenWeekStatus = typeof getElevenWeekStatus === 'function' ? getElevenWeekStatus() : null;
+
+    // 1. 体重异常 — 单日 vs 7日均值偏差 >0.5kg
+    if (weightTrendRows.length >= 2) {
+      const weights = weightTrendRows.map(r => r.weight_kg);
+      const avg7 = weights.reduce((a, v) => a + v, 0) / weights.length;
+      const latestW = weights[weights.length - 1];
+      const diff = latestW - avg7;
+      if (Math.abs(diff) > 0.5) {
+        const dir = diff > 0 ? '偏高' : '偏低';
+        alerts.push({
+          id: 'weight_spike',
+          level: 'red',
+          icon: '⚡',
+          title: `今日体重${dir}`,
+          description: `今早 ${latestW.toFixed(1)}kg vs 7日均值 ${avg7.toFixed(1)}kg (${diff > 0 ? '+' : ''}${diff.toFixed(2)}kg)，可能只是水分，明天再看`,
+          action: "document.querySelector('[data-p=\"body\"]')?.click(); if(typeof goPage==='function') goPage('body')",
+          actionLabel: '看形体',
+        });
+      }
+    }
+
+    // 2. 体重未录 — >=1 天
+    const daysSince = typeof daysSinceLastWeight === 'function' ? daysSinceLastWeight() : 999;
+    if (daysSince >= 1) {
+      alerts.push({
+        id: 'weight_missing',
+        level: 'yellow',
+        icon: '⚖️',
+        title: '体重未记录',
+        description: daysSince >= 999 ? '还未记录过体重，晨称是每周 checkpoint 的基准数据' : `${daysSince}天未称重，明早记得`,
+        action: "document.querySelector('[data-p=\"body\"]')?.click(); if(typeof goPage==='function') goPage('body')",
+        actionLabel: '去记录',
+      });
+    }
+
+    // 3. 蛋白滞后 — >=14:00 且完成 <40%
+    if (h >= 14) {
+      const eaten = todayFoodLogs.reduce((a, r) => a + (r.protein_g || 0), 0);
+      const pct = proteinTarget ? Math.round(eaten / proteinTarget * 100) : 0;
+      if (pct < 40) {
+        alerts.push({
+          id: 'protein_behind',
+          level: 'yellow',
+          icon: '🥩',
+          title: `蛋白质仅完成 ${pct}%`,
+          description: `下午${h >= 18 ? '了' : '过半'}，已完成 ${Math.round(eaten)}g/${proteinTarget}g，晚餐需要 ${Math.round(proteinTarget * 0.6)}g`,
+          action: "document.querySelector('[data-p=\"diet\"]')?.click(); if(typeof goPage==='function') goPage('diet')",
+          actionLabel: '去饮食',
+        });
+      }
+    }
+
+    // 4. 睡眠差 — 昨晚 <6h
+    if (sleepLogs1.length > 0) {
+      const hrs = sleepLogs1[0].duration_h || 0;
+      if (hrs > 0 && hrs < 6) {
+        alerts.push({
+          id: 'poor_sleep',
+          level: 'yellow',
+          icon: '🛌',
+          title: `昨晚只睡 ${hrs.toFixed(1)}h`,
+          description: '睡眠不足影响恢复和生长激素分泌，建议早睡补回来',
+          action: "document.querySelector('[data-p=\"body\"]')?.click(); if(typeof goPage==='function') goPage('body')",
+          actionLabel: '记录睡眠',
+        });
+      }
+    }
+
+    // 5. 训练脱节 — 连续3天非休息日未训练
+    {
+      let consecutiveMiss = 0;
+      const now = new Date();
+      for (let i = 1; i <= 3; i++) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().slice(0, 10);
+        const qType = getQueueTypeForDate(dateStr);
+        if (qType === 'rest') continue;
+        const didTrain = recentSessions7.some(s => (s.trained_at || '').startsWith(dateStr));
+        if (!didTrain) consecutiveMiss++;
+        else break;
+      }
+      if (consecutiveMiss >= 3) {
+        alerts.push({
+          id: 'training_drift',
+          level: 'red',
+          icon: '💪',
+          title: '连续 3 天缺练',
+          description: '过去 3 个非休息日未记录训练，队列可能脱节，打开计划页更新锚点',
+          action: "document.querySelector('[data-p=\"train\"]')?.click(); if(typeof goPage==='function') goPage('train')",
+          actionLabel: '去训练',
+        });
+      }
+    }
+
+    // 6. Diet Break 监控 — 第6周 7日均值超目标 >0.5kg
+    if (elevenWeekStatus && elevenWeekStatus.isDietBreak && weightTrendRows.length >= 2) {
+      const avg7 = weightTrendRows.reduce((a, r) => a + r.weight_kg, 0) / weightTrendRows.length;
+      const target = elevenWeekStatus.targetWeight;
+      if (avg7 - target > 0.5) {
+        alerts.push({
+          id: 'diet_break_overgain',
+          level: 'red',
+          icon: '🍽️',
+          title: 'Diet Break 体重超涨',
+          description: `7日均值 ${avg7.toFixed(1)}kg vs 目标 ${target}kg (超出 ${(avg7 - target).toFixed(1)}kg)，可能需降回 2700kcal`,
+          action: "document.querySelector('[data-p=\"plan\"]')?.click(); if(typeof goPage==='function') goPage('plan')",
+          actionLabel: '看计划',
+        });
+      }
+    }
+
+    // 7. 连续周偏离 — 连续2周 >0.3kg 高于目标
+    if (!(elevenWeekStatus && elevenWeekStatus.isDietBreak) && weightTrendRows.length >= 2) {
+      try {
+        const hist = JSON.parse(localStorage.getItem('form_checkpoint_history') || '[]');
+        const sorted = hist.sort((a, b) => b.week - a.week).slice(0, 2);
+        if (sorted.length === 2 && sorted[0].diff > 0.3 && sorted[1].diff > 0.3) {
+          alerts.push({
+            id: 'consecutive_deviation',
+            level: 'red',
+            icon: '📊',
+            title: '连续 2 周高于目标',
+            description: `第${sorted[1].week}周 +${sorted[1].diff.toFixed(2)}kg · 第${sorted[0].week}周 +${sorted[0].diff.toFixed(2)}kg，建议执行复盘下调 100kcal`,
+            action: "if(typeof runWeeklyCheckpoint==='function'){runWeeklyCheckpoint().then(r=>{if(r.suggestion){if(typeof toast==='function') toast(r.suggestion.reason);if(typeof renderPlanCheckpoint==='function') renderPlanCheckpoint();}})}",
+            actionLabel: '执行复盘',
+          });
+        }
+      } catch (e) {}
+    }
+
+    return alerts;
+  } catch (e) {
+    console.warn('[dashAlerts]', e);
+    return [];
+  }
+}
+
 // ── 导出到全局 ─────────────────────────────────────────────
 window.loadProfile = loadProfile;
 window.saveProfile = saveProfile;
@@ -658,3 +838,5 @@ window.loadSupps = loadSupps;
 window.saveSuppsData = saveSuppsData;
 window.getSuppsBySlot = getSuppsBySlot;
 window.getUncompletedSuppsBySlot = getUncompletedSuppsBySlot;
+// Dash 微复盘
+window.runDashAlerts = runDashAlerts;
