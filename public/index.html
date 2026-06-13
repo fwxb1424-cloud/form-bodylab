@@ -1130,10 +1130,16 @@ body{
 
     <!-- ══ 形体 ══ -->
     <div class="page" id="pg-body">
-      <div class="ph"><div class="ph-ey">形体追踪</div><div class="ph-h1">身体数据</div><div class="ph-sub">成分 · 围度 · 力量 · 睡眠</div></div>
+      <div class="ph"><div class="ph-ey">形体追踪</div><div class="ph-h1">身体数据</div><div class="ph-sub">体重 · 成分 · 围度 · 力量 · 睡眠</div></div>
+
+      <!-- 体重 -->
+      <div class="s" style="margin-top:12px"><div class="slbl">体重</div>
+        <div class="in-row"><input type="number" step="0.1" placeholder="体重 kg" id="in-weight" class="ni" style="flex:1"><button class="upd-btn" onclick="saveWeight()">记录体重</button></div>
+        <div id="weight-log" style="margin-top:6px;font-size:11px;color:var(--t2)"></div>
+      </div>
 
       <!-- 成分 -->
-      <div class="s" style="margin-top:12px"><div class="slbl">身体成分</div>
+      <div class="s" style="margin-top:8px"><div class="slbl">身体成分</div>
         <div class="comp-row"><div class="cp m"><div class="cp-l">肌肉量</div><div class="cp-v" id="muscle-val">40.4</div><div class="cp-u">kg</div></div><div class="cp f"><div class="cp-l">体脂率</div><div class="cp-v" id="fat-val">17.8</div><div class="cp-u">%</div></div></div>
         <div class="in-row"><input type="number" step="0.1" placeholder="肌肉量 kg" id="in-muscle" class="ni" style="flex:1"><input type="number" step="0.1" placeholder="体脂 %" id="in-fat" class="ni" style="flex:1"><button class="upd-btn" onclick="updateComp()">更新</button></div>
       </div>
@@ -1353,7 +1359,7 @@ async function boot(){
       if(n==='plan'){ renderLockedPlansOverview(); renderWeekExecBoard(); renderPlanWeekGrid(); renderPhaseProgress(); refreshTrainingSlotUI(); }
       if(n==='dash'){ ensureConnections(); updateDashStatusBar(); renderDailyChecklist(); renderTodayStatusCard(); renderPhaseTrigger(); setTimeout(renderDashAlerts,30); setTimeout(fillDashTrainCount,200); setTimeout(renderWeeklyMiniCard,100); renderPauseButton(); }
       if(n==='coach'){ _renderCoach(); }
-      if(n==='body'){ if(typeof loadStrChart==='function') loadStrChart(); }
+      if(n==='body'){ if(typeof loadStrChart==='function') loadStrChart(); if(typeof loadWeightLog==='function') loadWeightLog(); }
     };
   }
 }
@@ -1571,22 +1577,44 @@ async function fillDashTrainCount(){
 }
 
 async function quickSaveWeight(){
-  const input=document.getElementById('dash-quick-weight');
-  const w=parseFloat(input.value);
+  var input=document.getElementById('dash-quick-weight');
+  var w=parseFloat(input.value);
   if(!w||w<40||w>200){toast('请输入有效体重（40–200kg）');return;}
-  if(typeof saveQuickWeight==='function'&&window.db){
-    await saveQuickWeight(w,window.db);
-  }else{
-    const p=typeof loadProfile==='function'?loadProfile():{};
-    p.weight_kg=w;
-    if(typeof saveProfile==='function')saveProfile(p);
-    localStorage.setItem('form_last_weight',JSON.stringify({weight_kg:w,ts:Date.now(),date:new Date().toISOString().slice(0,10)}));
-    localStorage.setItem('form_last_stat_ts',Date.now().toString());
-  }
+  await _doSaveWeight(w);
   input.value='';
-  toast(`✓ 体重 ${w.toFixed(1)}kg 已记录`);
+  toast('✓ 体重 '+w.toFixed(1)+'kg 已记录');
   if(typeof renderDash==='function')renderDash();
   if(typeof renderTodayStatusCard==='function')renderTodayStatusCard();
+}
+async function saveWeight(){
+  var input=document.getElementById('in-weight');
+  var w=parseFloat(input.value);
+  if(!w||w<40||w>200){toast('请输入有效体重（40–200kg）');return;}
+  await _doSaveWeight(w);
+  input.value='';
+  toast('✓ 体重 '+w.toFixed(1)+'kg 已记录');
+  if(typeof loadWeightLog==='function')loadWeightLog();
+}
+async function _doSaveWeight(w){
+  S.weight_kg=w;
+  if(window.db){try{await db.addBodyStat({weight_kg:w,muscle_kg:S.muscle,fat_pct:S.fat_pct});}catch(e){}}
+  localStorage.setItem('form_last_weight',JSON.stringify({weight_kg:w,ts:Date.now(),date:new Date().toISOString().slice(0,10)}));
+  localStorage.setItem('form_last_stat_ts',Date.now().toString());
+}
+async function loadWeightLog(){
+  var el=document.getElementById('weight-log');if(!el)return;
+  if(!window.db){el.innerHTML='<span style=\"color:var(--t3)\">连接数据库后显示体重历史</span>';return;}
+  try{var rows=await db.getBodyStats(14);if(!rows||!rows.length){el.innerHTML='<span style=\"color:var(--t3)\">暂无记录</span>';return;}
+    var items=rows.filter(function(r){return r.weight_kg;}).slice(0,7);
+    if(!items.length){el.innerHTML='<span style=\"color:var(--t3)\">暂无体重记录</span>';return;}
+    el.innerHTML=items.map(function(r,i){
+      var d=r.logged_at?new Date(r.logged_at).toLocaleDateString('zh-CN',{month:'numeric',day:'numeric'}):'';
+      var lastW=items[i+1]?items[i+1].weight_kg:r.weight_kg;
+      var diff=r.weight_kg-lastW;
+      var diffStr=diff>0?'<span style=\"color:var(--wa)\">+'+diff.toFixed(1)+'</span>':diff<0?'<span style=\"color:var(--ac)\">'+diff.toFixed(1)+'</span>':'';
+      return '<div style=\"display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--ln);font-size:12px\"><span>'+d+'</span><span style=\"font-weight:600\">'+r.weight_kg.toFixed(1)+'kg '+diffStr+'</span></div>';
+    }).join('');
+  }catch(e){el.innerHTML='<span style=\"color:var(--t3)\">加载失败</span>';}
 }
 
 async function quickLogTraining(){
@@ -3598,7 +3626,7 @@ async function checkStrengthStall(){
       orig(n);
       if(n==='plan'){renderLockedPlansOverview();renderWeekExecBoard();renderPlanWeekGrid();renderPhaseProgress();renderPlanCheckpoint();}
       if(n==='dash'){ensureConnections();updateDashStatusBar();renderDailyChecklist();renderTodayStatusCard();renderPhaseTrigger();}
-      if(n==='body'){loadStrChart();}
+      if(n==='body'){loadStrChart();loadWeightLog();}
       // v4.3: 打开复盘页自动运行上次选定的周期
       if(n==='rev'){
         const el=document.getElementById('rev-result');
