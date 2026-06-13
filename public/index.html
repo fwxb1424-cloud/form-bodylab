@@ -3487,6 +3487,10 @@ async function _sendCoachMsg(text){
   _coachMsgs.push({role:'coach',text:'思考中...',saved:false});
   _renderCoach();
   try{
+    // 确保训练历史已加载，教练能看到真实训练数据
+    if(!S.recentSessionsCache?.length && typeof loadTrainHistory==='function'){
+      await loadTrainHistory();
+    }
     const profile=typeof buildProfile==='function'?buildProfile(window.S):'';
     const system=typeof PROMPTS!=='undefined'&&PROMPTS.coach?PROMPTS.coach(profile):'';
     const r=await AI.call('coach',{system,userMsg:text});
