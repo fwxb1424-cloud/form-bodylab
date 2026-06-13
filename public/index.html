@@ -758,7 +758,7 @@ body{
 
     <!-- ══ 概况 ══ -->
     <div class="page on" id="pg-dash">
-      <div class="ph"><div class="ph-ey">FORM · Body Lab</div><div class="ph-h1" style="display:flex;align-items:center;justify-content:space-between"><span>今日概况</span><div style="display:flex;gap:4px;align-items:center"><button onclick="openCoachChat()" style="background:linear-gradient(135deg,rgba(226,255,92,.12),rgba(180,154,255,.08));border:1px solid rgba(226,255,92,.2);color:var(--ac);cursor:pointer;padding:5px 12px;border-radius:20px;font-family:var(--f1);font-size:11px;font-weight:600;white-space:nowrap" title="AI教练">🧠 问教练</button><button onclick="toggleMoreMenu()" style="background:none;border:none;color:var(--t2);cursor:pointer;padding:4px 10px;border-radius:8px;font-size:20px;letter-spacing:3px;line-height:1" title="更多">⋯</button></div></div><div class="ph-sub" id="dash-date"></div>
+      <div class="ph"><div class="ph-ey">FORM · Body Lab</div><div class="ph-h1" style="display:flex;align-items:center;justify-content:space-between"><span>今日概况</span><div style="display:flex;gap:4px;align-items:center"><button onclick="toggleCoach()" style="background:linear-gradient(135deg,rgba(226,255,92,.12),rgba(180,154,255,.08));border:1px solid rgba(226,255,92,.2);color:var(--ac);cursor:pointer;padding:5px 12px;border-radius:20px;font-family:var(--f1);font-size:11px;font-weight:600;white-space:nowrap" title="AI教练">🧠 问教练</button><button onclick="toggleMoreMenu()" style="background:none;border:none;color:var(--t2);cursor:pointer;padding:4px 10px;border-radius:8px;font-size:20px;letter-spacing:3px;line-height:1" title="更多">⋯</button></div></div><div class="ph-sub" id="dash-date"></div>
         <div id="more-menu" style="display:none;margin-top:8px;padding:2px 0;flex-wrap:wrap;gap:5px">
           <button class="tc-pill" onclick="goPage('plan');hideMoreMenu()" style="cursor:pointer;border:1px solid var(--ln2);background:var(--s3);padding:3px 10px;font-size:11px;font-family:var(--f1);color:var(--t1);border-radius:10px">📋 计划</button>
           <button class="tc-pill" onclick="goPage('mem');hideMoreMenu()" style="cursor:pointer;border:1px solid var(--ln2);background:var(--s3);padding:3px 10px;font-size:11px;font-family:var(--f1);color:var(--t1);border-radius:10px">🧠 记忆</button>
@@ -767,10 +767,6 @@ body{
       </div>
       <!-- 微复盘提醒 -->
       <div id="dash-alerts-wrap"></div>
-      <div id="js-test" style="margin:6px 20px 0;padding:10px;background:rgba(232,88,88,.2);border:1px solid red;border-radius:8px;font-size:12px;color:#fff;text-align:center">
-        JS加载中...
-        <button onclick="document.getElementById('js-test').textContent='JS存活！onclick有效'" style="margin-left:8px;padding:4px 10px">点我测试</button>
-      </div>
       <!-- 快速操作 -->
       <div class="s" id="dash-quick-actions" style="margin-top:8px">
         <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
@@ -779,6 +775,15 @@ body{
           <button onclick="quickLogTraining()" id="dash-quick-train-btn" style="background:rgba(106,172,255,.1);border:1px solid rgba(106,172,255,.18);color:var(--info);cursor:pointer;padding:8px 14px;border-radius:10px;font-family:var(--f1);font-size:11px;font-weight:600;white-space:nowrap">✊ 练了</button>
           <button onclick="quickLogRest()" id="dash-quick-rest-btn" style="background:rgba(180,154,255,.08);border:1px solid rgba(180,154,255,.15);color:var(--pu);cursor:pointer;padding:8px 14px;border-radius:10px;font-family:var(--f1);font-size:11px;font-weight:600;white-space:nowrap">😴 休息</button>
           <button onclick="toggleNotifyPause()" id="dash-pause-btn" style="background:none;border:1px solid var(--ln);color:var(--t2);cursor:pointer;padding:8px 12px;border-radius:10px;font-family:var(--f1);font-size:10px;font-weight:500;white-space:nowrap">🔕</button>
+        </div>
+      </div>
+      <!-- AI 教练 -->
+      <div class="s" id="dash-coach-wrap" style="display:none">
+        <div class="slbl">🧠 问教练 <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t2);font-size:10px">已注入你的全部数据</span></div>
+        <div id="dash-coach-msgs" style="max-height:240px;overflow-y:auto;margin-bottom:6px;font-size:12px;line-height:1.6;color:var(--t1)"></div>
+        <div style="display:flex;gap:5px">
+          <input id="dash-coach-input" placeholder="问教练..." style="flex:1;background:var(--s2);border:1px solid var(--ln2);border-radius:10px;padding:9px 12px;color:var(--t1);font-family:var(--f1);font-size:12px;outline:none" onkeydown="if(event.key==='Enter')askCoach()">
+          <button onclick="askCoach()" style="background:var(--ac);color:#08090A;border:none;border-radius:10px;padding:9px 16px;font-family:var(--f1);font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">发送</button>
         </div>
       </div>
       <!-- 今日状态卡 -->
@@ -4882,122 +4887,58 @@ window.importPlanFoods = function() {
   toast(added > 0 ? `✓ 已导入 ${added} 个常用食物` : '已是最新，无新增');
 };
 
-// ══ AI 教练聊天 ══════════════════════════════════════════
-const coachMsgs = [];
+// ══ AI 教练（Dash 内嵌版）═════════════════════════════════
+const _coachMsgs = [];
 
-function openCoachChat() {
-  document.getElementById('coach-overlay').classList.add('on');
-  if (coachMsgs.length === 0) {
-    document.getElementById('coach-body').innerHTML =
-      `<div class="coach-empty">我是你的专属AI教练，已读取你的档案、今天数据、训练史和记忆库。<br><br>比如问：<br>"我最近卧推是不是停滞了"<br>"减脂速度正常吗"<br>"今天蛋白怎么补"</div>`;
-  }
-  setTimeout(() => document.getElementById('coach-input').focus(), 100);
-  hideMoreMenu();
-}
-
-function closeCoachChat() {
-  document.getElementById('coach-overlay').classList.remove('on');
-}
-
-function renderCoachChat() {
-  const body = document.getElementById('coach-body');
-  if (coachMsgs.length === 0) return;
-  body.innerHTML = coachMsgs.map((m, i) => `
-    <div class="coach-msg ${m.role}">
-      <div>${m.text.replace(/\n/g, '<br>')}</div>
-      ${m.role === 'coach' ? `
-        <div class="msg-meta">
-          <span>FORM Coach</span>
-          <button class="msg-save ${m.saved ? 'saved' : ''}" onclick="saveCoachMemory(${i})">${m.saved ? '✓ 已保存' : '保存到记忆'}</button>
-        </div>` : ''}
-    </div>
-  `).join('');
-  body.scrollTop = body.scrollHeight;
-}
-
-async function sendCoachMsg() {
-  try {
-  const input = document.getElementById('coach-input');
-  const btn = document.getElementById('coach-send-btn');
-  if (!input || !btn) { toast('聊天界面加载异常，请刷新'); return; }
-  const text = input.value.trim();
-  if (!text) return;
-  if (!window.AI) { toast('AI 未初始化，请先配置 API Key'); return; }
-
-  input.value = '';
-  btn.disabled = true;
-  btn.textContent = '...';
-
-  coachMsgs.push({ role: 'user', text });
-  coachMsgs.push({ role: 'coach', text: '思考中...', saved: false });
-  renderCoachChat();
-
-  try {
-    const profile = typeof buildProfile === 'function' ? buildProfile(S) : '';
-    const system = typeof PROMPTS !== 'undefined' && PROMPTS.coach ? PROMPTS.coach(profile) : '';
-    const r = await AI.call('coach', { system, userMsg: text });
-    const reply = r._err
-      ? `抱歉，AI 响应出错：${(r._raw || '').slice(0, 100)}`
-      : (r._raw || r.summary || '抱歉，未收到有效回复。');
-
-    coachMsgs[coachMsgs.length - 1] = { role: 'coach', text: reply, saved: false };
-  } catch (e) {
-    coachMsgs[coachMsgs.length - 1] = { role: 'coach', text: `网络或 API 错误：${e.message}` };
-  }
-
-  renderCoachChat();
-  btn.disabled = false;
-  btn.textContent = '发送';
-  const focusInput = document.getElementById('coach-input');
-  if (focusInput) focusInput.focus();
-  } catch(e) { toast('发送失败：' + e.message); }
-}
-
-async function saveCoachMemory(i) {
-  const m = coachMsgs[i];
-  if (!m || m.role !== 'coach' || m.saved) return;
-  try {
-    const text = m.text.slice(0, 200);
-    if (typeof saveMemoQ === 'function') {
-      await saveMemoQ(`教练建议：${text}`, 'short');
-    } else if (window.db) {
-      await window.db.addMemory(`教练建议：${text}`, 'short');
-    } else {
-      toast('记忆库不可用');
-      return;
-    }
-    coachMsgs[i].saved = true;
-    renderCoachChat();
-    toast('✓ 已存入记忆库');
-    if (typeof renderMemories === 'function') renderMemories();
-  } catch (e) {
-    toast('保存失败：' + e.message);
+function toggleCoach(){
+  const w=document.getElementById('dash-coach-wrap');
+  if(!w)return;
+  w.style.display=w.style.display==='none'?'block':'none';
+  if(w.style.display==='block'&&_coachMsgs.length===0){
+    document.getElementById('dash-coach-msgs').innerHTML='<div style="color:var(--t3);font-size:12px;text-align:center;padding:10px">我是你的专属AI教练，已读取你的全部数据。<br>试试问："我减脂进度正常吗"、"今天蛋白怎么安排"</div>';
   }
 }
 
-window.openCoachChat = openCoachChat;
-window.closeCoachChat = closeCoachChat;
-window.sendCoachMsg = sendCoachMsg;
-window.saveCoachMemory = saveCoachMemory;
+function _renderCoach(){
+  const el=document.getElementById('dash-coach-msgs');
+  if(!el||_coachMsgs.length===0)return;
+  el.innerHTML=_coachMsgs.map((m,i)=>`<div style="margin-bottom:8px;padding:8px 11px;border-radius:10px;font-size:12px;line-height:1.55;${m.role==='user'?'background:rgba(226,255,92,.06);border:1px solid rgba(226,255,92,.12)':'background:var(--s3);border:1px solid var(--ln)'}"><div>${m.text.replace(/\n/g,'<br>')}</div>${m.role==='coach'?`<div style="margin-top:5px;font-size:9px;color:var(--t3)">FORM Coach · <button onclick="_saveCoach(${i})" style="font-size:9px;color:${m.saved?'var(--t2)':'var(--ac)'};background:none;border:1px solid ${m.saved?'var(--ln)':'rgba(226,255,92,.2)'};border-radius:6px;padding:1px 7px;cursor:pointer">${m.saved?'✓ 已保存':'保存到记忆'}</button></div>`:''}</div>`).join('');
+  el.scrollTop=el.scrollHeight;
+}
+
+async function askCoach(){
+  const input=document.getElementById('dash-coach-input');
+  if(!input)return;
+  const text=input.value.trim();
+  if(!text)return;
+  if(!window.AI){toast('AI 未初始化');return;}
+  input.value='';
+  _coachMsgs.push({role:'user',text});
+  _coachMsgs.push({role:'coach',text:'思考中...',saved:false});
+  _renderCoach();
+  try{
+    const profile=typeof buildProfile==='function'?buildProfile(S):'';
+    const system=typeof PROMPTS!=='undefined'&&PROMPTS.coach?PROMPTS.coach(profile):'';
+    const r=await AI.call('coach',{system,userMsg:text});
+    _coachMsgs[_coachMsgs.length-1]={role:'coach',text:r._err?`错误：${(r._raw||'').slice(0,100)}`:(r._raw||'未收到回复'),saved:false};
+  }catch(e){
+    _coachMsgs[_coachMsgs.length-1]={role:'coach',text:`错误：${e.message}`,saved:false};
+  }
+  _renderCoach();
+}
+
+async function _saveCoach(i){
+  const m=_coachMsgs[i];
+  if(!m||m.role!=='coach'||m.saved)return;
+  try{
+    const txt=m.text.slice(0,200);
+    if(typeof saveMemoQ==='function')await saveMemoQ(`教练建议：${txt}`,'short');
+    else if(window.db)await window.db.addMemory(`教练建议：${txt}`,'short');
+    else{toast('记忆库不可用');return;}
+    _coachMsgs[i].saved=true;_renderCoach();toast('✓ 已存入记忆库');
+  }catch(e){toast('保存失败：'+e.message);}
+}
 
 </script>
-<!-- AI 教练聊天弹窗 -->
-<div class="coach-overlay" id="coach-overlay">
-  <div class="coach-header">
-    <div>
-      <div class="coach-title">🧠 FORM Coach</div>
-      <div class="coach-subtitle">专属AI教练 · 已注入你的全部数据</div>
-    </div>
-    <button class="coach-close" onclick="closeCoachChat()">✕</button>
-  </div>
-  <div class="coach-body" id="coach-body">
-    <div class="coach-empty">我是你的专属AI教练，已读取你的档案、今天数据、训练史和记忆库。<br><br>比如问：<br>"我最近卧推是不是停滞了"<br>"减脂速度正常吗"<br>"今天蛋白怎么补"</div>
-  </div>
-  <div class="coach-footer">
-    <input class="coach-input" id="coach-input" placeholder="问教练..." onkeydown="if(event.key==='Enter')sendCoachMsg()" autofocus>
-    <button class="coach-send" id="coach-send-btn" onclick="if(typeof toast==='function')toast('按钮有效');else this.textContent='toast未定义'">发送</button>
-  </div>
-</div>
-
 </body>
 </html>
