@@ -2802,6 +2802,7 @@ function calcSleepDur(){
 }
 
 async function saveSleep(){
+  try{
   var sl=document.getElementById('sleep-dur');if(!sl)return;
   var dur=parseFloat(sl.value);
   const startTime=document.getElementById('sleep-start')?.value||'';
@@ -2817,6 +2818,7 @@ async function saveSleep(){
   const[sh]=startTime.split(':').map(Number);
   const lateWarn=startTime&&sh>=23?'（⚠ 入睡偏晚）':'';
   toast(`✓ 睡眠 ${dur}h${startTime?' · 入睡'+startTime:''}${lateWarn}`);
+  }catch(e){}
 }
 
 async function loadSleepLog(){
