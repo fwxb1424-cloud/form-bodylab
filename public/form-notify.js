@@ -163,9 +163,17 @@ async function run(){
         ?`✓ 已称 ${lw.weight_kg.toFixed(1)}kg`
         :'⚠ 还没称，现在去';
       const kg=tgt.isDietBreak?`🔥 Diet Break ${tgt.kcal}kcal`:`${tgt.kcal}kcal`;
-      const preTrainNote=isStrength
-        ?'出门前：黑咖啡+半根香蕉 → 07:55出门 → 08:10训练'
-        :'出门前：黑咖啡 → 08:30出门 → 08:45有氧+核心(45min)';
+      const slot=profile.training_slot||'morning';
+      let preTrainNote='';
+      if(slot==='evening'){
+        preTrainNote=isStrength
+          ?'下班后去健身房 → 练前餐18:30吃（乳清+香蕉）→ 19:00训练'
+          :'下班后去 → 19:00有氧+核心(45min)';
+      }else{
+        preTrainNote=isStrength
+          ?'出门前：黑咖啡+半根香蕉 → 07:55出门 → 08:10训练'
+          :'出门前：黑咖啡 → 08:30出门 → 08:45有氧+核心(45min)';
+      }
       const label=isStrength?`💪 ${tgt.label}`:`🚴 ${tgt.label}`;
       await notify(
         `${label} · ${kg}`,

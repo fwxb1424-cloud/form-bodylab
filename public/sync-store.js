@@ -157,6 +157,16 @@ async function runWeeklyCheckpoint() {
 }
 
 // ── 云端同步：计划状态（供 Scriptable Widget 读取）────────────
+// ── 训练时段 ───────────────────────────────────────────────
+function getTrainingSlot() {
+  return localStorage.getItem('form_training_slot') || 'morning';
+}
+function setTrainingSlot(slot) {
+  localStorage.setItem('form_training_slot', slot);
+  if (typeof syncPlanStateToCloud === 'function') syncPlanStateToCloud();
+  if (typeof toast === 'function') toast(slot === 'morning' ? '✓ 已切换为早间训练' : '✓ 已切换为晚间训练');
+}
+
 /**
  * 把当前的队列锚点 + 阶段 + 11周计划微调状态写入 Supabase user_settings.profile_json
  * Widget 无法访问 PWA 的 localStorage，必须靠这份云端快照
@@ -172,6 +182,7 @@ async function syncPlanStateToCloud() {
     profile.cycle_start = localStorage.getItem('form_cycle_start');
     profile.kcal_adjustment = getKcalAdjustment();
     profile.diet_break_overgain = localStorage.getItem('form_diet_break_overgain') === '1';
+    profile.training_slot = getTrainingSlot();
     profile.plan_11week = PLAN_11WEEK; // 静态配置也存一份，Widget不用硬编码
     profile.updated_at = new Date().toISOString();
     await db.saveSettings({ profile_json: JSON.stringify(profile), supps_json: existing?.supps_json });
@@ -749,6 +760,25 @@ async function runDashAlerts() {
       }
     }
 
+    // 5.5 Diet Break 即将到来 — 提前3天预警
+    if (elevenWeekStatus && !elevenWeekStatus.done) {
+      const dbWeek = PLAN_11WEEK.dietBreakWeek;
+      const daysUntilDB = (dbWeek - elevenWeekStatus.weekNum) * 7 - (elevenWeekStatus.daysElapsed || 0) % 7;
+      if (elevenWeekStatus.weekNum < dbWeek && daysUntilDB <= 3 && daysUntilDB > 0) {
+        const dbStart = new Date(PLAN_11WEEK.startDate + 'T00:00:00');
+        dbStart.setDate(dbStart.getDate() + (dbWeek - 1) * 7);
+        alerts.push({
+          id: 'diet_break_coming',
+          level: 'green',
+          icon: '🍽️',
+          title: `Diet Break ${daysUntilDB === 1 ? '明天' : daysUntilDB + '天后'}开始`,
+          description: `${dbStart.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' })}–${new Date(dbStart.getTime() + 6 * 864e5).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' })}，热量升至2900kcal，体重涨幅不计入调整判断`,
+          action: "document.querySelector('[data-p=\"plan\"]')?.click(); if(typeof goPage==='function') goPage('plan')",
+          actionLabel: '看计划',
+        });
+      }
+    }
+
     // 6. Diet Break 监控 — 第6周 7日均值超目标 >0.5kg
     if (elevenWeekStatus && elevenWeekStatus.isDietBreak && weightTrendRows.length >= 2) {
       const avg7 = weightTrendRows.reduce((a, r) => a + r.weight_kg, 0) / weightTrendRows.length;
@@ -815,6 +845,8 @@ window.applyKcalAdjustment = applyKcalAdjustment;
 window.runWeeklyCheckpoint = runWeeklyCheckpoint;
 window.syncPlanStateToCloud = syncPlanStateToCloud;
 window.syncQueueAnchor = syncQueueAnchor;
+window.getTrainingSlot = getTrainingSlot;
+window.setTrainingSlot = setTrainingSlot;
 // 队列锚点 API
 window.getQueueAnchor = getQueueAnchor;
 window.setQueueAnchor = setQueueAnchor;

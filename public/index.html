@@ -767,6 +767,14 @@ body{
       </div>
       <!-- 微复盘提醒 -->
       <div id="dash-alerts-wrap"></div>
+      <!-- 快速操作 -->
+      <div class="s" id="dash-quick-actions" style="margin-top:8px">
+        <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
+          <input type="number" step="0.1" placeholder="体重 kg" id="dash-quick-weight" style="flex:1;min-width:80px;background:var(--s2);border:1px solid var(--ln2);border-radius:10px;padding:8px 10px;color:var(--t1);font-family:var(--f1);font-size:12px;outline:none;-webkit-appearance:none" onkeydown="if(event.key==='Enter')quickSaveWeight()" onfocus="this.select()">
+          <button onclick="quickSaveWeight()" style="background:rgba(226,255,92,.1);border:1px solid rgba(226,255,92,.2);color:var(--ac);cursor:pointer;padding:8px 14px;border-radius:10px;font-family:var(--f1);font-size:11px;font-weight:600;white-space:nowrap">保存体重</button>
+          <button onclick="quickLogTraining()" id="dash-quick-train-btn" style="background:rgba(106,172,255,.1);border:1px solid rgba(106,172,255,.18);color:var(--info);cursor:pointer;padding:8px 14px;border-radius:10px;font-family:var(--f1);font-size:11px;font-weight:600;white-space:nowrap">✊ 我今天练了</button>
+        </div>
+      </div>
       <!-- 今日状态卡 -->
       <div id="today-status-card"></div>
       <!-- 阶段触发器 -->
@@ -1041,6 +1049,14 @@ body{
 
       <!-- 周期进度 -->
       <div class="s" style="margin-top:8px">
+        <div class="slbl">训练时段</div>
+        <div style="display:flex;gap:6px">
+          <button class="ds-btn" id="ts-morning" onclick="setTrainingSlot('morning')">🌅 早间（7–9点）</button>
+          <button class="ds-btn" id="ts-evening" onclick="setTrainingSlot('evening')">🌆 晚间（18–20点）</button>
+        </div>
+        <div style="font-size:10px;color:var(--t3);margin-top:3px">切换时段会自动更新提醒文案的出门和训练时间</div>
+      </div>
+      <div class="s" style="margin-top:8px">
         <div class="slbl">减脂期进度</div>
         <div id="plan-phase-progress"></div>
       </div>
@@ -1314,7 +1330,7 @@ async function boot(){
     const _origGoPage=window.goPage;
     window.goPage=function(n){
       _origGoPage(n);
-      if(n==='plan'){ renderWeekExecBoard(); renderPlanWeekGrid(); renderPhaseProgress(); }
+      if(n==='plan'){ renderWeekExecBoard(); renderPlanWeekGrid(); renderPhaseProgress(); refreshTrainingSlotUI(); }
       if(n==='dash'){ renderTodayStatusCard(); renderPhaseTrigger(); setTimeout(renderDashAlerts,30); setTimeout(fillDashTrainCount,200); }
       if(n==='body'){ if(typeof loadStrChart==='function') loadStrChart(); }
     };
@@ -1441,6 +1457,45 @@ async function fillDashTrainCount(){
     el.textContent=count;
     el.style.color=count>=5?'var(--ac)':count>=3?'var(--wa)':'var(--da)';
   }catch(e){}
+}
+
+async function quickSaveWeight(){
+  const input=document.getElementById('dash-quick-weight');
+  const w=parseFloat(input.value);
+  if(!w||w<40||w>200){toast('请输入有效体重（40–200kg）');return;}
+  if(typeof saveQuickWeight==='function'&&window.db){
+    await saveQuickWeight(w,window.db);
+  }else{
+    const p=typeof loadProfile==='function'?loadProfile():{};
+    p.weight_kg=w;
+    if(typeof saveProfile==='function')saveProfile(p);
+    localStorage.setItem('form_last_weight',JSON.stringify({weight_kg:w,ts:Date.now(),date:new Date().toISOString().slice(0,10)}));
+    localStorage.setItem('form_last_stat_ts',Date.now().toString());
+  }
+  input.value='';
+  toast(`✓ 体重 ${w.toFixed(1)}kg 已记录`);
+  if(typeof renderDash==='function')renderDash();
+  if(typeof renderTodayStatusCard==='function')renderTodayStatusCard();
+}
+
+async function quickLogTraining(){
+  const btn=document.getElementById('dash-quick-train-btn');
+  if(!window.db){toast('数据库未连接');return;}
+  const todayType=typeof getTodayQueueType==='function'?getTodayQueueType():null;
+  if(!todayType||todayType==='rest'){toast('今天是休息日，不用打卡');return;}
+  btn.textContent='记录中...';btn.disabled=true;
+  try{
+    const now=new Date().toISOString();
+    await db.addSession({session_title:TRAIN_LABEL_MAP[todayType]||todayType,muscle_groups:todayType,volume:0,exercises_json:'[]',notes:'快速打卡',rpe:6,trained_at:now});
+    if(typeof markTodayAs==='function')markTodayAs(todayType);
+    if(typeof syncPlanStateToCloud==='function')syncPlanStateToCloud();
+    if(typeof setLastTrainType==='function')setLastTrainType(todayType);
+    toast(`✓ ${TRAIN_LABEL_MAP[todayType]||todayType} 已记录 · 锚点已更新`);
+    if(typeof renderDash==='function')renderDash();
+    if(typeof renderTodayStatusCard==='function')renderTodayStatusCard();
+    if(typeof renderMuscleSelector==='function')renderMuscleSelector();
+  }catch(e){toast('记录失败：'+e.message);}
+  btn.textContent='✊ 我今天练了';btn.disabled=false;
 }
 
 // ══ SUPPS ══
@@ -3098,6 +3153,14 @@ function renderPlanWeekGrid(){
     </div>`;
   }).join('');
 }
+function refreshTrainingSlotUI(){
+  const slot=typeof getTrainingSlot==='function'?getTrainingSlot():'morning';
+  ['morning','evening'].forEach(s=>{
+    const el=document.getElementById('ts-'+s);
+    if(el)el.classList.toggle('on',s===slot);
+  });
+}
+
 function renderPhaseProgress(){
   const container=document.getElementById('plan-phase-progress');if(!container)return;
   const phase=typeof getActivePlanPhase==='function'?getActivePlanPhase():'cut';
