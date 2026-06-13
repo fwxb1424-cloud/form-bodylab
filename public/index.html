@@ -831,6 +831,19 @@ body{
         </div>
         <div id="fav-food-list" style="display:flex;gap:6px;flex-wrap:wrap;min-height:24px"></div>
       </div>
+      <!-- 聚餐快录 -->
+      <div class="s" style="margin-top:7px">
+        <div class="slbl" style="display:flex;align-items:center;justify-content:space-between">
+          <span>聚餐快录 <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t2);font-size:10px">选场景+量级估算</span></span>
+          <button onclick="importPlanFoods()" style="font-size:10px;color:var(--t2);background:none;border:none;cursor:pointer">导入11周食物库</button>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="fav-chip" onclick="showMealTemplatePicker('hotpot',this)">🍲 火锅</button>
+          <button class="fav-chip" onclick="showMealTemplatePicker('bbq',this)">🍢 烧烤</button>
+          <button class="fav-chip" onclick="showMealTemplatePicker('japanese',this)">🍱 日料</button>
+          <button class="fav-chip" onclick="showMealTemplatePicker('bento',this)">🍛 便当</button>
+        </div>
+      </div>
       <div class="s" style="margin-top:7px">
         <div class="slbl">今日记录 <span id="food-cnt" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t2)"></span></div>
         <div id="food-list"><div class="empty">暂无记录</div></div>
@@ -968,7 +981,7 @@ body{
 
     <!-- ══ 计划 ══ -->
     <div class="page" id="pg-plan">
-      <div class="ph"><div class="ph-ey">长线规划</div><div class="ph-h1">训练计划</div><div class="ph-sub">减脂期 W1–W8 · 动态队列执行</div></div>
+      <div class="ph"><div class="ph-ey">长线规划</div><div class="ph-h1">训练计划</div><div class="ph-sub">减脂期 W1–W11 · 动态队列执行</div></div>
 
       <!-- 本周执行率 -->
       <div class="s" style="margin-top:12px">
@@ -980,6 +993,12 @@ body{
       <div class="s" style="margin-top:8px">
         <div class="slbl">减脂期进度</div>
         <div id="plan-phase-progress"></div>
+      </div>
+
+      <!-- 11周计划 · 体重检查点 -->
+      <div class="s" style="margin-top:8px">
+        <div class="slbl">本周体重检查点 <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t2);font-size:10px">周日复盘 · 7日均值</span></div>
+        <div id="plan-checkpoint"></div>
       </div>
 
       <!-- 本周训练结构 -->
@@ -1239,6 +1258,8 @@ async function boot(){
   }
   // 力量停滞检测（延迟执行不阻塞启动）
   setTimeout(()=>{ if(typeof checkStrengthStall==='function') checkStrengthStall(); }, 5000);
+  // 同步计划状态到云端（供Widget读取，延迟执行不阻塞启动）
+  setTimeout(()=>{ if(typeof syncPlanStateToCloud==='function') syncPlanStateToCloud().catch(()=>{}); }, 2000);
 
   // goPage钩子（只注册一次）
   if(!window._goPageHooked){
@@ -2861,10 +2882,22 @@ async function renderTodayStatusCard(){
   const lastStatTs=localStorage.getItem('form_last_stat_ts');
   const daysSince=lastStatTs?Math.floor((Date.now()-parseInt(lastStatTs))/864e5):999;
   const statReminder=daysSince>=14?`<div style="font-size:11px;color:var(--wa);margin-top:6px">📏 距上次体测已 ${daysSince} 天，建议更新体脂/体重</div>`:'';
+  // 11周计划：每日晨称提醒（不可商量底线#2）
+  let weightReminder='';
+  let dietBreakBadge='';
+  if(typeof getActivePlanPhase==='function'&&getActivePlanPhase()==='cut'){
+    if(typeof daysSinceLastWeight==='function'){
+      const dsw=daysSinceLastWeight();
+      if(dsw>=1)weightReminder=`<div style="font-size:11px;color:var(--wa);margin-top:6px">⚠️ 体重已${dsw>=999?'未':dsw}天未录，晨称是周checkpoint的依据</div>`;
+    }
+    if(typeof getElevenWeekStatus==='function'&&getElevenWeekStatus().isDietBreak){
+      dietBreakBadge=`<span class="tc-day-type" style="background:rgba(180,154,255,.18);color:var(--pu);margin-left:6px">Diet Break</span>`;
+    }
+  }
   wrap.innerHTML=`<div class="today-card">
     <div class="tc-row1">
       <span class="tc-plan-label">${opt.label}</span>
-      <span class="tc-day-type">${isTrainDay?'训练日':'休息日'}</span>
+      <span class="tc-day-type">${isTrainDay?'训练日':'休息日'}</span>${dietBreakBadge}
     </div>
     <div class="tc-row2">
       <span class="tc-pill">蛋白 <strong>${Math.round(S.protein)}/${tgt.protein}g</strong> (${proteinPct}%)</span>
@@ -2872,6 +2905,7 @@ async function renderTodayStatusCard(){
     </div>
     ${timeHint?`<div style="font-size:11px;color:var(--ac);margin-top:7px">${timeHint}</div>`:''}
     ${sleepHtml}
+    ${weightReminder}
     ${statReminder}
     <div class="tc-quick-btns">
       <button class="tc-qbtn primary" onclick="goPage('diet')">+ 记录饮食</button>
@@ -2978,21 +3012,94 @@ function renderPlanWeekGrid(){
 }
 function renderPhaseProgress(){
   const container=document.getElementById('plan-phase-progress');if(!container)return;
+  const phase=typeof getActivePlanPhase==='function'?getActivePlanPhase():'cut';
+  const bf=S.fat_pct||17.8;const muscle=S.muscle||40.4;
+
+  if(phase==='cut' && typeof getElevenWeekStatus==='function'){
+    const st=getElevenWeekStatus();
+    const pct=Math.min(100,Math.round(st.daysElapsed/st.totalDays*100));
+    const adj=typeof getKcalAdjustment==='function'?getKcalAdjustment():0;
+    const adjLabel=adj===0?'':` <span style="color:${adj>0?'var(--wa)':'#6AACFF'}">(已${adj>0?'上调':'下调'}${Math.abs(adj)}kcal)</span>`;
+    const dietBreakBadge=st.isDietBreak?`<span style="background:rgba(180,154,255,.18);color:var(--pu);padding:2px 8px;border-radius:10px;font-size:10px;margin-left:6px">Diet Break</span>`:'';
+    container.innerHTML=`<div class="phase-prog-card">
+      <div style="font-family:var(--f1);font-size:10px;font-weight:600;letter-spacing:.1em;color:var(--ac);text-transform:uppercase;margin-bottom:8px">11周计划 · 6/12→8/27${dietBreakBadge}</div>
+      <div class="phase-prog-label"><span style="color:var(--t2)">第 <strong style="color:var(--t1)">${st.weekNum}</strong> 周 / 共${PLAN_11WEEK.totalWeeks}周（${st.weekStart}–${st.weekEnd}）</span><span style="color:var(--ac);font-weight:600">${pct}%</span></div>
+      <div class="phase-prog-track"><div class="phase-prog-fill" style="width:${pct}%"></div></div>
+      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;margin-top:10px;font-size:11px;color:var(--t2)">
+        <span>本周目标体重 <strong style="color:var(--ac)">${st.targetWeight}kg</strong></span>
+        <span>体脂 <strong style="color:var(--t1)">${Number(bf).toFixed(1)}%</strong></span>
+        <span>骨骼肌 <strong style="color:var(--pu)">${Number(muscle).toFixed(1)}kg</strong></span>
+      </div>
+      ${adj!==0?`<div style="margin-top:6px;font-size:11px;color:var(--t2)">当前热量微调${adjLabel}</div>`:''}
+    </div>`;
+    return;
+  }
+
+  // 非cut阶段：保留原有通用进度展示
   if(!localStorage.getItem('form_cycle_start'))localStorage.setItem('form_cycle_start',new Date().toISOString());
   const start=new Date(localStorage.getItem('form_cycle_start'));
   const elapsed=Math.floor((Date.now()-start.getTime())/864e5);
-  const wk=Math.min(8,Math.floor(elapsed/7)+1);const pct=Math.min(100,Math.round(elapsed/56*100));
-  const bf=S.fat_pct||17.8;const muscle=S.muscle||40.4;
+  const plan=COLE_PLAN[phase]||COLE_PLAN.cut;
+  const totalWeeks=plan.durationWeeks||8;
+  const wk=Math.min(totalWeeks,Math.floor(elapsed/7)+1);const pct=Math.min(100,Math.round(elapsed/(totalWeeks*7)*100));
   container.innerHTML=`<div class="phase-prog-card">
-    <div style="font-family:var(--f1);font-size:10px;font-weight:600;letter-spacing:.1em;color:var(--ac);text-transform:uppercase;margin-bottom:8px">阶段一 · 减脂保肌期 W1–W8</div>
-    <div class="phase-prog-label"><span style="color:var(--t2)">第 <strong style="color:var(--t1)">${wk}</strong> 周 / 共8周</span><span style="color:var(--ac);font-weight:600">${pct}%</span></div>
+    <div style="font-family:var(--f1);font-size:10px;font-weight:600;letter-spacing:.1em;color:var(--ac);text-transform:uppercase;margin-bottom:8px">${plan.label||phase} W1–${totalWeeks}</div>
+    <div class="phase-prog-label"><span style="color:var(--t2)">第 <strong style="color:var(--t1)">${wk}</strong> 周 / 共${totalWeeks}周</span><span style="color:var(--ac);font-weight:600">${pct}%</span></div>
     <div class="phase-prog-track"><div class="phase-prog-fill" style="width:${pct}%"></div></div>
     <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;margin-top:10px;font-size:11px;color:var(--t2)">
       <span>体脂 <strong style="color:var(--t1)">${Number(bf).toFixed(1)}%</strong></span>
-      <span>目标 <strong style="color:var(--ac)">13.5%</strong></span>
       <span>骨骼肌 <strong style="color:var(--pu)">${Number(muscle).toFixed(1)}kg</strong></span>
     </div>
   </div>`;
+}
+
+// ── 11周计划 · 周复盘检查点 ────────────────────────────────
+const CHECKPOINT_ACTION_LABELS={
+  hold:{title:'✓ 维持当前热量',color:'var(--ac)'},
+  watch:{title:'👀 再观察一周',color:'var(--wa)'},
+  decrease:{title:'↓ 建议下调100kcal',color:'#6AACFF'},
+  increase:{title:'↑ 建议上调100kcal',color:'var(--wa)'},
+  diet_break_ok:{title:'✓ Diet Break 正常',color:'var(--ac)'},
+  diet_break_reduce:{title:'⚠ Diet Break 涨幅超标',color:'var(--wa)'},
+  done:{title:'🎉 11周计划已完成',color:'var(--pu)'},
+};
+async function renderPlanCheckpoint(){
+  const container=document.getElementById('plan-checkpoint');if(!container)return;
+  const phase=typeof getActivePlanPhase==='function'?getActivePlanPhase():'cut';
+  if(phase!=='cut'){container.innerHTML=`<div class="empty">非减脂期，无检查点</div>`;return;}
+  container.innerHTML=`<div class="empty">读取体重数据…</div>`;
+  try{
+    const r=await runWeeklyCheckpoint();
+    if(r.error){container.innerHTML=`<div class="empty">${r.error}</div>`;return;}
+    const lbl=CHECKPOINT_ACTION_LABELS[r.suggestion.action]||{title:r.suggestion.action,color:'var(--t2)'};
+    let actionBtn='';
+    if(r.suggestion.action==='decrease'||r.suggestion.action==='increase'){
+      actionBtn=`<button class="pt-btn" style="margin-top:8px" onclick="handleCheckpointAction('${r.suggestion.action==='decrease'?-100:100}')">应用此调整</button>`;
+    }else if(r.suggestion.action==='diet_break_reduce'){
+      actionBtn=`<button class="pt-btn" style="margin-top:8px" onclick="handleCheckpointAction('diet_break_reduce')">切换为${PLAN_11WEEK.dietBreakOverGainKcal}kcal</button>`;
+    }
+    const avgLine=r.avg!=null?`<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--t2);margin-bottom:6px"><span>7日均值 <strong style="color:var(--t1)">${r.avg}kg</strong></span><span>目标 <strong style="color:var(--ac)">${r.targetWeight}kg</strong></span><span>差值 <strong style="color:${r.diff>0?'var(--wa)':'#6AACFF'}">${r.diff>0?'+':''}${r.diff}kg</strong></span></div>`:'';
+    container.innerHTML=`<div class="phase-prog-card">
+      ${avgLine}
+      <div style="font-weight:600;color:${lbl.color};font-size:13px;margin-bottom:4px">${lbl.title}</div>
+      <div style="font-size:12px;color:var(--t2)">${r.suggestion.reason}</div>
+      ${actionBtn}
+    </div>`;
+  }catch(e){
+    container.innerHTML=`<div class="empty">复盘失败：${e.message||e}</div>`;
+  }
+}
+function handleCheckpointAction(arg){
+  if(arg==='diet_break_reduce'){
+    localStorage.setItem('form_diet_break_overgain','1');
+    if(typeof toast==='function')toast(`✓ Diet Break已切换为${PLAN_11WEEK.dietBreakOverGainKcal}kcal`);
+  }else{
+    applyKcalAdjustment(parseInt(arg,10));
+  }
+  if(typeof syncPlanStateToCloud==='function')syncPlanStateToCloud().catch(()=>{});
+  renderPlanCheckpoint();
+  if(typeof renderPhaseProgress==='function')renderPhaseProgress();
+  if(typeof renderTodayStatusCard==='function')renderTodayStatusCard();
 }
 
 // ── 睡眠缓存 ──────────────────────────────────────────
@@ -3025,7 +3132,7 @@ async function checkStrengthStall(){
     window._goPageHooked=true;
     window.goPage=function(n){
       orig(n);
-      if(n==='plan'){renderWeekExecBoard();renderPlanWeekGrid();renderPhaseProgress();}
+      if(n==='plan'){renderWeekExecBoard();renderPlanWeekGrid();renderPhaseProgress();renderPlanCheckpoint();}
       if(n==='dash'){renderTodayStatusCard();renderPhaseTrigger();}
       if(n==='body'){loadStrChart();}
       // v4.3: 打开复盘页自动运行上次选定的周期
@@ -4378,6 +4485,156 @@ window.quickAddFavPortion = async function(favIdx, multiplier) {
 
   // 刷新打卡清单
   if (typeof renderDailyChecklist === 'function') renderDailyChecklist();
+};
+
+// ──────────────────────────────────────────────────────────────────
+// ③ 聚餐快录：火锅/烧烤/日料/便当 × 偏少/正常/偏多
+//    来自11周计划「聚餐必须记录」底线 —— 不要求精确，给个区间估算够用
+// ──────────────────────────────────────────────────────────────────
+const MEAL_TEMPLATES = {
+  hotpot:   { name: '火锅',  emoji: '🍲', base: { protein_g: 45, carbs_g: 60, fat_g: 35, kcal: 700 } },
+  bbq:      { name: '烧烤',  emoji: '🍢', base: { protein_g: 50, carbs_g: 50, fat_g: 45, kcal: 750 } },
+  japanese: { name: '日料',  emoji: '🍱', base: { protein_g: 40, carbs_g: 70, fat_g: 25, kcal: 650 } },
+  bento:    { name: '便当',  emoji: '🍛', base: { protein_g: 35, carbs_g: 65, fat_g: 20, kcal: 570 } },
+};
+const MEAL_PORTIONS = [
+  { id: 'less',   label: '偏少', mult: 0.75 },
+  { id: 'normal', label: '正常', mult: 1.0 },
+  { id: 'more',   label: '偏多', mult: 1.3 },
+];
+
+function showMealTemplatePicker(templateId, anchorEl) {
+  document.getElementById('meal-template-picker')?.remove();
+  document.getElementById('fav-portion-picker')?.remove();
+
+  const tpl = MEAL_TEMPLATES[templateId];
+  if (!tpl) return;
+
+  const picker = document.createElement('div');
+  picker.id = 'meal-template-picker';
+
+  const rect = anchorEl.getBoundingClientRect();
+  const above = rect.top > 160;
+  picker.style.cssText = `
+    position:fixed;
+    left:${Math.min(rect.left, window.innerWidth - 220)}px;
+    ${above ? `bottom:${window.innerHeight - rect.top + 6}px;` : `top:${rect.bottom + 6}px;`}
+    width:210px;
+    background:var(--s1);
+    border:1px solid var(--ln2);
+    border-radius:var(--r2);
+    box-shadow:0 8px 32px rgba(0,0,0,.55);
+    z-index:800;
+    overflow:hidden;
+    animation:fadeInUp .15s ease;
+  `;
+
+  picker.innerHTML = `
+    <div style="padding:10px 12px 6px;font-family:var(--f1);font-size:11px;font-weight:600;
+      color:var(--t2);border-bottom:1px solid var(--ln);letter-spacing:.06em">
+      ${tpl.emoji} ${tpl.name} · 选量级
+    </div>
+    ${MEAL_PORTIONS.map(p => {
+      const protein = Math.round(tpl.base.protein_g * p.mult);
+      const kcal = Math.round(tpl.base.kcal * p.mult);
+      return `<button onclick="addMealTemplateEntry('${templateId}','${p.id}')"
+        style="display:flex;align-items:center;justify-content:space-between;width:100%;
+          padding:10px 12px;background:none;border:none;border-bottom:1px solid var(--ln);
+          cursor:pointer;text-align:left;transition:background .1s"
+        onmouseover="this.style.background='rgba(255,255,255,.04)'"
+        onmouseout="this.style.background='none'">
+        <span style="font-family:var(--f1);font-size:13px;font-weight:600;color:var(--t1)">${p.label}</span>
+        <span style="font-size:11px;color:var(--t2)">
+          <span style="color:var(--ac);font-weight:600">${protein}g蛋</span>
+          · ${kcal}kcal
+        </span>
+      </button>`;
+    }).join('')}
+    <button onclick="document.getElementById('meal-template-picker')?.remove()"
+      style="width:100%;padding:9px;background:none;border:none;
+        font-size:12px;color:var(--t3);cursor:pointer">取消</button>
+  `;
+
+  document.body.appendChild(picker);
+
+  setTimeout(() => {
+    document.addEventListener('pointerdown', function close(e) {
+      if (!picker.contains(e.target)) {
+        picker.remove();
+        document.removeEventListener('pointerdown', close);
+      }
+    });
+  }, 50);
+
+  if (navigator.vibrate) navigator.vibrate(30);
+}
+
+window.addMealTemplateEntry = async function(templateId, portionId) {
+  document.getElementById('meal-template-picker')?.remove();
+
+  const tpl = MEAL_TEMPLATES[templateId];
+  const portion = MEAL_PORTIONS.find(p => p.id === portionId);
+  if (!tpl || !portion) return;
+
+  const mult = portion.mult;
+  const f = {
+    name: `聚餐·${tpl.name}(${portion.label})`,
+    protein_g: Math.round(tpl.base.protein_g * mult),
+    carbs_g:   Math.round(tpl.base.carbs_g * mult),
+    fat_g:     Math.round(tpl.base.fat_g * mult),
+    kcal:      Math.round(tpl.base.kcal * mult),
+  };
+
+  const ts = typeof getLogTimestamp === 'function' ? getLogTimestamp() : new Date().toISOString();
+  const entry = { ...f, id: Date.now() + Math.random(), time: nt(), meal_type: S_mealType || '晚餐', logged_at: ts };
+
+  const isDietTodayNow = typeof isDietToday === 'function' ? isDietToday() : (typeof S_dietDate !== 'undefined' ? S_dietDate === 'today' : true);
+  if (isDietTodayNow && typeof addFoodEntry === 'function') addFoodEntry(entry);
+
+  if (db) {
+    const row = await dbOp('饮食保存', () => db.addFoodLog({ ...f, time_tag: S_mealType || '晚餐', logged_at: ts }));
+    if (isDietTodayNow && row?.id) {
+      const fe = S.foods[S.foods.length - 1];
+      if (fe) fe.dbId = row.id;
+    }
+  }
+
+  if (!isDietTodayNow && typeof loadBackfillFood === 'function') loadBackfillFood(S_dietDate);
+
+  toast(`✓ ${tpl.emoji} ${tpl.name}(${portion.label}) · +${f.protein_g}g蛋白 / ${f.kcal}kcal`);
+  if (typeof renderDailyChecklist === 'function') renderDailyChecklist();
+};
+
+// ──────────────────────────────────────────────────────────────────
+// ④ 11周计划 · 常用食物库一键导入
+//    来源：11week-plan.md 第四/五部分（固定食谱 + 扩展库）
+// ──────────────────────────────────────────────────────────────────
+const PLAN_FIXED_FOODS = [
+  { name: '3个茶叶蛋+希腊酸奶', protein_g: 28, carbs_g: 6,  fat_g: 15, kcal: 270 },
+  { name: '卤鸡腿+时蔬米饭',     protein_g: 30, carbs_g: 50, fat_g: 18, kcal: 480 },
+  { name: '麻辣拌鸡腿',          protein_g: 28, carbs_g: 45, fat_g: 20, kcal: 470 },
+  { name: '卤菜鸡腿(无饭)',      protein_g: 28, carbs_g: 20, fat_g: 18, kcal: 355 },
+  { name: '卤牛肉饭',            protein_g: 30, carbs_g: 48, fat_g: 18, kcal: 470 },
+  { name: '白灼虾+杂粮饭',       protein_g: 30, carbs_g: 48, fat_g: 18, kcal: 470 },
+  { name: '烤鱼/三文鱼饭',       protein_g: 30, carbs_g: 48, fat_g: 19, kcal: 475 },
+  { name: '全麦吐司+鸡胸肉',     protein_g: 27, carbs_g: 22, fat_g: 10, kcal: 280 },
+  { name: '无糖豆浆+茶叶蛋',     protein_g: 27, carbs_g: 22, fat_g: 10, kcal: 280 },
+  { name: '即食鸡胸肉(1包)',     protein_g: 22, carbs_g: 3,  fat_g: 2,  kcal: 115 },
+  { name: '乳清蛋白(1勺)',       protein_g: 24, carbs_g: 3,  fat_g: 1,  kcal: 115 },
+  { name: '即食燕麦杯',          protein_g: 4,  carbs_g: 27, fat_g: 0,  kcal: 125 },
+  { name: '香蕉',                protein_g: 1,  carbs_g: 27, fat_g: 0,  kcal: 105 },
+  { name: '全麦吐司(2片)',       protein_g: 5,  carbs_g: 26, fat_g: 2,  kcal: 140 },
+];
+window.importPlanFoods = function() {
+  const favs = typeof loadFavFoods === 'function' ? loadFavFoods() : [];
+  const existingNames = new Set(favs.map(f => f.name));
+  let added = 0;
+  PLAN_FIXED_FOODS.forEach(f => {
+    if (!existingNames.has(f.name)) { favs.push({ ...f }); added++; }
+  });
+  saveFavFoods(favs);
+  renderFavFoods();
+  toast(added > 0 ? `✓ 已导入 ${added} 个常用食物` : '已是最新，无新增');
 };
 
 </script>

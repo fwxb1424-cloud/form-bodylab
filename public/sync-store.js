@@ -40,6 +40,148 @@ const COLE_PLAN = {
   },
 };
 
+// ── 11周执行计划（6/12 → 8/27，缓冲至8/31）───────────────
+/**
+ * 这是 cut 阶段内的精细化计划：
+ *   - 每周有目标体重检查点（7日均值对照）
+ *   - 第6周是 diet break，宏量固定为 2900/180/320/100（训练日/休息日相同）
+ *   - 支持 ±100kcal 的累积微调（周日复盘后应用），影响 cut 阶段的 train/rest kcal+carbs
+ */
+const PLAN_11WEEK = {
+  startDate: '2026-06-12', // 第1周周一
+  totalWeeks: 11,
+  dietBreakWeek: 6,
+  // 每周目标体重（7日均值，kg），index 0 = 第1周
+  weeklyTargetWeights: [84.35, 83.70, 83.05, 82.40, 81.75, 81.75, 81.10, 80.45, 79.80, 79.15, 78.50],
+  dietBreakMacros: { kcal: 2900, protein: 180, carbs: 320, fat: 100, label: 'Diet Break · 战略恢复周' },
+  dietBreakOverGainKcal: 2700, // diet break期间体重涨>2kg时改用此值
+  kcalStep: 100,
+};
+
+/** 当前处于11周计划的第几周、是否diet break、本周目标体重等 */
+function getElevenWeekStatus() {
+  const start = new Date(PLAN_11WEEK.startDate + 'T00:00:00');
+  const diffDays = Math.floor((Date.now() - start.getTime()) / 86400000);
+  let weekNum = Math.floor(diffDays / 7) + 1;
+  const done = weekNum > PLAN_11WEEK.totalWeeks;
+  if (done) weekNum = PLAN_11WEEK.totalWeeks;
+  const idx = Math.max(0, Math.min(PLAN_11WEEK.totalWeeks - 1, weekNum - 1));
+  const targetWeight = PLAN_11WEEK.weeklyTargetWeights[idx];
+  const weekStart = new Date(start);
+  weekStart.setDate(start.getDate() + (weekNum - 1) * 7);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  return {
+    weekNum,
+    done,
+    isDietBreak: !done && weekNum === PLAN_11WEEK.dietBreakWeek,
+    targetWeight,
+    weekStart: weekStart.toISOString().slice(0, 10),
+    weekEnd: weekEnd.toISOString().slice(0, 10),
+    totalDays: PLAN_11WEEK.totalWeeks * 7,
+    daysElapsed: Math.max(0, diffDays),
+  };
+}
+
+/** 当前累积的kcal微调（周日复盘后用 applyKcalAdjustment 修改） */
+function getKcalAdjustment() {
+  return parseInt(localStorage.getItem('form_kcal_adjustment') || '0', 10) || 0;
+}
+function setKcalAdjustment(val) {
+  localStorage.setItem('form_kcal_adjustment', String(val));
+}
+/** delta: +100 或 -100（按 PLAN_11WEEK.kcalStep 的倍数） */
+function applyKcalAdjustment(delta) {
+  const next = getKcalAdjustment() + delta;
+  setKcalAdjustment(next);
+  if (typeof toast === 'function') {
+    toast(`✓ 全天热量已${delta > 0 ? '上调' : '下调'}${Math.abs(delta)}kcal（累计${next>0?'+':''}${next}）`);
+  }
+  return next;
+}
+
+/**
+ * 周复盘：拉取最近7天体重，对比本周目标体重，给出调整建议
+ * 调整规则：
+ *   - 7日均值比目标重 >0.3kg，且上周也是 → 建议 -100kcal
+ *   - 7日均值比目标重 >0.3kg，但上周不是 → 观察
+ *   - 7日均值比目标轻 >0.4kg（脱速过快）→ 建议 +100kcal
+ *   - 否则维持
+ * diet break周（第6周）不做调整，但检测体重涨幅是否>2kg
+ */
+async function runWeeklyCheckpoint() {
+  const status = getElevenWeekStatus();
+  if (status.done) return { ...status, suggestion: { action: 'done', reason: '11周计划已完成，进入终测窗口' } };
+
+  if (!window.db || typeof db.getWeightTrendDays !== 'function') {
+    return { ...status, error: '无法读取体重历史（db未初始化）' };
+  }
+  const rows = await db.getWeightTrendDays(7).catch(() => []);
+  if (rows.length < 5) {
+    return { ...status, error: `体重记录不足（仅${rows.length}天），至少需要5天才能算7日均值` };
+  }
+  const avg = rows.reduce((a, r) => a + (r.weight_kg || 0), 0) / rows.length;
+  const diff = avg - status.targetWeight;
+
+  if (status.isDietBreak) {
+    // diet break周：检查体重是否超涨
+    const overGain = diff > 2;
+    const suggestion = overGain
+      ? { action: 'diet_break_reduce', reason: `本周体重涨幅超过2kg（实际${avg.toFixed(2)}kg vs 目标${status.targetWeight}kg），diet break改为${PLAN_11WEEK.dietBreakOverGainKcal}kcal` }
+      : { action: 'diet_break_ok', reason: `本周体重涨幅在正常范围内（糖原+水分），无需调整` };
+    return { ...status, avg: Math.round(avg * 100) / 100, diff: Math.round(diff * 100) / 100, suggestion };
+  }
+
+  // 记录本周checkpoint历史（用于判断"连续2周"）
+  const hist = JSON.parse(localStorage.getItem('form_checkpoint_history') || '[]');
+  const already = hist.find(h => h.week === status.weekNum);
+  if (!already) {
+    hist.push({ week: status.weekNum, avg, target: status.targetWeight, diff, ts: Date.now() });
+    localStorage.setItem('form_checkpoint_history', JSON.stringify(hist.slice(-6)));
+  }
+
+  let suggestion = { action: 'hold', reason: `体重符合预期（${avg.toFixed(2)}kg vs 目标${status.targetWeight}kg），维持当前热量` };
+  if (diff > 0.3) {
+    const prev = hist.find(h => h.week === status.weekNum - 1);
+    const consecutive = prev && prev.diff > 0.3;
+    if (consecutive) {
+      suggestion = { action: 'decrease', delta: -PLAN_11WEEK.kcalStep, reason: `连续2周高于目标体重（本周+${diff.toFixed(2)}kg），建议下调${PLAN_11WEEK.kcalStep}kcal` };
+    } else {
+      suggestion = { action: 'watch', reason: `本周高于目标体重 +${diff.toFixed(2)}kg，先观察一周` };
+    }
+  } else if (diff < -0.4) {
+    suggestion = { action: 'increase', delta: PLAN_11WEEK.kcalStep, reason: `脱速过快（本周${diff.toFixed(2)}kg），建议上调${PLAN_11WEEK.kcalStep}kcal保护肌肉` };
+  }
+
+  return { ...status, avg: Math.round(avg * 100) / 100, diff: Math.round(diff * 100) / 100, suggestion };
+}
+
+// ── 云端同步：计划状态（供 Scriptable Widget 读取）────────────
+/**
+ * 把当前的队列锚点 + 阶段 + 11周计划微调状态写入 Supabase user_settings.profile_json
+ * Widget 无法访问 PWA 的 localStorage，必须靠这份云端快照
+ */
+async function syncPlanStateToCloud() {
+  if (!window.db || !db.settingsTableOk) return;
+  try {
+    const existing = await db.getSettings().catch(() => null);
+    let profile = {};
+    try { profile = JSON.parse(existing?.profile_json || '{}'); } catch (e) {}
+    profile.queue_anchor = getQueueAnchor();
+    profile.plan_phase = getActivePlanPhase();
+    profile.cycle_start = localStorage.getItem('form_cycle_start');
+    profile.kcal_adjustment = getKcalAdjustment();
+    profile.diet_break_overgain = localStorage.getItem('form_diet_break_overgain') === '1';
+    profile.plan_11week = PLAN_11WEEK; // 静态配置也存一份，Widget不用硬编码
+    profile.updated_at = new Date().toISOString();
+    await db.saveSettings({ profile_json: JSON.stringify(profile), supps_json: existing?.supps_json });
+  } catch (e) {
+    console.warn('[sync] syncPlanStateToCloud failed:', e);
+  }
+}
+// 兼容旧调用名
+async function syncQueueAnchor() { return syncPlanStateToCloud(); }
+
 // ── 队列定义（全局唯一，所有模块共用）─────────────────────
 const PLAN_QUEUE_DEF = ['push', 'pull', 'cardio', 'legs', 'shoulder', 'cardio', 'rest'];
 const TRAIN_LABEL_MAP = {
@@ -367,9 +509,45 @@ function calcDailyTargets(p, isTrain = true, intensity = 'medium') {
   if (isPlanMode()) {
     const phase = getActivePlanPhase();
     const plan = COLE_PLAN[phase] || COLE_PLAN.cut;
-    const nums = isTrain ? plan.train : plan.rest;
+    let effectiveIsTrain = isTrain;
+    let planLabel = plan.label;
+    let elevenWeek = null;
+
+    // 11周计划仅在 cut 阶段生效：
+    // 计划里训练日/有氧日宏量相同(2220)，只有队列里的 rest(周日) 才是1950
+    // 所以这里以队列类型为准，而不是 S.isTrain（S.isTrain 把 cardio 也算作非训练日）
+    if (phase === 'cut' && typeof getTodayQueueType === 'function') {
+      effectiveIsTrain = getTodayQueueType() !== 'rest';
+    }
+
+    let nums = effectiveIsTrain ? plan.train : plan.rest;
     const lbm = getLeanMass(p || loadProfile());
     const tdee = calcTDEE(p || loadProfile());
+
+    if (phase === 'cut') {
+      elevenWeek = getElevenWeekStatus();
+      if (elevenWeek.isDietBreak) {
+        // diet break周：训练日/休息日宏量统一，不受kcal微调影响
+        const overGain = localStorage.getItem('form_diet_break_overgain') === '1';
+        const dbm = overGain
+          ? { ...PLAN_11WEEK.dietBreakMacros, kcal: PLAN_11WEEK.dietBreakOverGainKcal }
+          : PLAN_11WEEK.dietBreakMacros;
+        nums = { protein: dbm.protein, carbs: overGain ? Math.round((dbm.kcal - dbm.protein*4 - dbm.fat*9)/4) : dbm.carbs, fat: dbm.fat, kcal: dbm.kcal };
+        planLabel = dbm.label;
+      } else {
+        // 应用累积kcal微调（碳水吸收变化，蛋白/脂肪不变）
+        const adj = getKcalAdjustment();
+        if (adj !== 0) {
+          nums = {
+            protein: nums.protein,
+            fat: nums.fat,
+            carbs: Math.max(0, nums.carbs + Math.round(adj / 4)),
+            kcal: nums.kcal + adj,
+          };
+        }
+      }
+    }
+
     return {
       protein: nums.protein,
       fat: nums.fat,
@@ -377,10 +555,11 @@ function calcDailyTargets(p, isTrain = true, intensity = 'medium') {
       kcal: nums.kcal,
       tdee,
       lbm: Math.round(lbm * 10) / 10,
-      isTrain,
+      isTrain: effectiveIsTrain,
       goal: phase,
-      planLabel: plan.label,
+      planLabel,
       isPlanMode: true,
+      elevenWeek,
     };
   }
 
@@ -447,6 +626,15 @@ window.TRAIN_LABEL_MAP = TRAIN_LABEL_MAP;
 window.getActivePlanPhase = getActivePlanPhase;
 window.setActivePlanPhase = setActivePlanPhase;
 window.isPlanMode = isPlanMode;
+// 11周计划
+window.PLAN_11WEEK = PLAN_11WEEK;
+window.getElevenWeekStatus = getElevenWeekStatus;
+window.getKcalAdjustment = getKcalAdjustment;
+window.setKcalAdjustment = setKcalAdjustment;
+window.applyKcalAdjustment = applyKcalAdjustment;
+window.runWeeklyCheckpoint = runWeeklyCheckpoint;
+window.syncPlanStateToCloud = syncPlanStateToCloud;
+window.syncQueueAnchor = syncQueueAnchor;
 // 队列锚点 API
 window.getQueueAnchor = getQueueAnchor;
 window.setQueueAnchor = setQueueAnchor;
