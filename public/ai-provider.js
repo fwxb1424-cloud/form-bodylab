@@ -119,13 +119,13 @@ class AIProvider {
 }
 
 // ── Utils ─────────────────────────────────────────────
-function getTimeCtx(){
+function getTimeCtx(isTrain){
   const h=new Date().getHours();
-  if(h>=5&&h<9)  return{label:'清晨',tag:'morning',hint:'晨间状态基准，空腹测量最准'};
-  if(h>=9&&h<12) return{label:'上午',tag:'morning',hint:'上午记录'};
-  if(h>=12&&h<14)return{label:'午间',tag:'noon',hint:'午餐时段'};
-  if(h>=14&&h<18)return{label:'下午',tag:'afternoon',hint:'下午记录'};
-  if(h>=18&&h<21)return{label:'傍晚',tag:'evening',hint:'训后黄金补给窗口（30-60min内）'};
+  if(h>=5&&h<9)  return{label:'清晨',tag:'morning',hint:isTrain?'晨间空腹状态，适合记录体重后训练':'晨间状态基准，空腹测量最准'};
+  if(h>=9&&h<12) return{label:'上午',tag:'morning',hint:isTrain?'上午训练时段，注意训练前加餐':'上午记录'};
+  if(h>=12&&h<14)return{label:'午间',tag:'noon',hint:isTrain?'午餐后1-2h可训练，注意消化':'午餐时段'};
+  if(h>=14&&h<18)return{label:'下午',tag:'afternoon',hint:isTrain?'下午训练黄金时段，睾酮水平较高':'下午记录'};
+  if(h>=18&&h<21)return{label:'傍晚',tag:'evening',hint:isTrain?'训后黄金补给窗口（30-60min内）':'傍晚休息时段，控制碳水摄入'};
   if(h>=21&&h<23)return{label:'夜间',tag:'night',hint:'今日总结，距离睡眠留1-2h'};
   return{label:'深夜',tag:'late',hint:'深夜记录，避免高GI碳水'};
 }
@@ -156,7 +156,7 @@ async function compressImage(file,maxPx=1024,q=0.82){
 function buildProfile(S) {
   const now = new Date();
   const dayNames = ['日','一','二','三','四','五','六'];
-  const tc = getTimeCtx();
+  const tc = getTimeCtx(S.isTrain);
   const activeMemories = S.memories.filter(m=>!m.expires_at||new Date(m.expires_at)>now);
   const memLines = activeMemories.map(m=>`[${{perm:'永久',mid:'中期',short:'短期',day:'当日'}[m.tier]}] ${m.content}`).join('\n');
   const p = typeof mergeProfile === 'function' ? mergeProfile(S) : {};

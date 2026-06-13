@@ -1377,7 +1377,7 @@ function mkThink(txt='解析中…'){
 
 // ══ TIME CONTEXT ══
 function updateTCTag(){
-  const tc=getTimeCtx();
+  const tc=getTimeCtx(window.S?.isTrain);
   const cls={morning:'tc-m',evening:'tc-e',night:'tc-n',late:'tc-n'}[tc.tag]||'tc-d';
   document.getElementById('tc-wrap').innerHTML=`<div class="tc-tag ${cls}">${tc.label} · ${tc.hint}</div>`;
 }
@@ -1785,7 +1785,7 @@ async function parseFood(){
   if(!AI?.ds){toast('请先点顶部「DeepSeek · 去设置」填写 API Key');if(typeof openSetupScreen==='function')openSetupScreen();return;}
   const input=document.getElementById('food-input').value.trim();if(!input)return;
   const btn=document.getElementById('parse-btn');btn.disabled=true;btn.textContent='…';
-  const tc=getTimeCtx();
+  const tc=getTimeCtx(window.S?.isTrain);
   const list=document.getElementById('food-list');
   list.querySelector('.empty')?.remove();
   const tk=mkThink('AI 解析中…');list.prepend(tk);
