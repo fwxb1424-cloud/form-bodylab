@@ -134,23 +134,23 @@ async function run() {
 
   switch (slot) {
 
-    // ── 力量日 07:15：起床+晨称+出门吃法 ──
+    // ── 力量日 07:35：起床+晨称+出门吃法 ──
     case 'morning_strength': {
       if (!isStrengthDay) return;
       const dietBreak = tgt.isDietBreak ? '（Diet Break周）' : '';
       await notify(
-        `🌅 ${tgt.label} · 07:20起${dietBreak}`,
+        `🌅 ${tgt.label} · 07:40起${dietBreak}`,
         `晨称(7日均值是checkpoint依据)→黑咖啡+半根香蕉→8:00训练。今日目标 蛋白${tgt.protein}g / ${tgt.kcal}kcal`
       );
       return;
     }
 
-    // ── 有氧日 07:55：可以多睡，起床+晨称 ──
+    // ── 有氧日 08:15：可以多睡，起床+晨称 ──
     case 'morning_cardio': {
       if (!isCardioDay) return;
       await notify(
         `🌅 ${tgt.label} · 比力量日多睡40min`,
-        `晨称→08:40有氧+核心(30min)。今日目标 蛋白${tgt.protein}g / ${tgt.kcal}kcal`
+        `晨称→09:00有氧+核心(30min)。今日目标 蛋白${tgt.protein}g / ${tgt.kcal}kcal`
       );
       return;
     }
