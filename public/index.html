@@ -1581,8 +1581,11 @@ async function quickSaveWeight(){
   input.disabled=true;
   try{
     await _doSaveWeight(w);
-    input.value='';
     S.weight_kg=w;
+    input.placeholder=w.toFixed(1)+'kg ✓';
+    input.value='';
+    input.style.color='var(--ac)';
+    setTimeout(function(){input.style.color='';input.placeholder='体重 kg';},3000);
     toast('✓ 体重 '+w.toFixed(1)+'kg 已记录');
     if(typeof renderDash==='function')renderDash();
     if(typeof renderTodayStatusCard==='function')renderTodayStatusCard();
