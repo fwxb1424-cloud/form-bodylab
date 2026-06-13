@@ -10,17 +10,32 @@
 const SUPABASE_URL = "https://urduzohozghrfgwsvamy.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVyZHV6b2hvemdocmZnd3N2YW15Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwMjcyMDQsImV4cCI6MjA5NDYwMzIwNH0.wSbZiY6rxd7jVrFD0EsaC0hIIbeP3UiacBlL7YFiZ50";
 
-// ── 与 sync-store.js 保持一致的常量（手动同步，改动后请双边都改）──
+// ── 与 sync-store.js 保持一致的常量（改动后请双边都改）──
 const PLAN_QUEUE_DEF = ['push', 'pull', 'cardio', 'legs', 'shoulder', 'cardio', 'rest'];
 const TRAIN_LABEL_MAP = {
-  push: '推日', pull: '拉日', cardio: '有氧+核心', legs: '腿日', shoulder: '肩日', rest: '休息日',
+  push: '推日（胸·侧束·三头）', pull: '拉日（背·二头）', cardio: '有氧+核心日',
+  legs: '腿日（股四·后链·臀）', shoulder: '肩日（三角肌）', rest: '休息日',
 };
-// cut 阶段基础宏量（与 COLE_PLAN.cut 一致），plan_11week 的动态部分从云端读取
-const COLE_PLAN_CUT = {
-  train: { protein: 168, carbs: 220, fat: 75, kcal: 2220 },
-  rest:  { protein: 168, carbs: 140, fat: 80, kcal: 1950 },
+// 全阶段宏量（与 COLE_PLAN 一致），plan_11week 的动态部分从云端读取
+const COLE_PLAN = {
+  cut: {
+    train: { protein: 168, carbs: 220, fat: 75, kcal: 2220 },
+    rest:  { protein: 168, carbs: 140, fat: 80, kcal: 1950 },
+  },
+  recomp: {
+    train: { protein: 168, carbs: 275, fat: 92, kcal: 2620 },
+    rest:  { protein: 168, carbs: 210, fat: 92, kcal: 2450 },
+  },
+  bulk: {
+    train: { protein: 168, carbs: 335, fat: 100, kcal: 2970 },
+    rest:  { protein: 168, carbs: 245, fat: 100, kcal: 2650 },
+  },
+  deload: {
+    train: { protein: 168, carbs: 255, fat: 90, kcal: 2420 },
+    rest:  { protein: 168, carbs: 255, fat: 90, kcal: 2420 },
+  },
 };
-const WEEKLY_TRAIN_TARGET = 6; // 11周计划：每周6练（周一至周六）
+const WEEKLY_TRAIN_TARGET = 6;
 
 // ── 工具函数 ──────────────────────────────────────────────
 function pad(n) { return String(n).padStart(2, '0'); }
@@ -115,27 +130,36 @@ function calcTargets(profile) {
   const todayType = getQueueTypeForDate(localDateStr(), anchor);
   const phase = profile.plan_phase || 'cut';
   const label = TRAIN_LABEL_MAP[todayType] || todayType;
-
-  if (phase !== 'cut' || !profile.plan_11week) {
-    const isTrain = todayType !== 'rest';
-    const nums = isTrain ? COLE_PLAN_CUT.train : COLE_PLAN_CUT.rest;
-    return { label, todayType, isTrain, isDietBreak: false, week: null, ...nums };
-  }
-
-  const plan11 = profile.plan_11week;
+  const plan = COLE_PLAN[phase] || COLE_PLAN.cut;
   const isTrain = todayType !== 'rest';
-  let nums = isTrain ? COLE_PLAN_CUT.train : COLE_PLAN_CUT.rest;
-  const week = getElevenWeekStatus(plan11);
+  let nums = isTrain ? plan.train : plan.rest;
+  let week = null;
   let isDietBreak = false;
 
-  if (week.isDietBreak) {
-    const overGain = !!profile.diet_break_overgain;
-    const dbm = plan11.dietBreakMacros;
-    const kcal = overGain ? plan11.dietBreakOverGainKcal : dbm.kcal;
-    const carbs = overGain ? Math.round((kcal - dbm.protein * 4 - dbm.fat * 9) / 4) : dbm.carbs;
-    nums = { protein: dbm.protein, carbs, fat: dbm.fat, kcal };
-    isDietBreak = true;
-  } else {
+  // cut 阶段有 11 周计划时，走动态逻辑（diet break / kcal 微调）
+  if (phase === 'cut' && profile.plan_11week) {
+    const plan11 = profile.plan_11week;
+    week = getElevenWeekStatus(plan11);
+    if (week.isDietBreak) {
+      const overGain = !!profile.diet_break_overgain;
+      const dbm = plan11.dietBreakMacros;
+      const kcal = overGain ? plan11.dietBreakOverGainKcal : dbm.kcal;
+      const carbs = overGain ? Math.round((kcal - dbm.protein * 4 - dbm.fat * 9) / 4) : dbm.carbs;
+      nums = { protein: dbm.protein, carbs, fat: dbm.fat, kcal };
+      isDietBreak = true;
+    } else {
+      const adj = profile.kcal_adjustment || 0;
+      if (adj !== 0) {
+        nums = {
+          protein: nums.protein,
+          fat: nums.fat,
+          carbs: Math.max(0, nums.carbs + Math.round(adj / 4)),
+          kcal: nums.kcal + adj,
+        };
+      }
+    }
+  } else if (phase === 'cut') {
+    // cut 但没有 11 周计划（计划结束后继续减脂）：继续用 cut + 累积调整
     const adj = profile.kcal_adjustment || 0;
     if (adj !== 0) {
       nums = {
@@ -146,6 +170,7 @@ function calcTargets(profile) {
       };
     }
   }
+
   return { label, todayType, isTrain, isDietBreak, week, ...nums };
 }
 

@@ -15,9 +15,28 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const PLAN_QUEUE_DEF = ['push','pull','cardio','legs','shoulder','cardio','rest'];
 const TRAIN_LABEL_MAP = {
   push:'推日（胸·侧束·三头）',pull:'拉日（背·二头）',cardio:'有氧+核心日',
-  legs:'腿日（缩短版60min）',shoulder:'肩日（三角肌）',rest:'休息日',
+  legs:'腿日（股四·后链·臀）',shoulder:'肩日（三角肌）',rest:'休息日',
 };
 const STRENGTH_TYPES = ['push','pull','legs','shoulder'];
+// 全阶段宏量（与 COLE_PLAN 一致）
+const COLE_PLAN = {
+  cut: {
+    train: { protein: 168, carbs: 220, fat: 75, kcal: 2220 },
+    rest:  { protein: 168, carbs: 140, fat: 80, kcal: 1950 },
+  },
+  recomp: {
+    train: { protein: 168, carbs: 275, fat: 92, kcal: 2620 },
+    rest:  { protein: 168, carbs: 210, fat: 92, kcal: 2450 },
+  },
+  bulk: {
+    train: { protein: 168, carbs: 335, fat: 100, kcal: 2970 },
+    rest:  { protein: 168, carbs: 245, fat: 100, kcal: 2650 },
+  },
+  deload: {
+    train: { protein: 168, carbs: 255, fat: 90, kcal: 2420 },
+    rest:  { protein: 168, carbs: 255, fat: 90, kcal: 2420 },
+  },
+};
 
 // ── 工具 ──────────────────────────────────────────────────────
 function pad(n){return String(n).padStart(2,'0');}
@@ -56,16 +75,18 @@ function calcTargets(profile){
   const anchor=profile.queue_anchor||{date:localDateStr(),index:0};
   const todayType=getQueueTypeForDate(localDateStr(),anchor);
   const label=TRAIN_LABEL_MAP[todayType]||todayType;
-  const plan11=profile.plan_11week;
   const phase=profile.plan_phase||'cut';
+  const plan=COLE_PLAN[phase]||COLE_PLAN.cut;
   const isTrain=todayType!=='rest';
-  let nums=isTrain?{protein:168,carbs:220,fat:75,kcal:2220}:{protein:168,carbs:140,fat:80,kcal:1950};
-  let isDietBreak=false,week=null;
-  if(phase==='cut'&&plan11){
+  let nums=isTrain?plan.train:plan.rest;
+  let week=null,isDietBreak=false;
+
+  if(phase==='cut'&&profile.plan_11week){
+    const plan11=profile.plan_11week;
     week=getElevenWeekStatus(plan11);
     if(week.isDietBreak){
-      const dbm=plan11.dietBreakMacros;
       const overGain=!!profile.diet_break_overgain;
+      const dbm=plan11.dietBreakMacros;
       const kcal=overGain?plan11.dietBreakOverGainKcal:dbm.kcal;
       nums={protein:dbm.protein,carbs:overGain?Math.round((kcal-dbm.protein*4-dbm.fat*9)/4):dbm.carbs,fat:dbm.fat,kcal};
       isDietBreak=true;
@@ -73,7 +94,11 @@ function calcTargets(profile){
       const adj=profile.kcal_adjustment||0;
       if(adj!==0)nums={protein:nums.protein,fat:nums.fat,carbs:Math.max(0,nums.carbs+Math.round(adj/4)),kcal:nums.kcal+adj};
     }
+  }else if(phase==='cut'){
+    const adj=profile.kcal_adjustment||0;
+    if(adj!==0)nums={protein:nums.protein,fat:nums.fat,carbs:Math.max(0,nums.carbs+Math.round(adj/4)),kcal:nums.kcal+adj};
   }
+
   return{label,todayType,isTrain,isDietBreak,week,...nums};
 }
 
@@ -207,9 +232,19 @@ async function run(){
         ?''
         :'\n⚠ 今天还没称体重，现在去。';
 
+      // 计算明天碳水目标
+      const tomorrowPlan=COLE_PLAN[profile.plan_phase||'cut']||COLE_PLAN.cut;
+      const tomorrowIsRest=tomorrowType==='rest';
+      let tomorrowCarbs=tomorrowIsRest?tomorrowPlan.rest.carbs:tomorrowPlan.train.carbs;
+      // 如果 cut 阶段有 kcal 微调，明天也适用
+      if((profile.plan_phase||'cut')==='cut'){
+        const adj=profile.kcal_adjustment||0;
+        if(adj!==0)tomorrowCarbs=Math.max(0,tomorrowCarbs+Math.round(adj/4));
+      }
+
       await notify(
         `🌙 今日收尾 · ${tgt.label}`,
-        `${proteinLine}\n${trainLine}\n明天 ${tomorrowLabel}，碳水${isRest?tgt.carbs:'220'}g${wStr}`
+        `${proteinLine}\n${trainLine}\n明天 ${tomorrowLabel}，碳水${tomorrowCarbs}g${wStr}`
       );
       return;
     }
