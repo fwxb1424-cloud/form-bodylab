@@ -986,10 +986,14 @@ body{
 
       <!-- gen button -->
       <div class="s" style="margin-top:7px">
-        <button class="ghost-btn" onclick="genWorkout()">
+        <button class="ghost-btn" onclick="genWorkout()" id="gen-workout-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          生成今日训练方案
+          <span id="gen-btn-label">生成训练方案</span>
         </button>
+        <div id="plan-lock-ui" style="margin-top:6px;display:none">
+          <button onclick="lockCurrentPlan()" id="lock-plan-btn" style="font-size:11px;color:var(--ac);background:rgba(226,255,92,.08);border:1px solid rgba(226,255,92,.2);border-radius:14px;padding:4px 12px;cursor:pointer;font-family:var(--f1)">🔒 锁定此方案（以后不AI生成）</button>
+          <button onclick="unlockPlan()" id="unlock-plan-btn" style="font-size:11px;color:var(--t2);background:var(--s2);border:1px solid var(--ln);border-radius:14px;padding:4px 12px;cursor:pointer;font-family:var(--f1);display:none">🔓 解锁（恢复AI生成）</button>
+        </div>
       </div>
 
       <!-- exercise list -->
@@ -2167,7 +2171,7 @@ async function genWorkout(){
       hint.textContent='💡 '+r.next_session_hint;
       document.getElementById('ex-list').prepend(hint);
     }
-    renderExercises();updateTokenUI();
+    renderExercises();updateTokenUI();renderLockUI();
     if(typeof scheduleTrainAutosave==='function')scheduleTrainAutosave();
   }catch(e){
     document.getElementById('sh-title').textContent='生成失败';
@@ -3043,11 +3047,85 @@ window.WEEK_PLAN = [
 ];
 
 // 计划底稿加载（含上次重量填充）
+// ── 计划模板（锁定功能）───────────────────────────────
+function getPlanTemplates(){
+  try{ return JSON.parse(localStorage.getItem('form_plan_templates')||'{}'); }catch(e){return{};}
+}
+function getPlanTemplate(muscleId){
+  const templates=getPlanTemplates();
+  return templates[muscleId] || null;
+}
+function savePlanTemplate(muscleId, exercises){
+  const templates=getPlanTemplates();
+  // 清理临时字段
+  const clean = exercises.map(e=>({name:e.name, sets:e.sets, reps:e.reps, weight_kg:e.weight_kg||0, muscle:e.muscle||muscleId, is_compound:e.is_compound||false, notes:e.notes||''}));
+  templates[muscleId] = clean;
+  localStorage.setItem('form_plan_templates', JSON.stringify(templates));
+}
+function deletePlanTemplate(muscleId){
+  const templates=getPlanTemplates();
+  delete templates[muscleId];
+  localStorage.setItem('form_plan_templates', JSON.stringify(templates));
+}
+function lockCurrentPlan(){
+  if(!S.workout||!S.workout.length){toast('没有可锁定的动作');return;}
+  const muscleId=S.todayMuscle;
+  if(!muscleId||muscleId==='rest'||muscleId==='cardio'){toast('休息日/有氧日不能锁定');return;}
+  savePlanTemplate(muscleId, S.workout);
+  renderLockUI();
+  toast(`✓ ${muscleId} 计划已锁定——以后不再AI生成，直接加载此方案`);
+}
+function unlockPlan(){
+  const muscleId=S.todayMuscle;
+  if(!muscleId)return;
+  deletePlanTemplate(muscleId);
+  renderLockUI();
+  toast(`✓ ${muscleId} 已解锁——下次选此肌群将提示AI生成`);
+}
+function renderLockUI(){
+  const lockUI=document.getElementById('plan-lock-ui');
+  const lockBtn=document.getElementById('lock-plan-btn');
+  const unlockBtn=document.getElementById('unlock-plan-btn');
+  const genLabel=document.getElementById('gen-btn-label');
+  if(!lockUI||!lockBtn||!unlockBtn)return;
+  const muscleId=S.todayMuscle;
+  if(!muscleId||muscleId==='rest'||muscleId==='cardio'){lockUI.style.display='none';return;}
+  const template=getPlanTemplate(muscleId);
+  lockUI.style.display='';
+  if(template){
+    lockBtn.style.display='none';
+    unlockBtn.style.display='';
+    if(genLabel)genLabel.textContent='重新生成（覆盖锁定方案）';
+  }else{
+    lockBtn.style.display='';
+    unlockBtn.style.display='none';
+    if(genLabel)genLabel.textContent='生成训练方案';
+  }
+}
+
 async function showPlanDraft(muscleId){
   const exList=document.getElementById('ex-list');if(!exList)return;
+  // 检查是否有锁定的计划模板
+  const template=getPlanTemplate(muscleId);
+  if(template){
+    S.workout=template.map(e=>({
+      name:e.name, sets:e.sets, reps:e.reps, weight_kg:e.weight_kg||0,
+      muscle:e.muscle||muscleId, rpe_target:7,
+      is_compound:e.is_compound||false, notes:e.notes||'',
+      done:false, sets_data:[], fromPlan:true, _collapsed:false,
+    }));
+    document.getElementById('total-cnt').textContent=S.workout.length;
+    document.getElementById('done-cnt').textContent=0;
+    document.getElementById('sh-sub').textContent=`🔒 锁定计划 · ${S.workout.length}个动作 · 直接开练`;
+    renderExercises();
+    renderLockUI();
+    if(window.db) fillLastWeights();
+    return;
+  }
+  // 无模板：使用预设计划底稿
   const planDay=WEEK_PLAN.find(d=>d.type===muscleId);
   if(!planDay||!planDay.groups?.length){
-    exList.innerHTML='<div class="empty">点击「生成训练方案」或直接记录动作</div>';return;
+    exList.innerHTML='<div class="empty">点击「生成训练方案」让AI出计划，生成后可锁定</div>';renderLockUI();return;
   }
   const allEx=planDay.groups.flatMap(g=>g.exercises);
   S.workout=allEx.map(e=>({
@@ -3059,8 +3137,9 @@ async function showPlanDraft(muscleId){
   }));
   document.getElementById('total-cnt').textContent=S.workout.length;
   document.getElementById('done-cnt').textContent=0;
-  document.getElementById('sh-sub').textContent=`计划底稿 · ${allEx.length}个动作 · 填入实际重量后保存`;
+  document.getElementById('sh-sub').textContent=`计划底稿 · ${allEx.length}个动作 · 生成后可锁定`;
   renderExercises();
+  renderLockUI();
   // 异步填入上次重量
   if(window.db) fillLastWeights();
 }
