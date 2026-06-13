@@ -3490,11 +3490,19 @@ async function _sendCoachMsg(text){
     const profile=typeof buildProfile==='function'?buildProfile(window.S):'';
     const system=typeof PROMPTS!=='undefined'&&PROMPTS.coach?PROMPTS.coach(profile):'';
     const r=await AI.call('coach',{system,userMsg:text});
-    _coachMsgs[_coachMsgs.length-1]={role:'coach',text:(r._raw||'未收到回复'),saved:false};
+    _coachMsgs[_coachMsgs.length-1]={role:'coach',text:_cleanCoachText(r._raw||'未收到回复'),saved:false};
   }catch(e){
     _coachMsgs[_coachMsgs.length-1]={role:'coach',text:`错误：${e.message}`,saved:false};
   }
   _renderCoach();
+}
+
+// 强制剥离markdown格式（防御性后处理）
+function _cleanCoachText(t){
+  return t.replace(/\*\*(.+?)\*\*/g,'$1')         // **加粗** → 加粗
+           .replace(/^###?\s+/gm,'')               // # ## ### 标题
+           .replace(/^[-*]\s+/gm,'')               // - 或 * 列表标记
+           .replace(/`{1,3}(.+?)`{1,3}/g,'$1');    // `代码`
 }
 
 // 全屏教练页发送
