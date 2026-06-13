@@ -46,7 +46,7 @@ async function getData(){
   const anchorDate=new Date(anchor.date+'T00:00:00');
   const targetDate=new Date(today+'T00:00:00');
   const diffDays=Math.round((targetDate-anchorDate)/86400000);
-  const idx=((anchor.index+diffDays)%7+7)%7;
+  const idx=((anchor.index+diffDays)%PLAN_QUEUE_DEF.length+PLAN_QUEUE_DEF.length)%PLAN_QUEUE_DEF.length;
   const todayType=PLAN_QUEUE_DEF[idx];
 
   const phase=profile.plan_phase||'cut';
@@ -71,6 +71,9 @@ async function getData(){
       const adj=profile.kcal_adjustment||0;
       if(adj!==0)nums={p:nums.p,f:nums.f,c:Math.max(0,nums.c+Math.round(adj/4)),k:nums.k+adj};
     }
+  }else if(phase==='cut'){
+    const adj=profile.kcal_adjustment||0;
+    if(adj!==0)nums={p:nums.p,f:nums.f,c:Math.max(0,nums.c+Math.round(adj/4)),k:nums.k+adj};
   }
 
   const eatenProtein=(foodRows||[]).reduce((a,r)=>a+(r.protein_g||0),0);

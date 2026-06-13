@@ -42,7 +42,6 @@ const COLE_PLAN = {
 function pad(n){return String(n).padStart(2,'0');}
 function localDateStr(d=new Date()){return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;}
 function localMidnightISO(d=new Date()){const x=new Date(d);x.setHours(0,0,0,0);return x.toISOString();}
-function weekAgoISO(){const d=new Date();d.setDate(d.getDate()-7);d.setHours(0,0,0,0);return d.toISOString();}
 function getQueueTypeForDate(dateStr,anchor){
   const anchorDate=new Date(anchor.date+'T00:00:00');
   const targetDate=new Date(dateStr+'T00:00:00');
@@ -109,10 +108,6 @@ async function getTodayFood(){
 async function getTodaySessions(){
   const today=new Date().toISOString().slice(0,10);
   const rows=await sb(`sessions?select=trained_at,volume&trained_at=gte.${encodeURIComponent(today+'T00:00:00')}&trained_at=lte.${encodeURIComponent(today+'T23:59:59')}`);
-  return rows||[];
-}
-async function getRecentSessions7(){
-  const rows=await sb(`sessions?select=trained_at&trained_at=gte.${encodeURIComponent(weekAgoISO())}`);
   return rows||[];
 }
 async function getLatestWeight(){
