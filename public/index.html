@@ -3405,7 +3405,9 @@ async function checkStrengthStall(){
     if(err)err.textContent='本机 Key 已丢失（常见于换网址/主屏幕）。请重新填写 Supabase 与 DeepSeek。';
   }
 })();
+</script>
 
+<script>
 // ═══════════════════════════════════════════════════════════════════
 // FEATURE PACK v4.1 — 功能升级包
 // 包含：① 组间自动计时浮层  ② 概况页睡眠快录  ③ 常用食物置顶
@@ -4987,7 +4989,7 @@ window.saveCoachMemory = saveCoachMemory;
   </div>
   <div class="coach-footer">
     <input class="coach-input" id="coach-input" placeholder="问教练..." onkeydown="if(event.key==='Enter')sendCoachMsg()" autofocus>
-    <button class="coach-send" id="coach-send-btn" onclick="sendCoachMsg()">发送</button>
+    <button class="coach-send" id="coach-send-btn" onclick="if(typeof toast==='function')toast('按钮有效');else this.textContent='toast未定义'">发送</button>
   </div>
 </div>
 
