@@ -1575,8 +1575,9 @@ async function fillDashTrainCount(){
 
 async function quickSaveWeight(){
   var input=document.getElementById('dash-quick-weight');
+  if(!input){return;}
   var w=parseFloat(input.value);
-  if(!w||w<40||w>200){toast('请输入有效体重（40–200kg）');return;}
+  if(isNaN(w)||w<40||w>200){toast('请输入有效体重（40–200kg）');return;}
   await _doSaveWeight(w);
   input.value='';
   toast('✓ 体重 '+w.toFixed(1)+'kg 已记录');
