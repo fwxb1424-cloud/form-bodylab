@@ -772,9 +772,25 @@ body{
         <div id="dash-status-bar" style="display:flex;align-items:center;gap:6px;padding:10px 12px;background:var(--s2);border:1px solid var(--ln);border-radius:var(--r);font-family:var(--f1)">
           <button onclick="toggleDashSlot()" id="dash-slot-btn" style="font-size:13px;font-weight:600;border:none;border-radius:18px;padding:5px 14px;cursor:pointer;white-space:nowrap">🌅 早间</button>
           <div style="width:1px;height:18px;background:var(--ln2);flex-shrink:0"></div>
-          <div id="dash-sleep-badge" style="flex:1;font-size:12px;color:var(--t2);min-width:0">🛌 昨晚 —</div>
+          <button id="dash-sleep-badge" onclick="toggleDashSleepForm()" style="flex:1;font-size:12px;color:var(--t2);min-width:0;background:none;border:none;cursor:pointer;text-align:left;font-family:var(--f1);padding:2px 4px">🛌 昨晚 —</button>
           <div style="width:1px;height:18px;background:var(--ln2);flex-shrink:0"></div>
           <div id="dash-today-label" style="font-size:12px;font-weight:600;color:var(--ac);white-space:nowrap">加载中…</div>
+        </div>
+      </div>
+
+      <!-- 睡眠快录（折叠） -->
+      <div class="s" id="dash-sleep-form-wrap" style="display:none;margin-top:6px">
+        <div style="background:var(--s2);border:1px solid rgba(226,255,92,.15);border-radius:var(--r);padding:12px 13px">
+          <div style="font-size:11px;font-weight:600;color:var(--ac);margin-bottom:10px">🛌 记录昨晚睡眠</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+            <div><div style="font-size:10px;color:var(--t2);margin-bottom:4px">入睡</div><input type="time" id="dsq-bed" style="width:100%;background:var(--s3);border:1px solid var(--ln2);border-radius:8px;padding:8px;color:var(--t1);font-size:14px;font-weight:600;outline:none" oninput="calcDashSleepDur()"></div>
+            <div><div style="font-size:10px;color:var(--t2);margin-bottom:4px">起床</div><input type="time" id="dsq-wake" style="width:100%;background:var(--s3);border:1px solid var(--ln2);border-radius:8px;padding:8px;color:var(--t1);font-size:14px;font-weight:600;outline:none" oninput="calcDashSleepDur()"></div>
+          </div>
+          <div style="text-align:center;font-size:20px;font-weight:800;color:var(--ac);margin-bottom:8px" id="dsq-dur">—</div>
+          <div style="display:flex;gap:5px;margin-bottom:10px">
+            ${['😴差','😐一般','🙂良好','😄极佳'].map((q,i)=>`<button onclick="setDashSleepQ(${i+1},this)" data-q="${i+1}" style="flex:1;font-size:11px;padding:6px 0;border-radius:8px;border:1px solid var(--ln);background:var(--s3);color:var(--t2);cursor:pointer">${q}</button>`).join('')}
+          </div>
+          <button onclick="saveDashSleep()" style="width:100%;padding:11px;background:var(--ac);color:#08090A;border:none;border-radius:var(--r);font-size:13px;font-weight:700;cursor:pointer">记录睡眠</button>
         </div>
       </div>
 
@@ -1091,16 +1107,6 @@ body{
         <div id="week-exec-board"><div class="empty">连接云端后显示</div></div>
       </div>
 
-      <!-- 训练时段 -->
-      <div class="s" style="margin-top:8px">
-        <div class="slbl">训练时段（用于通知推送）</div>
-        <div style="display:flex;gap:6px">
-          <button class="ds-btn" id="ts-morning" onclick="setTrainingSlot('morning')">🌅 早间（7–9点）</button>
-          <button class="ds-btn" id="ts-evening" onclick="setTrainingSlot('evening')">🌆 晚间（18–20点）</button>
-        </div>
-        <div style="font-size:10px;color:var(--t2);margin-top:4px;line-height:1.5">选择你习惯的训练时段。同步到手机通知脚本后，提醒会在对应时间段前推送。</div>
-      </div>
-
       <!-- 减脂期进度 -->
       <div class="s" style="margin-top:8px">
         <div class="slbl">减脂期进度</div>
@@ -1112,20 +1118,6 @@ body{
       <div class="s" style="margin-top:8px">
         <div class="slbl">本周体重检查点 <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t2);font-size:10px">周日复盘对照</span></div>
         <div id="plan-checkpoint"></div>
-      </div>
-    </div>
-        </div>
-      </div>
-      <div class="s" style="margin-top:8px">
-        <div class="slbl">计划建议</div>
-        <div class="adv-box">
-          <div class="adv-row"><input class="adv-in" id="plan-adv-in" placeholder="问：这周执行率低该怎么调整？卧推停滞了怎么办？…"><button class="adv-btn" id="plan-adv-btn" onclick="askAdvice('plan')">问</button></div>
-          <div class="adv-res" id="plan-adv-res"></div>
-        </div>
-      </div>
-      <div class="s" style="margin-top:8px;padding-bottom:4px">
-        <div class="slbl">近期训练对比</div>
-        <div id="recent-cmp"><div class="empty">完成训练记录后显示</div></div>
       </div>
     </div>
 
@@ -1489,11 +1481,17 @@ function renderDashStatusBar(){
       }
     }catch(e){sleepBadge.innerHTML='🛌 —';}
   }
-  // 今日训练标签
+  // 今日训练标签（优先显示用户已选的肌群，其次显示队列推荐）
   const todayLabel=document.getElementById('dash-today-label');
   if(todayLabel){
-    const t=typeof getTodayQueueType==='function'?getTodayQueueType():null;
-    if(t==='rest'){todayLabel.textContent='😴 休息日';todayLabel.style.color='var(--pu)';}
+    const selected=S.todayMuscle;
+    const queued=typeof getTodayQueueType==='function'?getTodayQueueType():null;
+    const t=selected||queued;
+    if(selected){
+      if(selected==='rest'){todayLabel.textContent='😴 休息日';todayLabel.style.color='var(--pu)';}
+      else if(selected==='cardio'){todayLabel.textContent='🚴 有氧日';todayLabel.style.color='var(--info)';}
+      else{todayLabel.textContent='💪 '+(TRAIN_LABEL_MAP[selected]||selected);todayLabel.style.color='var(--ac)';}
+    }else if(t==='rest'){todayLabel.textContent='😴 休息日';todayLabel.style.color='var(--pu)';}
     else if(t==='cardio'){todayLabel.textContent='🚴 有氧日';todayLabel.style.color='var(--info)';}
     else if(t){todayLabel.textContent='💪 '+(TRAIN_LABEL_MAP[t]||t);todayLabel.style.color='var(--ac)';}
     else{todayLabel.textContent='选肌群';todayLabel.style.color='var(--t2)';}
@@ -1504,6 +1502,62 @@ function toggleDashSlot(){
   const next=cur==='morning'?'evening':'morning';
   if(typeof setTrainingSlot==='function')setTrainingSlot(next);
   renderDashStatusBar();
+}
+
+// ── 首页睡眠快录 ──
+function toggleDashSleepForm(){
+  const wrap=document.getElementById('dash-sleep-form-wrap');
+  if(!wrap)return;
+  const show=wrap.style.display==='none';
+  wrap.style.display=show?'':'none';
+  if(show){
+    // 预填默认时间
+    const now=new Date();
+    document.getElementById('dsq-bed').value='23:30';
+    document.getElementById('dsq-wake').value=`0${now.getHours()}`.slice(-2)+':'+`0${now.getMinutes()}`.slice(-2);
+    document.getElementById('dsq-dur').textContent='—';
+    document.querySelectorAll('#dash-sleep-form-wrap [data-q]').forEach(b=>b.style.background='var(--s3)');
+    calcDashSleepDur();
+  }
+}
+function calcDashSleepDur(){
+  const bed=document.getElementById('dsq-bed')?.value;
+  const wake=document.getElementById('dsq-wake')?.value;
+  const durEl=document.getElementById('dsq-dur');
+  if(!bed||!wake||!durEl)return;
+  const b=new Date(`2000-01-01T${bed}:00`);
+  const w=new Date(`2000-01-01T${wake}:00`);
+  let h=(w-b)/36e5;if(h<0)h+=24;
+  durEl.textContent=h.toFixed(1)+'h';
+  durEl.style.color=h<6?'var(--wa)':h>=8?'var(--ac)':'var(--t1)';
+}
+let _dashSleepQ=3;
+function setDashSleepQ(q,btn){
+  _dashSleepQ=q;
+  document.querySelectorAll('#dash-sleep-form-wrap [data-q]').forEach(b=>{
+    b.style.background=parseInt(b.dataset.q)===q?'rgba(226,255,92,.15)':'var(--s3)';
+    b.style.color=parseInt(b.dataset.q)===q?'var(--ac)':'var(--t2)';
+  });
+}
+async function saveDashSleep(){
+  const bed=document.getElementById('dsq-bed')?.value;
+  const wake=document.getElementById('dsq-wake')?.value;
+  if(!bed||!wake){if(typeof toast==='function')toast('请填写入睡和起床时间');return;}
+  const b=new Date(`2000-01-01T${bed}:00`);
+  const w=new Date(`2000-01-01T${wake}:00`);
+  let h=(w-b)/36e5;if(h<0)h+=24;
+  const bedtime=wake; // woke up at wake time
+  if(window.db){
+    try{
+      await db.addSleepLog({duration_h:Math.round(h*10)/10,bedtime,quality:_dashSleepQ,logged_at:new Date().toISOString()});
+      if(typeof loadSleepLog==='function')await loadSleepLog();
+    }catch(e){console.warn('saveDashSleep',e);}
+  }
+  // 更新本地缓存
+  localStorage.setItem('form_last_sleep',JSON.stringify({duration_h:Math.round(h*10)/10,bedtime,ts:Date.now()}));
+  document.getElementById('dash-sleep-form-wrap').style.display='none';
+  renderDashStatusBar();
+  if(typeof toast==='function')toast('✓ 睡眠已记录');
 }
 
 async function renderDashAlerts(){
@@ -1795,12 +1849,20 @@ function updateTrainDateUI(){
   const bar = document.getElementById('train-backfill-bar');
   const todayBtn = document.getElementById('ts-today');
   const genBtn = document.querySelector('#pg-train .ghost-btn');
-  // 补录模式 vs 今天
   if(bar) bar.classList.toggle('hidden', !isBackfill);
   if(todayBtn) todayBtn.classList.toggle('on', !isBackfill);
-  // 更新"生成"按钮文字
   if(genBtn) genBtn.textContent = isBackfill ? '生成该日训练方案' : '生成今日训练方案';
-  // 重新渲染肌群选择器（补录时隐藏推荐高亮）
+  // 补录模式下清除当前选择，避免高亮残留
+  if(isBackfill && S.todayMuscle){
+    S.todayMuscle='';S.workout=[];S.volume=0;
+    document.getElementById('sh-title').textContent='选择训练部位后生成';
+    document.getElementById('sh-sub').textContent='补录模式 · 选择肌群 → 手动记录';
+    document.getElementById('ex-list').innerHTML='<div class="empty">补录模式：选择肌群后手动填写或生成方案</div>';
+    document.getElementById('total-cnt').textContent='0';
+    document.getElementById('done-cnt').textContent='0';
+    document.getElementById('muscle-grp').textContent='—';
+    document.getElementById('est-dur').textContent='—';
+  }
   renderMuscleSelector();
 }
 
