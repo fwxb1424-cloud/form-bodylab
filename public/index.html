@@ -1578,11 +1578,16 @@ async function quickSaveWeight(){
   if(!input){return;}
   var w=parseFloat(input.value);
   if(isNaN(w)||w<40||w>200){toast('请输入有效体重（40–200kg）');return;}
-  await _doSaveWeight(w);
-  input.value='';
-  toast('✓ 体重 '+w.toFixed(1)+'kg 已记录');
-  if(typeof renderDash==='function')renderDash();
-  if(typeof renderTodayStatusCard==='function')renderTodayStatusCard();
+  input.disabled=true;
+  try{
+    await _doSaveWeight(w);
+    input.value='';
+    S.weight_kg=w;
+    toast('✓ 体重 '+w.toFixed(1)+'kg 已记录');
+    if(typeof renderDash==='function')renderDash();
+    if(typeof renderTodayStatusCard==='function')renderTodayStatusCard();
+  }catch(e){toast('保存失败：'+e.message);}
+  input.disabled=false;
 }
 async function saveWeight(){
   var input=document.getElementById('in-weight');
