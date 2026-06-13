@@ -145,34 +145,26 @@ async function run() {
       return;
     }
 
-    // ── 有氧日 08:15：可以多睡，起床+晨称 ──
+    // ── 有氧日 08:10：可以多睡，起床+晨称 ──
     case 'morning_cardio': {
       if (!isCardioDay) return;
       await notify(
-        `🌅 ${tgt.label} · 比力量日多睡40min`,
-        `晨称→09:00有氧+核心(30min)。今日目标 蛋白${tgt.protein}g / ${tgt.kcal}kcal`
+        `🌅 ${tgt.label} · 比力量日多睡35min`,
+        `晨称→08:45有氧+核心(45min)。今日目标 蛋白${tgt.protein}g / ${tgt.kcal}kcal`
       );
       return;
     }
 
-    // ── 力量日 09:30：练后第一餐 ──
-    case 'breakfast_strength': {
-      if (!isStrengthDay) return;
+    // ── 每天 09:45：打卡后买早饭 ──
+    case 'breakfast': {
+      if (isRestDay) return;
       const food = await getTodayFood();
+      const isStrength = isStrengthDay;
       await notify(
-        `🍳 练后第一餐`,
-        `目标蛋白28g+。当前进度 ${Math.round(food.protein)}/${tgt.protein}g`
-      );
-      return;
-    }
-
-    // ── 有氧日 09:50：早餐（更宽松） ──
-    case 'breakfast_cardio': {
-      if (!isCardioDay) return;
-      const food = await getTodayFood();
-      await notify(
-        `🍳 早餐时间`,
-        `今日 ${tgt.label}，当前蛋白进度 ${Math.round(food.protein)}/${tgt.protein}g`
+        isStrength ? `🍳 练后第一餐` : `🍳 早餐时间`,
+        isStrength
+          ? `目标蛋白28g+。当前进度 ${Math.round(food.protein)}/${tgt.protein}g`
+          : `今日 ${tgt.label}，当前蛋白进度 ${Math.round(food.protein)}/${tgt.protein}g`
       );
       return;
     }
