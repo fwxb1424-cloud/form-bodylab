@@ -403,6 +403,28 @@ body{
 .alert-card.yellow .alert-action{background:rgba(240,150,74,.12);color:var(--wa);}
 .alert-card.green .alert-action{background:rgba(226,255,92,.1);color:var(--ac);}
 .alert-action:active{opacity:.7;}
+/* AI 教练聊天 */
+.coach-overlay{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.78);backdrop-filter:blur(8px);display:none;flex-direction:column;max-width:430px;margin:0 auto;}
+.coach-overlay.on{display:flex;}
+.coach-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--ln2);flex-shrink:0;}
+.coach-title{font-family:var(--f1);font-size:15px;font-weight:700;letter-spacing:-.03em;}
+.coach-subtitle{font-size:10px;color:var(--t2);margin-top:1px;}
+.coach-close{background:none;border:none;color:var(--t2);font-size:22px;cursor:pointer;padding:4px 8px;}
+.coach-body{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px;-webkit-overflow-scrolling:touch;}
+.coach-msg{max-width:85%;padding:11px 14px;border-radius:16px;font-size:13px;line-height:1.55;animation:fi .2s ease;}
+.coach-msg.user{align-self:flex-end;background:rgba(226,255,92,.1);border:1px solid rgba(226,255,92,.16);color:var(--t1);border-bottom-right-radius:4px;}
+.coach-msg.coach{align-self:flex-start;background:var(--s3);border:1px solid var(--ln);color:var(--t1);border-bottom-left-radius:4px;}
+.coach-msg .msg-meta{font-size:9px;color:var(--t3);margin-top:6px;display:flex;align-items:center;gap:6px;}
+.coach-msg .msg-save{font-size:9px;font-weight:600;color:var(--ac);background:none;border:1px solid rgba(226,255,92,.2);border-radius:8px;padding:2px 8px;cursor:pointer;}
+.coach-msg .msg-save:active{background:rgba(226,255,92,.1);}
+.coach-msg .msg-save.saved{color:var(--t2);border-color:var(--ln);}
+.coach-empty{text-align:center;color:var(--t3);font-size:12px;padding:40px 20px;line-height:1.6;}
+.coach-footer{display:flex;gap:6px;padding:10px 14px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0));border-top:1px solid var(--ln2);flex-shrink:0;background:rgba(5,5,6,.9);}
+.coach-input{flex:1;background:var(--s2);border:1px solid var(--ln2);border-radius:22px;padding:11px 16px;color:var(--t1);font-family:var(--f1);font-size:13px;outline:none;}
+.coach-input:focus{border-color:rgba(226,255,92,.25);}
+.coach-send{background:var(--ac);color:#08090A;border:none;border-radius:22px;padding:11px 18px;font-family:var(--f1);font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0;}
+.coach-send:active{background:var(--ac2);}
+.coach-send:disabled{opacity:.4;}
 /* 今日状态卡 */
 .today-card{margin:10px 20px 0;padding:14px 16px;background:linear-gradient(135deg,rgba(226,255,92,.07),rgba(106,172,255,.04));border:1px solid rgba(226,255,92,.18);border-radius:var(--r2);}
 .tc-row1{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
@@ -736,7 +758,7 @@ body{
 
     <!-- ══ 概况 ══ -->
     <div class="page on" id="pg-dash">
-      <div class="ph"><div class="ph-ey">FORM · Body Lab</div><div class="ph-h1" style="display:flex;align-items:center;justify-content:space-between"><span>今日概况</span><button onclick="toggleMoreMenu()" style="background:none;border:none;color:var(--t2);cursor:pointer;padding:4px 10px;border-radius:8px;font-size:20px;letter-spacing:3px;line-height:1" title="更多">⋯</button></div><div class="ph-sub" id="dash-date"></div>
+      <div class="ph"><div class="ph-ey">FORM · Body Lab</div><div class="ph-h1" style="display:flex;align-items:center;justify-content:space-between"><span>今日概况</span><div style="display:flex;gap:4px;align-items:center"><button onclick="openCoachChat()" style="background:linear-gradient(135deg,rgba(226,255,92,.12),rgba(180,154,255,.08));border:1px solid rgba(226,255,92,.2);color:var(--ac);cursor:pointer;padding:5px 12px;border-radius:20px;font-family:var(--f1);font-size:11px;font-weight:600;white-space:nowrap" title="AI教练">🧠 问教练</button><button onclick="toggleMoreMenu()" style="background:none;border:none;color:var(--t2);cursor:pointer;padding:4px 10px;border-radius:8px;font-size:20px;letter-spacing:3px;line-height:1" title="更多">⋯</button></div></div><div class="ph-sub" id="dash-date"></div>
         <div id="more-menu" style="display:none;margin-top:8px;padding:2px 0;flex-wrap:wrap;gap:5px">
           <button class="tc-pill" onclick="goPage('plan');hideMoreMenu()" style="cursor:pointer;border:1px solid var(--ln2);background:var(--s3);padding:3px 10px;font-size:11px;font-family:var(--f1);color:var(--t1);border-radius:10px">📋 计划</button>
           <button class="tc-pill" onclick="goPage('mem');hideMoreMenu()" style="cursor:pointer;border:1px solid var(--ln2);background:var(--s3);padding:3px 10px;font-size:11px;font-family:var(--f1);color:var(--t1);border-radius:10px">🧠 记忆</button>
@@ -4704,6 +4726,113 @@ window.importPlanFoods = function() {
   toast(added > 0 ? `✓ 已导入 ${added} 个常用食物` : '已是最新，无新增');
 };
 
+// ══ AI 教练聊天 ══════════════════════════════════════════
+const coachMsgs = [];
+
+function openCoachChat() {
+  document.getElementById('coach-overlay').classList.add('on');
+  if (coachMsgs.length === 0) {
+    document.getElementById('coach-body').innerHTML =
+      `<div class="coach-empty">我是你的专属AI教练，已读取你的档案、今天数据、训练史和记忆库。<br><br>比如问：<br>"我最近卧推是不是停滞了"<br>"减脂速度正常吗"<br>"今天蛋白怎么补"</div>`;
+  }
+  setTimeout(() => document.getElementById('coach-input').focus(), 100);
+  hideMoreMenu();
+}
+
+function closeCoachChat() {
+  document.getElementById('coach-overlay').classList.remove('on');
+}
+
+function renderCoachChat() {
+  const body = document.getElementById('coach-body');
+  if (coachMsgs.length === 0) return;
+  body.innerHTML = coachMsgs.map((m, i) => `
+    <div class="coach-msg ${m.role}">
+      <div>${m.text.replace(/\n/g, '<br>')}</div>
+      ${m.role === 'coach' ? `
+        <div class="msg-meta">
+          <span>FORM Coach</span>
+          <button class="msg-save ${m.saved ? 'saved' : ''}" onclick="saveCoachMemory(${i})">${m.saved ? '✓ 已保存' : '保存到记忆'}</button>
+        </div>` : ''}
+    </div>
+  `).join('');
+  body.scrollTop = body.scrollHeight;
+}
+
+async function sendCoachMsg() {
+  const input = document.getElementById('coach-input');
+  const btn = document.getElementById('coach-send-btn');
+  const text = input.value.trim();
+  if (!text) return;
+  if (!window.AI) { toast('AI 未初始化，请先配置 API Key'); return; }
+
+  input.value = '';
+  btn.disabled = true;
+  btn.textContent = '...';
+
+  coachMsgs.push({ role: 'user', text });
+  coachMsgs.push({ role: 'coach', text: '思考中...', saved: false });
+  renderCoachChat();
+
+  try {
+    const profile = typeof buildProfile === 'function' ? buildProfile(S) : '';
+    const system = typeof PROMPTS !== 'undefined' && PROMPTS.coach ? PROMPTS.coach(profile) : '';
+    const r = await AI.call('coach', { system, userMsg: text });
+    const reply = r._err
+      ? `抱歉，AI 响应出错：${(r._raw || '').slice(0, 100)}`
+      : (r._raw || r.summary || '抱歉，未收到有效回复。');
+
+    coachMsgs[coachMsgs.length - 1] = { role: 'coach', text: reply, saved: false };
+  } catch (e) {
+    coachMsgs[coachMsgs.length - 1] = { role: 'coach', text: `网络或 API 错误：${e.message}` };
+  }
+
+  renderCoachChat();
+  btn.disabled = false;
+  btn.textContent = '发送';
+  document.getElementById('coach-input').focus();
+}
+
+async function saveCoachMemory(i) {
+  const m = coachMsgs[i];
+  if (!m || m.role !== 'coach' || m.saved) return;
+  try {
+    const text = m.text.slice(0, 200);
+    if (typeof saveMemoQ === 'function') {
+      await saveMemoQ(`教练建议：${text}`, 'short');
+    } else if (window.db) {
+      await window.db.addMemory(`教练建议：${text}`, 'short');
+    } else {
+      toast('记忆库不可用');
+      return;
+    }
+    coachMsgs[i].saved = true;
+    renderCoachChat();
+    toast('✓ 已存入记忆库');
+    if (typeof renderMemories === 'function') renderMemories();
+  } catch (e) {
+    toast('保存失败：' + e.message);
+  }
+}
+
 </script>
+<!-- AI 教练聊天弹窗 -->
+<div class="coach-overlay" id="coach-overlay">
+  <div class="coach-header">
+    <div>
+      <div class="coach-title">🧠 FORM Coach</div>
+      <div class="coach-subtitle">专属AI教练 · 已注入你的全部数据</div>
+    </div>
+    <button class="coach-close" onclick="closeCoachChat()">✕</button>
+  </div>
+  <div class="coach-body" id="coach-body">
+    <div class="coach-empty">我是你的专属AI教练，已读取你的档案、今天数据、训练史和记忆库。<br><br>比如问：<br>"我最近卧推是不是停滞了"<br>"减脂速度正常吗"<br>"今天蛋白怎么补"</div>
+  </div>
+  <div class="coach-footer">
+    <input class="coach-input" id="coach-input" placeholder="问教练..." onkeydown="if(event.key==='Enter')sendCoachMsg()" autofocus>
+    <button class="coach-send" id="coach-send-btn" onclick="sendCoachMsg()">发送</button>
+  </div>
+</div>
+
 </body>
 </html>
