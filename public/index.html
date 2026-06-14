@@ -1421,6 +1421,8 @@ function updateDashStatusBar(){
   if(gymTime)parts.push('🏋️ '+gymTime);
   if(sc&&sc.duration_h)parts.push('🛌 '+sc.duration_h+'h');
   else parts.push('🛌 未录');
+  var pt=(typeof PT==='function'?PT():168)||168;
+  parts.push('🥩 '+Math.round(S.protein||0)+'/'+pt+'g');
   if(meta){
     var syncStatus='';
     var lastSync=localStorage.getItem('form_last_sync_ok');
