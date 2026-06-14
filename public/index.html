@@ -1291,7 +1291,7 @@ async function doSetup(){
     console.error('doSetup失败',e.message,e.stack);
     if(typeof toast==='function')toast('连接失败：'+e.message);
     var err2=document.getElementById('s-err');
-    if(err2){err2.style.display='block';err2.textContent='连接失败：'+e.message;}
+    if(err2){err2.style.display='block';err2.style.color='var(--da)';err2.style.background='rgba(232,88,88,.08)';err2.style.borderColor='rgba(232,88,88,.2)';err2.textContent='连接失败：'+e.message;}
     var btn2=document.getElementById('s-btn');
     if(btn2){btn2.textContent='开始使用 →';btn2.disabled=false;btn2.style.opacity='';}
   }
@@ -3752,22 +3752,11 @@ async function checkStrengthStall(){
     document.getElementById('in-gm').value=gm||'';
     document.getElementById('in-su').value=su;
     document.getElementById('in-sk').value=sk;
-    var attempts=0;
-    function tryConnect(){
-      if(typeof supabase!=='undefined'&&typeof DB!=='undefined'){
-        doSetup();
-      }else if(attempts<3){
-        attempts++;
-        setTimeout(tryConnect,800*attempts);
-      }else{
-        var errAuto=document.getElementById('s-err');
-        if(errAuto)errAuto.textContent='脚本加载超时，请检查网络后刷新页面';
-      }
-    }
-    tryConnect();
+    var msg=document.getElementById('s-err');
+    if(msg){msg.style.display='block';msg.style.color='var(--ac)';msg.style.background='rgba(226,255,92,.06)';msg.style.borderColor='rgba(226,255,92,.15)';msg.textContent='已加载上次配置，点击下方开始使用 →';}
   }else if(localStorage.getItem('form_connected')){
     var err2=document.getElementById('s-err');
-    if(err2)err2.textContent='本机 Key 已丢失。请重新填写。';
+    if(err2){err2.style.display='block';err2.textContent='本机 Key 已丢失。请重新填写。';}
   }
 })();
 
