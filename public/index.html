@@ -1249,43 +1249,7 @@ window.S = {
 };
 const S = window.S;
 
-// ══ SETUP ══
-async function doSetup(){
-  try{var ds=document.getElementById('in-ds');if(!ds)throw new Error('找不到 DeepSeek 输入框');ds=ds.value.trim();}
-  catch(e){alert('错误：'+e.message);return;}
-  try{var gm=document.getElementById('in-gm');gm=gm?gm.value.trim():'';}catch(e){gm='';}
-  try{var su=document.getElementById('in-su');if(!su)throw new Error('找不到 Supabase URL 输入框');su=su.value.trim();}
-  catch(e){alert('错误：'+e.message);return;}
-  try{var sk=document.getElementById('in-sk');if(!sk)throw new Error('找不到 Supabase Key 输入框');sk=sk.value.trim();}
-  catch(e){alert('错误：'+e.message);return;}
-  var err=document.getElementById('s-err');
-  if(err)err.textContent='';
-  if(!ds.startsWith('sk-')){if(err)err.textContent='DeepSeek Key 格式不对（应以 sk- 开头）';return;}
-  if(!su.includes('supabase.co')){if(err)err.textContent='Supabase URL 格式不对';return;}
-  if(!sk){if(err)err.textContent='请输入 Supabase anon key';return;}
-  var btn=document.getElementById('s-btn');if(!btn){alert('找不到按钮');return;}
-  btn.textContent='连接中…';btn.disabled=true;btn.style.opacity='0.6';
-  localStorage.setItem('form_ds',ds);localStorage.setItem('form_gm',gm||'');
-  if(err)err.textContent='正在连接 Supabase 和 DeepSeek…';
-  localStorage.setItem('form_su',su);localStorage.setItem('form_sk',sk);
-  try{
-    if(typeof supabase==='undefined')throw new Error('Supabase 脚本未加载，请用 https 打开且检查网络');
-    window.db=db=new DB(su,sk);
-    await db.init();
-    window.AI=AI=new AIProvider(ds,gm||null);
-    localStorage.setItem('form_connected','1');
-    await boot();
-    if(err){err.textContent='';err.style.display='none';}
-    toast('✓ 已连接云端数据库与 DeepSeek');
-  }catch(e){
-    window.db=db=null;
-    window.AI=AI=null;
-    console.error('doSetup失败',e.message,e.stack);
-    if(err){err.style.display='block';err.textContent='连接失败：'+e.message;}
-    if(btn){btn.textContent='开始使用 →';btn.disabled=false;btn.style.opacity='';}
-    try{document.getElementById('setup').classList.remove('off');}catch(e2){}
-  }
-}
+
 function resetSetup(){
   ['form_ds','form_gm','form_su','form_sk','form_connected'].forEach(k=>localStorage.removeItem(k));
   window.db=db=null;window.AI=AI=null;
@@ -5044,5 +5008,47 @@ window.importPlanFoods = function() {
 
 // ══ AI 教练（Dash 内嵌版）═════════════════════════════════
 </script>
+
+<script>
+// ══ SETUP (独立脚本块，不受其他代码影响) ══
+window.doSetup = async function(){
+  try{
+    var dsEl=document.getElementById('in-ds');if(!dsEl)throw new Error('找不到 DeepSeek 输入框');
+    var ds=dsEl.value.trim();
+    var gmEl=document.getElementById('in-gm');var gm=gmEl?gmEl.value.trim():'';
+    var suEl=document.getElementById('in-su');if(!suEl)throw new Error('找不到 Supabase URL 输入框');
+    var su=suEl.value.trim();
+    var skEl=document.getElementById('in-sk');if(!skEl)throw new Error('找不到 Supabase Key 输入框');
+    var sk=skEl.value.trim();
+    var err=document.getElementById('s-err');
+    if(err)err.textContent='';
+    if(!ds.startsWith('sk-')){if(err)err.textContent='DeepSeek Key 格式不对（应以 sk- 开头）';return;}
+    if(!su.includes('supabase.co')){if(err)err.textContent='Supabase URL 格式不对';return;}
+    if(!sk){if(err)err.textContent='请输入 Supabase anon key';return;}
+    var btn=document.getElementById('s-btn');if(!btn)throw new Error('找不到按钮');
+    btn.textContent='连接中…';btn.disabled=true;btn.style.opacity='0.6';
+    localStorage.setItem('form_ds',ds);localStorage.setItem('form_gm',gm||'');
+    localStorage.setItem('form_su',su);localStorage.setItem('form_sk',sk);
+    if(err)err.textContent='正在连接 Supabase 和 DeepSeek…';
+    if(typeof supabase==='undefined')throw new Error('Supabase 脚本未加载，请用 https 打开且检查网络');
+    window.db=db=new DB(su,sk);
+    await db.init();
+    window.AI=AI=new AIProvider(ds,gm||null);
+    localStorage.setItem('form_connected','1');
+    await boot();
+    if(err){err.textContent='';err.style.display='none';}
+    toast('✓ 已连接云端数据库与 DeepSeek');
+  }catch(e){
+    window.db=db=null;window.AI=AI=null;
+    console.error('doSetup失败',e.message,e.stack);
+    alert('连接失败：'+e.message);
+    var err2=document.getElementById('s-err');
+    if(err2){err2.style.display='block';err2.textContent='连接失败：'+e.message;}
+    var btn2=document.getElementById('s-btn');
+    if(btn2){btn2.textContent='开始使用 →';btn2.disabled=false;btn2.style.opacity='';}
+  }
+};
+</script>
+
 </body>
 </html>
