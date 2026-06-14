@@ -1201,7 +1201,7 @@ function clearTrainDraft(dateKey){try{localStorage.removeItem("form_train_draft_
 async function dbOp(label, fn){ try{return await fn();}catch(e){console.warn("dbOp:"+label,e.message);return null;} }
 async function loadTodayFood(){if(!db)return;try{var d=await db.getFoodLogsByRange(new Date(new Date().setHours(0,0,0,0)).toISOString(),new Date().toISOString());if(d&&d.length){for(var i=0;i<d.length;i++){var f=d[i];S.foods.push({name:f.name,protein_g:f.protein_g||0,carbs_g:f.carbs_g||0,fat_g:f.fat_g||0,kcal:f.kcal||0,id:f.id||Date.now()+i,time:f.time_tag||'',meal_type:f.time_tag||'早餐',logged_at:f.logged_at,dbId:f.id});S.protein+=f.protein_g||0;S.carbs+=f.carbs_g||0;S.fat+=f.fat_g||0;S.kcal+=f.kcal||0;}renderFoodList();updateBars();renderDash();applyNutritionUI();}}catch(e){console.warn('loadTodayFood',e);}}
 function saveAppStateLocally(){try{var st={protein:S.protein,carbs:S.carbs,fat:S.fat,kcal:S.kcal,foods:S.foods,todayMuscle:S.todayMuscle,isTrain:S.isTrain,volume:S.volume};localStorage.setItem('form_app_state',JSON.stringify(st));}catch(e){}}
-function loadAppStateLocally(){try{var st=JSON.parse(localStorage.getItem('form_app_state')||'null');if(st){S.protein=st.protein||0;S.carbs=st.carbs||0;S.fat=st.fat||0;S.kcal=st.kcal||0;S.foods=st.foods||[];S.todayMuscle=st.todayMuscle||'';S.isTrain=st.isTrain!==false;S.volume=st.volume||0;}}catch(e){}}
+function loadAppStateLocally(){try{var st=JSON.parse(localStorage.getItem('form_app_state')||'null');if(st){S.protein=st.protein||0;S.carbs=st.carbs||0;S.fat=st.fat||0;S.kcal=st.kcal||0;S.foods=st.foods||[];S.todayMuscle=st.todayMuscle||'';S.isTrain=st.isTrain!==false;S.volume=st.volume||0;try{renderFoodList();updateBars();renderDash();}catch(e){}}var w=JSON.parse(localStorage.getItem('form_last_weight')||'null');if(w&&w.weight_kg)S.weight_kg=w.weight_kg;}catch(e){}
 function refreshAppStatus(){if(typeof updateDashStatusBar==='function')updateDashStatusBar();}
 function backupTodayFoods(){saveAppStateLocally();}
 function pushSettingsToCloud(){}
@@ -1930,7 +1930,7 @@ async function parseFood(){
     if(S_dietDate === 'today'){
       addFoodEntry(entry);
     }
-    document.getElementById('food-input').value='';
+    document.getElementById('food-input').value='';saveAppStateLocally();
     if(db){
       const row=await dbOp('饮食保存',()=>db.addFoodLog({...r, time_tag:S_mealType, logged_at:ts}));
       if(S_dietDate === 'today'){
@@ -1988,7 +1988,7 @@ async function addManualFood(){
     const row=await dbOp('饮食保存',()=>db.addFoodLog({name,protein_g:p,carbs_g:c,fat_g:f,kcal:k,time_tag:S_mealType,logged_at:ts}));
     if(S_dietDate === 'today' && row?.id) entry.dbId=row.id;
   }
-  ['mf-name','mf-p','mf-c','mf-f','mf-k'].forEach(id=>document.getElementById(id).value='');
+  saveAppStateLocally();['mf-name','mf-p','mf-c','mf-f','mf-k'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('mfp').classList.remove('on');
   if(S_dietDate === 'today') {applyNutritionUI();updateGapRec();toast('✓ 精确记录：'+name+' ['+S_mealType+']');}
   else {loadYesterdayFood();toast('✓ 已补录昨日：'+name);}
@@ -2062,7 +2062,7 @@ function removeFood(id){
   S.protein=Math.max(0,S.protein-(f.protein_g||0));S.carbs=Math.max(0,S.carbs-(f.carbs_g||0));
   S.fat=Math.max(0,S.fat-(f.fat_g||0));S.kcal=Math.max(0,S.kcal-(f.kcal||0));
   if(f.dbId&&db)db.deleteFoodLog(f.dbId).catch(()=>{});
-  renderFoodList();updateBars();renderDash();applyNutritionUI();updateGapRec();
+  renderFoodList();updateBars();renderDash();applyNutritionUI();updateGapRec();saveAppStateLocally();
   if(typeof backupTodayFoods==='function')backupTodayFoods();
   if(typeof refreshAppStatus==='function')refreshAppStatus();
   toast('已撤回：'+f.name);
@@ -3410,7 +3410,7 @@ function renderFavFoods(){
 window.toggleFavEdit=function(){const w=document.getElementById('fav-food-list');if(!w)return;w.dataset.editing=w.dataset.editing==='1'?'0':'1';document.getElementById('fav-edit-btn').textContent=w.dataset.editing==='1'?'完成':'管理';renderFavFoods();};
 window.removeFav=function(i){const f=loadFavFoods();f.splice(i,1);saveFavFoods(f);renderFavFoods();};
 window.addFav=function(){const n=document.getElementById('fav-name')?.value.trim();if(!n)return;const p=parseFloat(document.getElementById('fav-p')?.value)||0,c=parseFloat(document.getElementById('fav-c')?.value)||0,f=parseFloat(document.getElementById('fav-f')?.value)||0,k=parseFloat(document.getElementById('fav-k')?.value)||(p*4+c*4+f*9);const favs=loadFavFoods();favs.push({name:n,protein_g:p,carbs_g:c,fat_g:f,kcal:k});saveFavFoods(favs);renderFavFoods();toast('✓ 已添加：'+n);};
-window.quickAddFav=async function(i){const favs=loadFavFoods();const f=favs[i];if(!f)return;const ts=typeof getLogTimestamp==='function'?getLogTimestamp():new Date().toISOString();const entry={...f,id:Date.now()+Math.random(),time:nt(),meal_type:S_mealType||'早餐',logged_at:ts};if(typeof isDietToday==='function'&&isDietToday()){if(typeof addFoodEntry==='function')addFoodEntry(entry);}if(db){const row=await dbOp('饮食保存',()=>db.addFoodLog({...f,time_tag:S_mealType||'早餐',logged_at:ts}));if(typeof isDietToday==='function'&&isDietToday()&&row?.id){const fe=S.foods[S.foods.length-1];if(fe)fe.dbId=row.id;}}if(typeof isDietToday==='function'&&!isDietToday()&&typeof loadBackfillFood==='function')loadBackfillFood(S_dietDate);toast(`✓ 快速添加：${f.name}`);};
+window.quickAddFav=async function(i){const favs=loadFavFoods();const f=favs[i];if(!f)return;const ts=typeof getLogTimestamp==='function'?getLogTimestamp():new Date().toISOString();const entry={...f,id:Date.now()+Math.random(),time:nt(),meal_type:S_mealType||'早餐',logged_at:ts};if(typeof isDietToday==='function'&&isDietToday()){if(typeof addFoodEntry==='function')addFoodEntry(entry);}if(db){const row=await dbOp('饮食保存',()=>db.addFoodLog({...f,time_tag:S_mealType||'早餐',logged_at:ts}));if(typeof isDietToday==='function'&&isDietToday()&&row?.id){const fe=S.foods[S.foods.length-1];if(fe)fe.dbId=row.id;}}if(typeof isDietToday==='function'&&!isDietToday()&&typeof loadBackfillFood==='function')loadBackfillFood(S_dietDate);saveAppStateLocally();toast(`✓ 快速添加：${f.name}`);};
 
 // ── 执行率看板（修正：不计入未来天、区分调整） ────────
 async function renderWeekExecBoard(){
