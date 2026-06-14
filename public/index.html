@@ -3698,33 +3698,6 @@ async function checkStrengthStall(){
   }
 })();
 
-// ══ INIT ══
-(function(){
-  try{if(typeof loadAppStateLocally==='function')loadAppStateLocally();}catch(e){}
-  var ds=localStorage.getItem('form_ds');
-  var gm=localStorage.getItem('form_gm');
-  var su=localStorage.getItem('form_su');
-  var sk=localStorage.getItem('form_sk');
-  if(ds&&su&&sk){
-    document.getElementById('in-ds').value=ds;
-    document.getElementById('in-gm').value=gm||'';
-    document.getElementById('in-su').value=su;
-    document.getElementById('in-sk').value=sk;
-    var attempts=0;
-    function tryConnect(){
-      if(typeof supabase!=='undefined'&&typeof DB!=='undefined'){
-        doSetup();
-      }else if(attempts<3){
-        attempts++;
-        setTimeout(tryConnect,800*attempts);
-      }
-    }
-    tryConnect();
-  }else if(localStorage.getItem('form_connected')){
-    var err2=document.getElementById('s-err');
-    if(err2)err2.textContent='本机 Key 已丢失（常见于换网址/主屏幕）。请重新填写 Supabase 与 DeepSeek。';
-  }
-})();
 
 // ══ AI 教练（Dash 内嵌版，Block 5 全局作用域）═════════════════
 const _coachMsgs = [];
@@ -5172,6 +5145,34 @@ window.doSetup = async function(){
     if(btn2){btn2.textContent='开始使用 →';btn2.disabled=false;btn2.style.opacity='';}
   }
 };
+
+// ══ 自动连接 ══
+(function(){
+  try{if(typeof loadAppStateLocally==='function')loadAppStateLocally();}catch(e){}
+  var ds=localStorage.getItem('form_ds');
+  var gm=localStorage.getItem('form_gm');
+  var su=localStorage.getItem('form_su');
+  var sk=localStorage.getItem('form_sk');
+  if(ds&&su&&sk){
+    document.getElementById('in-ds').value=ds;
+    document.getElementById('in-gm').value=gm||'';
+    document.getElementById('in-su').value=su;
+    document.getElementById('in-sk').value=sk;
+    var attempts=0;
+    function autoTryConnect(){
+      if(typeof supabase!=='undefined'&&typeof DB!=='undefined'){
+        window.doSetup();
+      }else if(attempts<3){
+        attempts++;
+        setTimeout(autoTryConnect,800*attempts);
+      }
+    }
+    autoTryConnect();
+  }else if(localStorage.getItem('form_connected')){
+    var err2=document.getElementById('s-err');
+    if(err2)err2.textContent='本机 Key 已丢失。请重新填写。';
+  }
+})();
 </script>
 
 </body>
