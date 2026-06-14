@@ -2774,57 +2774,10 @@ function updateM(key){
   toast(`✓ ${MEASURES.find(m=>m.key===key)?.label} 已更新`);
 }
 
-let sleepQ=3;
-function setSleepQ(q){sleepQ=q;document.querySelectorAll('.sqb').forEach((b,i)=>b.classList.toggle('on',i+1===q));}
 
-function calcSleepDur(){
-  const s=document.getElementById('sleep-start')?.value;
-  const e=document.getElementById('sleep-end')?.value;
-  if(!s||!e)return;
-  const[sh,sm]=s.split(':').map(Number);
-  const[eh,em]=e.split(':').map(Number);
-  let mins=(eh*60+em)-(sh*60+sm);
-  if(mins<0)mins+=1440;
-  const hrs=Math.round(mins/60*2)/2;
-  const sl=document.getElementById('sleep-dur');
-  const slv=document.getElementById('slv');
-  if(sl)sl.value=Math.max(4,Math.min(10,hrs));
-  if(slv)slv.textContent=hrs.toFixed(1)+'h';
-}
 
-async function saveSleep(){
-  try{
-  var sl=document.getElementById('sleep-dur');if(!sl)return;
-  var dur=parseFloat(sl.value);
-  const startTime=document.getElementById('sleep-start')?.value||'';
-  const endTime=document.getElementById('sleep-end')?.value||'';
-  const notes=startTime?`入睡${startTime}${endTime?' 起床'+endTime:''}` :'';
-  if(db)await db.addSleepLog({duration_h:dur,quality:sleepQ,notes}).catch(()=>{});
-  // 缓存到本地供概况页快速读取
-  if(typeof cacheSleepData==='function')cacheSleepData(dur,startTime);
-  else localStorage.setItem('form_last_sleep',JSON.stringify({duration_h:dur,bedtime:startTime,ts:Date.now()}));
-  await loadSleepLog();
-  // 刷新概况页状态卡
-  if(typeof renderTodayStatusCard==='function')renderTodayStatusCard();
-  const[sh]=startTime.split(':').map(Number);
-  const lateWarn=startTime&&sh>=23?'（⚠ 入睡偏晚）':'';
-  toast(`✓ 睡眠 ${dur}h${startTime?' · 入睡'+startTime:''}${lateWarn}`);
-  }catch(e){}
-}
 
-async function loadSleepLog(){
-  if(!db)return;
-  try{
-    const d=await db.getRecentSleepLogs(14);
-    renderSleepLog(d);
-    // 同步缓存最新一条
-    if(d.length){
-      const last=d[d.length-1];
-      const nm=(last.notes||'').match(/入睡(\d+:\d+)/);
-      localStorage.setItem('form_last_sleep',JSON.stringify({duration_h:last.duration_h,bedtime:last.bedtime||(nm?nm[1]:'')||'',ts:Date.now()}));
-    }
-  }catch(e){}
-}
+
 
 function renderSleepLog(data){
   const el=document.getElementById('sleep-log');if(!el||!data.length){if(el)el.innerHTML='';return;}
@@ -3928,163 +3881,6 @@ window.completeSet = function(exIdx, setIdx) {
 
 
 // ──────────────────────────────────────────────────────────────────
-// ② 概况页睡眠快录：起床填两个时间，10秒完成
-// ──────────────────────────────────────────────────────────────────
-
-function renderSleepQuickLog() {
-  // 已有记录则显示摘要+更新按钮，未记录则显示快录表单
-  const cached = (() => { try { return JSON.parse(localStorage.getItem('form_last_sleep') || 'null'); } catch(e) { return null; } })();
-  const today = new Date().toDateString();
-  const isToday = cached && new Date(cached.ts).toDateString() === today;
-
-  const wrap = document.getElementById('dash-sleep-quick');
-  if (!wrap) return;
-
-  if (isToday) {
-    // 已记录：显示摘要
-    const hrs = cached.duration_h || 0;
-    const bed = cached.bedtime || '';
-    const color = hrs < 6.5 ? 'var(--wa)' : 'var(--ac)';
-    const warn = hrs < 6.5 ? ' ⚠' : hrs >= 8 ? ' 👍' : '';
-    wrap.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 13px;background:var(--s2);border:1px solid var(--ln);border-radius:var(--r)">
-        <div style="display:flex;align-items:center;gap:10px">
-          <span style="font-size:18px">🛌</span>
-          <div>
-            <div style="font-family:var(--f1);font-size:14px;font-weight:700;color:${color}">${hrs}h${warn}</div>
-            ${bed ? `<div style="font-size:10px;color:var(--t3)">入睡 ${bed}</div>` : ''}
-          </div>
-        </div>
-        <button onclick="showSleepQuickForm()" style="font-size:11px;color:var(--t2);background:none;border:1px solid var(--ln);border-radius:8px;padding:4px 10px;cursor:pointer">更新</button>
-      </div>`;
-  } else {
-    // 未记录：展开表单
-    const now = new Date();
-    const defaultBed = '23:30';
-    const defaultWake = `0${now.getHours()}`.slice(-2) + ':' + `0${now.getMinutes()}`.slice(-2);
-    wrap.innerHTML = `
-      <div id="sleep-quick-form" style="background:var(--s2);border:1px solid rgba(226,255,92,.15);border-radius:var(--r);padding:12px 13px">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <span style="font-size:16px">🛌</span>
-          <span style="font-family:var(--f1);font-size:11px;font-weight:600;color:var(--ac);letter-spacing:.08em;text-transform:uppercase">昨晚睡眠</span>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-          <div>
-            <div style="font-size:10px;color:var(--t2);margin-bottom:4px">入睡时间</div>
-            <input type="time" id="sq-bed" value="${defaultBed}"
-              style="width:100%;background:var(--s3);border:1px solid var(--ln2);border-radius:8px;padding:8px 10px;color:var(--t1);font-family:var(--f1);font-size:14px;font-weight:600;outline:none;-webkit-appearance:none"
-              oninput="calcSleepQuick()">
-          </div>
-          <div>
-            <div style="font-size:10px;color:var(--t2);margin-bottom:4px">起床时间</div>
-            <input type="time" id="sq-wake" value="${defaultWake}"
-              style="width:100%;background:var(--s3);border:1px solid var(--ln2);border-radius:8px;padding:8px 10px;color:var(--t1);font-family:var(--f1);font-size:14px;font-weight:600;outline:none;-webkit-appearance:none"
-              oninput="calcSleepQuick()">
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <div style="font-family:var(--f1);font-size:20px;font-weight:800;color:var(--ac)" id="sq-dur-display">—</div>
-          <div style="flex:1">
-            <div style="display:flex;gap:5px" id="sq-quality-btns">
-              ${['😴差','😐一般','🙂良好','😄极佳'].map((q,i)=>`<button onclick="setSleepQuickQ(${i+1},this)" style="flex:1;font-size:11px;padding:5px 0;border-radius:8px;border:1px solid var(--ln);background:var(--s3);color:var(--t2);cursor:pointer">${q}</button>`).join('')}
-            </div>
-          </div>
-        </div>
-        <button onclick="saveSleepQuick()" style="width:100%;padding:11px;background:var(--ac);color:#08090A;border:none;border-radius:var(--r);font-family:var(--f1);font-size:13px;font-weight:700;cursor:pointer">记录睡眠 ✓</button>
-      </div>`;
-    // 初始算一次时长
-    setTimeout(calcSleepQuick, 50);
-  }
-}
-
-window.showSleepQuickForm = function() {
-  // 清除缓存中的今日标记，让表单重新出现
-  const c = JSON.parse(localStorage.getItem('form_last_sleep') || '{}');
-  c.ts = 0;
-  localStorage.setItem('form_last_sleep', JSON.stringify(c));
-  renderSleepQuickLog();
-};
-
-let _sqQuality = 3;
-window.setSleepQuickQ = function(q, btn) {
-  _sqQuality = q;
-  document.querySelectorAll('#sq-quality-btns button').forEach((b, i) => {
-    b.style.background = i + 1 === q ? 'rgba(226,255,92,.15)' : 'var(--s3)';
-    b.style.borderColor = i + 1 === q ? 'rgba(226,255,92,.4)' : 'var(--ln)';
-    b.style.color = i + 1 === q ? 'var(--ac)' : 'var(--t2)';
-  });
-};
-
-window.calcSleepQuick = function() {
-  const bed = document.getElementById('sq-bed')?.value;
-  const wake = document.getElementById('sq-wake')?.value;
-  const disp = document.getElementById('sq-dur-display');
-  if (!bed || !wake || !disp) return;
-  const [bh, bm] = bed.split(':').map(Number);
-  const [wh, wm] = wake.split(':').map(Number);
-  let mins = (wh * 60 + wm) - (bh * 60 + bm);
-  if (mins < 0) mins += 1440;
-  const hrs = Math.round(mins / 60 * 2) / 2;
-  const color = hrs < 6.5 ? 'var(--wa)' : hrs >= 8 ? 'var(--ac)' : 'var(--t1)';
-  disp.style.color = color;
-  disp.textContent = hrs.toFixed(1) + 'h';
-  disp.dataset.hrs = hrs;
-};
-
-window.saveSleepQuick = async function() {
-  const bed = document.getElementById('sq-bed')?.value || '';
-  const wake = document.getElementById('sq-wake')?.value || '';
-  const hrs = parseFloat(document.getElementById('sq-dur-display')?.dataset.hrs || '0');
-  if (!hrs || hrs < 2) { toast('请先填写入睡和起床时间'); return; }
-
-  const notes = `入睡${bed}${wake ? ' 起床' + wake : ''}`;
-
-  // 写 Supabase
-  if (db) await db.addSleepLog({ duration_h: hrs, quality: _sqQuality, notes }).catch(() => {});
-
-  // 本地缓存
-  localStorage.setItem('form_last_sleep', JSON.stringify({ duration_h: hrs, bedtime: bed, ts: Date.now() }));
-
-  // 同步到形体页
-  const slEl = document.getElementById('sleep-dur');
-  const slvEl = document.getElementById('slv');
-  const sbEl = document.getElementById('sleep-start');
-  const seEl = document.getElementById('sleep-end');
-  if (slEl) slEl.value = Math.max(4, Math.min(10, hrs));
-  if (slvEl) slvEl.textContent = hrs + 'h';
-  if (sbEl) sbEl.value = bed;
-  if (seEl) seEl.value = wake;
-
-  const warn = bed && parseInt(bed.split(':')[0]) >= 23 ? '（⚠ 入睡偏晚）' : '';
-  toast(`✓ 睡眠 ${hrs}h · 入睡 ${bed}${warn}`);
-  renderSleepQuickLog();
-
-  // 刷新今日状态卡
-  if (typeof renderTodayStatusCard === 'function') renderTodayStatusCard();
-  // 刷新今日打卡清单
-  renderDailyChecklist();
-};
-
-// 在 boot 时把睡眠快录插到概况页合适位置
-function injectSleepQuickLog() {
-  // 状态条已有睡眠摘要，不再重复注入
-  if (document.getElementById('dash-status-bar')) return;
-  const suppSection = document.querySelector('#pg-dash .s:has(#dash-supps)');
-  if (!suppSection || document.getElementById('dash-sleep-quick')) return;
-
-  const wrap = document.createElement('div');
-  wrap.className = 's';
-  wrap.style.marginTop = '7px';
-  wrap.innerHTML = `
-    <div class="slbl">昨晚睡眠</div>
-    <div id="dash-sleep-quick"></div>
-  `;
-  suppSection.parentNode.insertBefore(wrap, suppSection);
-  renderSleepQuickLog();
-}
-
-
-// ──────────────────────────────────────────────────────────────────
 // ③ 常用食物置顶：把 fav-food-list 区块移到输入框正下方
 // ──────────────────────────────────────────────────────────────────
 
@@ -4433,7 +4229,6 @@ window.setLastTrainType = function(type) {
     await origBoot.apply(this, args);
 
     // 注入所有新功能
-    injectSleepQuickLog();
     injectDailyChecklist();
     hoistFavFoods();
     watchExecBoardForClick();
@@ -4469,7 +4264,6 @@ window.setLastTrainType = function(type) {
 if (document.getElementById('app') && !document.getElementById('app').classList.contains('off')) {
   // App 已启动，直接注入
   setTimeout(() => {
-    injectSleepQuickLog();
     injectDailyChecklist();
     hoistFavFoods();
     watchExecBoardForClick();
@@ -4712,7 +4506,6 @@ async function renderWeekInsightCard() {
     if (n === 'dash') {
       setTimeout(renderWeekInsightCard, 100);
       setTimeout(renderDailyChecklist, 50);
-      setTimeout(renderSleepQuickLog, 80);
       setTimeout(renderDashAlerts, 30);
       setTimeout(renderWeeklyMiniCard, 100);
       renderPauseButton();
