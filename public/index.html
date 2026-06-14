@@ -1196,6 +1196,8 @@ try { document.getElementById('js-test').textContent = '✅ JS已加载 · 所�
 let AI, db; /* 同时赋值 window.db / window.AI，供 sync-store.js 等模块使用 */
 function PT(){ return macroTargets().protein; }
 function applyNutritionUI(){} // stub
+function scheduleTrainAutosave(){try{var s=JSON.stringify({muscle:S.todayMuscle,workout:S.workout,volume:S.volume,notes:document.getElementById("session-notes")?.value||""});localStorage.setItem("form_train_draft_"+(S_trainDate||"today"),s);}catch(e){}}
+function clearTrainDraft(dateKey){try{localStorage.removeItem("form_train_draft_"+(dateKey||S_trainDate||"today"));}catch(e){}}
 async function dbOp(label, fn){ try{return await fn();}catch(e){console.warn("dbOp:"+label,e.message);return null;} }
 async function loadTodayFood(){if(!db)return;try{var d=await db.getFoodLogsByRange(new Date(new Date().setHours(0,0,0,0)).toISOString(),new Date().toISOString());if(d&&d.length){for(var i=0;i<d.length;i++){var f=d[i];S.foods.push({name:f.name,protein_g:f.protein_g||0,carbs_g:f.carbs_g||0,fat_g:f.fat_g||0,kcal:f.kcal||0,id:f.id||Date.now()+i,time:f.time_tag||'',meal_type:f.time_tag||'早餐',logged_at:f.logged_at,dbId:f.id});S.protein+=f.protein_g||0;S.carbs+=f.carbs_g||0;S.fat+=f.fat_g||0;S.kcal+=f.kcal||0;}renderFoodList();updateBars();renderDash();applyNutritionUI();}}catch(e){console.warn('loadTodayFood',e);}}
 function saveAppStateLocally(){try{var st={protein:S.protein,carbs:S.carbs,fat:S.fat,kcal:S.kcal,foods:S.foods,todayMuscle:S.todayMuscle,isTrain:S.isTrain,volume:S.volume};localStorage.setItem('form_app_state',JSON.stringify(st));}catch(e){}}
@@ -1292,6 +1294,7 @@ async function boot(){
       _origGoPage(n);
       if(n==='plan'){ renderLockedPlansOverview(); renderWeekExecBoard(); renderPlanWeekGrid(); renderPhaseProgress(); refreshTrainingSlotUI(); }
       if(n==='dash'){ ensureConnections(); updateDashStatusBar(); renderDailyChecklist(); renderTodayStatusCard(); renderPhaseTrigger(); setTimeout(renderDashAlerts,30); setTimeout(fillDashTrainCount,200); setTimeout(renderWeeklyMiniCard,100); renderPauseButton(); }
+      if(n==='train'){renderMuscleSelector();renderLockUI();var dk='form_train_draft_'+(S_trainDate||'today');var d=localStorage.getItem(dk);if(d){try{var dj=JSON.parse(d);if(dj.workout&&dj.workout.length&&!S.workout.length){S.todayMuscle=dj.muscle||S.todayMuscle;S.workout=dj.workout;S.volume=dj.volume||0;renderExercises();renderLockUI();renderMuscleSelector();var sn2=document.getElementById('session-notes');if(sn2&&dj.notes)sn2.value=dj.notes;}}catch(e){}}}
       if(n==='coach'){ _renderCoach(); }
       if(n==='body'){ if(typeof loadStrChart==='function') loadStrChart(); if(typeof loadWeightLog==='function') loadWeightLog(); }
     };
