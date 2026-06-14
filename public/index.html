@@ -776,10 +776,7 @@ body{
       <!-- 今日状态条 -->
       <div class="s" style="margin-top:8px">
         <div id="dash-status-bar" style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:linear-gradient(135deg,rgba(255,255,255,.04),rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.08);border-radius:var(--r2);font-family:var(--f1);box-shadow:0 2px 20px rgba(0,0,0,.25)">
-          <div id="dash-gym-wrap" style="flex-shrink:0;position:relative">
-            <input type="time" id="dash-gym-time" onchange="saveGymTime()" style="position:absolute;inset:0;opacity:0;cursor:pointer;font-size:16px">
-            <div id="dash-gym-btn" style="font-size:13px;font-weight:700;border:none;border-radius:18px;padding:6px 14px;white-space:nowrap;background:rgba(255,255,255,.04);color:var(--t2);pointer-events:none">🏋️ 几点练？</div>
-          </div>
+          <input type="time" id="dash-gym-time" onchange="saveGymTime()" style="width:100px;background:var(--s3);border:1px solid var(--ln);border-radius:18px;padding:6px 8px;color:var(--ac);font-size:13px;font-weight:700;outline:none;flex-shrink:0;text-align:center">
           <div style="width:1px;height:20px;background:rgba(255,255,255,.08);flex-shrink:0"></div>
           <button id="dash-sleep-badge" onclick="toggleDashSleepForm()" style="flex:1;font-size:12px;color:var(--t2);min-width:0;background:none;border:none;cursor:pointer;text-align:left;font-family:var(--f1);padding:2px 0;transition:color .15s">🛌 昨晚 —</button>
           <div style="width:1px;height:20px;background:rgba(255,255,255,.08);flex-shrink:0"></div>
@@ -1465,15 +1462,9 @@ function renderDash(){
 // ── 首页状态条（时段 + 睡眠 + 今日任务）──
 // 首页状态条 —— 直读 localStorage + S 对象，不走间接调用
 function updateDashStatusBar(){
-  // 健身房时间按钮
+  // 健身房时间
   var gt=document.getElementById('dash-gym-time');
-  var gb=document.getElementById('dash-gym-btn');
-  var gv=localStorage.getItem('form_gym_time');
-  if(gt)gt.value=gv||'';
-  if(gb){
-    if(gv){gb.textContent='🏋️ '+gv;gb.style.background='rgba(226,255,92,.12)';gb.style.color='var(--ac)';}
-    else{gb.textContent='🏋️ 几点练？';gb.style.background='rgba(255,255,255,.04)';gb.style.color='var(--t2)';}
-  }
+  if(gt){gt.value=localStorage.getItem('form_gym_time')||'';}
   // 睡眠
   var sb=document.getElementById('dash-sleep-badge');
   if(sb){try{var sc=JSON.parse(localStorage.getItem('form_last_sleep')||'null');if(sc&&sc.duration_h){var h=sc.duration_h;sb.innerHTML=(h<6?'😴':h>=8?'👍':'🛌')+' 昨晚 <b style=\"color:'+(h<6?'var(--wa)':h>=8?'var(--ac)':'var(--t1)')+'\">'+h+'h</b>'+(sc.bedtime?' · 入睡 '+sc.bedtime:'');}else{sb.innerHTML='🛌 昨晚 <span style=\"color:var(--t3)\">未记录</span>';}}catch(e){sb.innerHTML='🛌 —';}}
