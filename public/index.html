@@ -1185,6 +1185,7 @@ try { document.getElementById('js-test').textContent = '✅ JS已加载 · 所�
 let AI, db; /* 同时赋值 window.db / window.AI，供 sync-store.js 等模块使用 */
 function PT(){ return macroTargets().protein; }
 function applyNutritionUI(){} // stub
+async function dbOp(label, fn){ try{return await fn();}catch(e){console.warn("dbOp:"+label,e.message);return null;} }
 const CHK = `<svg viewBox="0 0 24 24" fill="none" stroke="#08090A" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>`;
 const DEL = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
 const MEASURES = [{key:'arm',label:'手臂围'},{key:'waist',label:'腰围'},{key:'chest',label:'胸围'},{key:'thigh',label:'大腿围'}];
@@ -1921,7 +1922,8 @@ async function parseFood(){
     try{updateTokenUI();}catch(e){}
     toast(`✓ +${Math.round(r.protein_g)}g 蛋白质 [${S_mealType}]${r._cached?' (缓存)':''}`);
   }catch(e){toast('解析失败：'+(e.message||'请重试'));}
-  tk.remove();btn.disabled=false;btn.textContent='解析';
+  try{tk.remove();}catch(e){}
+  btn.disabled=false;btn.textContent='解析';
 }
 
 async function handlePhoto(event){
@@ -1946,7 +1948,8 @@ async function handlePhoto(event){
     updateTokenUI();
     toast(`✓ ${r.name}（${r.confidence}）[${S_mealType}]`);
   }catch(e){toast('识别失败：'+(e.message||'请重试'));}
-  tk.remove();btn.disabled=false;btn.textContent='解析';event.target.value='';
+  try{tk.remove();}catch(e){}
+  btn.disabled=false;btn.textContent='解析';event.target.value='';
 }
 
 function toggleManual(){document.getElementById('mfp').classList.toggle('on');}
@@ -5020,7 +5023,7 @@ window.doSetup = async function(){
   }catch(e){
     window.db=db=null;window.AI=AI=null;
     console.error('doSetup失败',e.message,e.stack);
-    alert('连接失败：'+e.message);
+    if(typeof toast==='function')toast('连接失败：'+e.message);
     var err2=document.getElementById('s-err');
     if(err2){err2.style.display='block';err2.textContent='连接失败：'+e.message;}
     var btn2=document.getElementById('s-btn');
