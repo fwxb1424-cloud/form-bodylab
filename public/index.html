@@ -1566,7 +1566,7 @@ async function saveDashSleep(){
   document.getElementById('dash-sleep-form-wrap').style.display='none';
   updateDashStatusBar();
   if(typeof renderTodayStatusCard==='function')renderTodayStatusCard();
-  if(typeof renderDailyChecklist==='function')renderDailyChecklist();
+  updateDashStatusBar();if(typeof renderDailyChecklist==='function')renderDailyChecklist();
   if(typeof toast==='function')toast('✓ 睡眠已记录');
 }
 
@@ -1615,7 +1615,7 @@ async function quickSaveWeight(){
     input.style.color='var(--ac)';
     setTimeout(function(){input.style.color='';input.placeholder='体重 kg';},3000);
     toast('✓ 体重 '+w.toFixed(1)+'kg 已记录');
-    if(typeof renderDailyChecklist==='function')renderDailyChecklist();
+    updateDashStatusBar();if(typeof renderDailyChecklist==='function')renderDailyChecklist();
     if(typeof renderDash==='function')renderDash();
     if(typeof renderTodayStatusCard==='function')renderTodayStatusCard();
   }catch(e){toast('保存失败：'+e.message);}
@@ -1628,7 +1628,7 @@ async function saveWeight(){
   await _doSaveWeight(w);
   input.value='';
   toast('✓ 体重 '+w.toFixed(1)+'kg 已记录');
-  if(typeof renderDailyChecklist==='function')renderDailyChecklist();
+  updateDashStatusBar();if(typeof renderDailyChecklist==='function')renderDailyChecklist();
   if(typeof loadWeightLog==='function')loadWeightLog();
 }
 async function _doSaveWeight(w){
@@ -1692,7 +1692,7 @@ async function quickLogRest(){
     if(typeof markTodayAs==='function')markTodayAs('rest');
     if(typeof syncPlanStateToCloud==='function')syncPlanStateToCloud();
     toast('✓ 已标记为休息日');
-    if(typeof renderDailyChecklist==='function')renderDailyChecklist();
+    updateDashStatusBar();if(typeof renderDailyChecklist==='function')renderDailyChecklist();
     if(typeof renderDash==='function')renderDash();
     if(typeof renderTodayStatusCard==='function')renderTodayStatusCard();
     if(typeof renderMuscleSelector==='function')renderMuscleSelector();
