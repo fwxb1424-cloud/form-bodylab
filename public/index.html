@@ -71,7 +71,7 @@ body{
 .sf-hint a{color:var(--ac);text-decoration:none;}
 .s-btn{width:100%;margin-top:12px;background:var(--ac);color:#08090A;border:none;border-radius:var(--r);padding:15px;font-family:var(--f1);font-size:14px;font-weight:700;cursor:pointer;}
 .s-btn:active{background:var(--ac2);}
-.s-err{font-size:13px;color:var(--da);text-align:center;margin-top:12px;min-height:20px;padding:10px;background:rgba(232,88,88,.08);border:1px solid rgba(232,88,88,.2);border-radius:var(--r);display:none;font-weight:500;}
+.s-err{font-size:13px;color:var(--da);text-align:center;margin-top:12px;min-height:20px;padding:10px;background:rgba(232,88,88,.08);border:1px solid rgba(232,88,88,.2);border-radius:var(--r);font-weight:500;}
 
 /* ─ APP SHELL ─────────────────────────────────────── */
 .app{flex:1;display:flex;flex-direction:column;overflow:hidden;}
@@ -738,7 +738,7 @@ body{
     <div class="sf-hint">Settings → API → anon public key</div>
   </div>
   <button class="s-btn" id="s-btn" onclick="doSetup()">开始使用 →</button>
-  <div class="s-err" id="s-err"></div>
+  <div class="s-err" id="s-err">请输入上方 API Key 和数据库地址</div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -1265,6 +1265,7 @@ async function doSetup(){
     window.AI=AI=new AIProvider(ds,gm||null);
     localStorage.setItem('form_connected','1');
     await boot();
+    if(err){err.textContent='';err.style.display='none';}
     toast('✓ 已连接云端数据库与 DeepSeek');
   }catch(e){
     window.db=db=null;
