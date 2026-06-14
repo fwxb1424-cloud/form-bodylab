@@ -722,32 +722,7 @@ body{
     <input type="password" id="in-sk" placeholder="eyJhbGci…" autocomplete="off" spellcheck="false">
     <div class="sf-hint">Settings → API → anon public key</div>
   </div>
-  <button class="s-btn" id="s-btn" onclick="var b=this;b.textContent='连接中…';b.disabled=true;b.style.opacity='0.6';
-(function(){
-  var d=document.getElementById('in-ds').value.trim();
-  var g=document.getElementById('in-gm').value.trim();
-  var u=document.getElementById('in-su').value.trim();
-  var k=document.getElementById('in-sk').value.trim();
-  var e=document.getElementById('s-err');
-  var showErr=function(m){if(e)e.textContent=m;b.textContent='开始使用 →';b.disabled=false;b.style.opacity='';};
-  if(!d.startsWith('sk-')){showErr('DS Key 应以 sk- 开头');return;}
-  if(!u||!u.includes('supabase.co')){showErr('SU URL 格式不对');return;}
-  if(!k){showErr('请输入 SK');return;}
-  localStorage.setItem('form_ds',d);localStorage.setItem('form_gm',g||'');
-  localStorage.setItem('form_su',u);localStorage.setItem('form_sk',k);
-  if(typeof supabase==='undefined'){showErr('请用 https 打开');return;}
-  if(typeof DB==='undefined'){showErr('DB未加载，刷新重试');return;}
-  if(typeof AIProvider==='undefined'){showErr('AIProvider未加载，刷新重试');return;}
-  var pdb=new DB(u,k);var pai=new AIProvider(d,g||null);
-  pdb.init().then(function(){
-    window.db=pdb;window.AI=pai;
-    localStorage.setItem('form_connected','1');
-    document.getElementById('setup').classList.add('off');
-    document.getElementById('app').classList.remove('off');
-    if(typeof boot==='function')boot();
-    else if(typeof window.boot==='function')window.boot();
-  }).catch(function(err){showErr('连接失败：'+err.message);});
-})()">开始使用 →</button>
+  <button class="s-btn" id="s-btn" onclick="var b=this;b.textContent='连接中…';b.disabled=true;b.style.opacity='0.6';(function(){var d=document.getElementById('in-ds').value.trim();var g=document.getElementById('in-gm').value.trim();var u=document.getElementById('in-su').value.trim();var k=document.getElementById('in-sk').value.trim();var e=document.getElementById('s-err');var showErr=function(m){if(e)e.textContent=m;b.textContent='开始使用 →';b.disabled=false;b.style.opacity='';};if(!d.startsWith('sk-')){showErr('DS Key 应以 sk- 开头');return;}if(!u||!u.includes('supabase.co')){showErr('SU URL 格式不对');return;}if(!k){showErr('请输入 SK');return;}localStorage.setItem('form_ds',d);localStorage.setItem('form_gm',g||'');localStorage.setItem('form_su',u);localStorage.setItem('form_sk',k);if(typeof supabase==='undefined'){showErr('请用 https 打开');return;}if(typeof DB==='undefined'){showErr('DB未加载');return;}if(typeof AIProvider==='undefined'){showErr('AIProvider未加载');return;}var pdb=new DB(u,k);var pai=new AIProvider(d,g||null);pdb.init().then(function(){window.db=pdb;window.AI=pai;localStorage.setItem('form_connected','1');document.getElementById('setup').classList.add('off');document.getElementById('app').classList.remove('off');if(typeof boot==='function')boot();else if(typeof window.boot==='function')window.boot();}).catch(function(err){showErr('连接失败：'+err.message);});})()">开始使用 →</button>
   <div class="s-err" id="s-err">请输入上方 API Key 和数据库地址</div>
 </div>
 
@@ -1231,7 +1206,7 @@ function PT(){ return macroTargets().protein; }
 function applyNutritionUI(){} // stub
 function scheduleTrainAutosave(){try{var s=JSON.stringify({muscle:S.todayMuscle,workout:S.workout,volume:S.volume,notes:document.getElementById("session-notes")?.value||""});localStorage.setItem("form_train_draft_"+(S_trainDate||"today"),s);}catch(e){}}
 function clearTrainDraft(dateKey){try{localStorage.removeItem("form_train_draft_"+(dateKey||S_trainDate||"today"));}catch(e){}}
-async function dbOp(label, fn){ try{var r=await fn();localStorage.setItem("form_last_sync_ok",Date.now());return r;}catch(e){console.warn("dbOp:"+label,e.message);localStorage.removeItem("form_last_sync_ok");updateDashStatusBar();return null;} }
+async function dbOp(label, fn){ try{var r=await fn();localStorage.setItem("form_last_sync_ok",Date.now());return r;}catch(e){console.warn("dbOp:"+label,e.message);return null;} }
 async function loadTodayFood(){if(!db)return;try{var d=await db.getFoodLogsByRange(new Date(new Date().setHours(0,0,0,0)).toISOString(),new Date().toISOString());if(d&&d.length){for(var i=0;i<d.length;i++){var f=d[i];S.foods.push({name:f.name,protein_g:f.protein_g||0,carbs_g:f.carbs_g||0,fat_g:f.fat_g||0,kcal:f.kcal||0,id:f.id||Date.now()+i,time:f.time_tag||'',meal_type:f.time_tag||'早餐',logged_at:f.logged_at,dbId:f.id});S.protein+=f.protein_g||0;S.carbs+=f.carbs_g||0;S.fat+=f.fat_g||0;S.kcal+=f.kcal||0;}renderFoodList();updateBars();renderDash();applyNutritionUI();}}catch(e){console.warn('loadTodayFood',e);}}
 function saveAppStateLocally(){try{var st={protein:S.protein,carbs:S.carbs,fat:S.fat,kcal:S.kcal,foods:S.foods,todayMuscle:S.todayMuscle,isTrain:S.isTrain,volume:S.volume};localStorage.setItem('form_app_state',JSON.stringify(st));}catch(e){}}
 function loadAppStateLocally(){try{var st=JSON.parse(localStorage.getItem('form_app_state')||'null');if(st){S.protein=st.protein||0;S.carbs=st.carbs||0;S.fat=st.fat||0;S.kcal=st.kcal||0;S.foods=st.foods||[];S.todayMuscle=st.todayMuscle||'';S.isTrain=st.isTrain!==false;S.volume=st.volume||0;try{renderFoodList();updateBars();renderDash();}catch(e){}}var w=JSON.parse(localStorage.getItem('form_last_weight')||'null');if(w&&w.weight_kg)S.weight_kg=w.weight_kg;}catch(e){}
@@ -1333,7 +1308,6 @@ async function boot(){
     };
   }
 }
-window.boot = boot;
 
 // ══ UTILS ══
 function nt(){return new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});}
@@ -1552,7 +1526,7 @@ async function saveDashSleep(){
   document.getElementById('dash-sleep-form-wrap').style.display='none';
   updateDashStatusBar();
   if(typeof renderTodayStatusCard==='function')renderTodayStatusCard();
-  updateDashStatusBar();if(typeof renderDailyChecklist==='function')renderDailyChecklist();
+  if(typeof renderDailyChecklist==='function')renderDailyChecklist();
   if(typeof toast==='function')toast('✓ 睡眠已记录');
 }
 
@@ -1601,7 +1575,7 @@ async function quickSaveWeight(){
     input.style.color='var(--ac)';
     setTimeout(function(){input.style.color='';input.placeholder='体重 kg';},3000);
     toast('✓ 体重 '+w.toFixed(1)+'kg 已记录');
-    updateDashStatusBar();if(typeof renderDailyChecklist==='function')renderDailyChecklist();
+    if(typeof renderDailyChecklist==='function')renderDailyChecklist();
     if(typeof renderDash==='function')renderDash();
     if(typeof renderTodayStatusCard==='function')renderTodayStatusCard();
   }catch(e){toast('保存失败：'+e.message);}
@@ -1614,7 +1588,7 @@ async function saveWeight(){
   await _doSaveWeight(w);
   input.value='';
   toast('✓ 体重 '+w.toFixed(1)+'kg 已记录');
-  updateDashStatusBar();if(typeof renderDailyChecklist==='function')renderDailyChecklist();
+  if(typeof renderDailyChecklist==='function')renderDailyChecklist();
   if(typeof loadWeightLog==='function')loadWeightLog();
 }
 async function _doSaveWeight(w){
@@ -1678,7 +1652,7 @@ async function quickLogRest(){
     if(typeof markTodayAs==='function')markTodayAs('rest');
     if(typeof syncPlanStateToCloud==='function')syncPlanStateToCloud();
     toast('✓ 已标记为休息日');
-    updateDashStatusBar();if(typeof renderDailyChecklist==='function')renderDailyChecklist();
+    if(typeof renderDailyChecklist==='function')renderDailyChecklist();
     if(typeof renderDash==='function')renderDash();
     if(typeof renderTodayStatusCard==='function')renderTodayStatusCard();
     if(typeof renderMuscleSelector==='function')renderMuscleSelector();
@@ -2012,7 +1986,7 @@ async function handlePhoto(event){
       const row=await dbOp('饮食保存',()=>db.addFoodLog({...r, time_tag:S_mealType, logged_at:ts}));
       if(S_dietDate === 'today'){const f=S.foods[S.foods.length-1];if(row?.id&&f)f.dbId=row.id;}
     }
-    if(S_dietDate === 'today') {applyNutritionUI();updateGapRec();updateDashStatusBar();}
+    if(S_dietDate === 'today') {applyNutritionUI();updateGapRec();}
     else loadYesterdayFood();
     updateTokenUI();
     toast(`✓ ${r.name}（${r.confidence}）[${S_mealType}]`);
@@ -2038,7 +2012,7 @@ async function addManualFood(){
   }
   saveAppStateLocally();['mf-name','mf-p','mf-c','mf-f','mf-k'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('mfp').classList.remove('on');
-  if(S_dietDate === 'today') {applyNutritionUI();updateGapRec();updateDashStatusBar();toast('✓ 精确记录：'+name+' ['+S_mealType+']');}
+  if(S_dietDate === 'today') {applyNutritionUI();updateGapRec();toast('✓ 精确记录：'+name+' ['+S_mealType+']');}
   else {loadYesterdayFood();toast('✓ 已补录昨日：'+name);}
 }
 
@@ -2110,7 +2084,7 @@ function removeFood(id){
   S.protein=Math.max(0,S.protein-(f.protein_g||0));S.carbs=Math.max(0,S.carbs-(f.carbs_g||0));
   S.fat=Math.max(0,S.fat-(f.fat_g||0));S.kcal=Math.max(0,S.kcal-(f.kcal||0));
   if(f.dbId&&db)db.deleteFoodLog(f.dbId).catch(()=>{});
-  renderFoodList();updateBars();renderDash();applyNutritionUI();updateGapRec();updateDashStatusBar();saveAppStateLocally();
+  renderFoodList();updateBars();renderDash();applyNutritionUI();updateGapRec();saveAppStateLocally();
   if(typeof backupTodayFoods==='function')backupTodayFoods();
   if(typeof refreshAppStatus==='function')refreshAppStatus();
   toast('已撤回：'+f.name);
@@ -2345,7 +2319,6 @@ function addExercise(){
   S.workout.push({name,sets,reps,weight_kg:kg,muscle:'自定义',rpe_target:7,is_compound:false,notes:'',done:false,sets_data:[]});
   document.getElementById('total-cnt').textContent=S.workout.length;
   renderExercises();
-  if(window.db)fillLastWeights();
   document.getElementById('aep').classList.remove('on');
   ['aep-name','aep-reps'].forEach(id=>document.getElementById(id).value='');
   toast('✓ 已添加：'+name);
@@ -3725,7 +3698,6 @@ async function checkStrengthStall(){
   }
 })();
 
-
 // ══ INIT ══
 (function(){
   try{if(typeof loadAppStateLocally==='function')loadAppStateLocally();}catch(e){}
@@ -3738,11 +3710,19 @@ async function checkStrengthStall(){
     document.getElementById('in-gm').value=gm||'';
     document.getElementById('in-su').value=su;
     document.getElementById('in-sk').value=sk;
-    var msg=document.getElementById('s-err');
-    if(msg){msg.style.display='block';msg.style.color='var(--ac)';msg.style.background='rgba(226,255,92,.06)';msg.style.borderColor='rgba(226,255,92,.15)';msg.textContent='已加载上次配置，点击下方开始使用 →';}
+    var attempts=0;
+    function tryConnect(){
+      if(typeof supabase!=='undefined'&&typeof DB!=='undefined'){
+        doSetup();
+      }else if(attempts<3){
+        attempts++;
+        setTimeout(tryConnect,800*attempts);
+      }
+    }
+    tryConnect();
   }else if(localStorage.getItem('form_connected')){
     var err2=document.getElementById('s-err');
-    if(err2){err2.style.display='block';err2.textContent='本机 Key 已丢失。请重新填写。';}
+    if(err2)err2.textContent='本机 Key 已丢失（常见于换网址/主屏幕）。请重新填写 Supabase 与 DeepSeek。';
   }
 })();
 
@@ -5153,6 +5133,46 @@ window.importPlanFoods = function() {
 // ══ AI 教练（Dash 内嵌版）═════════════════════════════════
 </script>
 
-<script src="setup.js"></script>
+<script>
+// ══ SETUP (独立脚本块，不受其他代码影响) ══
+window.doSetup = async function(){
+  try{
+    var dsEl=document.getElementById('in-ds');if(!dsEl)throw new Error('找不到 DeepSeek 输入框');
+    var ds=dsEl.value.trim();
+    var gmEl=document.getElementById('in-gm');var gm=gmEl?gmEl.value.trim():'';
+    var suEl=document.getElementById('in-su');if(!suEl)throw new Error('找不到 Supabase URL 输入框');
+    var su=suEl.value.trim();
+    var skEl=document.getElementById('in-sk');if(!skEl)throw new Error('找不到 Supabase Key 输入框');
+    var sk=skEl.value.trim();
+    var err=document.getElementById('s-err');
+    if(err)err.textContent='';
+    if(!ds.startsWith('sk-')){if(err)err.textContent='DeepSeek Key 格式不对（应以 sk- 开头）';return;}
+    if(!su.includes('supabase.co')){if(err)err.textContent='Supabase URL 格式不对';return;}
+    if(!sk){if(err)err.textContent='请输入 Supabase anon key';return;}
+    var btn=document.getElementById('s-btn');if(!btn)throw new Error('找不到按钮');
+    btn.textContent='连接中…';btn.disabled=true;btn.style.opacity='0.6';
+    localStorage.setItem('form_ds',ds);localStorage.setItem('form_gm',gm||'');
+    localStorage.setItem('form_su',su);localStorage.setItem('form_sk',sk);
+    if(err)err.textContent='正在连接 Supabase 和 DeepSeek…';
+    if(typeof supabase==='undefined')throw new Error('Supabase 脚本未加载，请用 https 打开且检查网络');
+    window.db=db=new DB(su,sk);
+    await Promise.race([db.init(),new Promise(function(_,rej){setTimeout(function(){rej(new Error('连接超时'));},15000);})]);
+    window.AI=AI=new AIProvider(ds,gm||null);
+    localStorage.setItem('form_connected','1');
+    await boot();
+    if(err){err.textContent='';err.style.display='none';}
+    toast('✓ 已连接云端数据库与 DeepSeek');
+  }catch(e){
+    window.db=db=null;window.AI=AI=null;
+    console.error('doSetup失败',e.message,e.stack);
+    if(typeof toast==='function')toast('连接失败：'+e.message);
+    var err2=document.getElementById('s-err');
+    if(err2){err2.style.display='block';err2.textContent='连接失败：'+e.message;}
+    var btn2=document.getElementById('s-btn');
+    if(btn2){btn2.textContent='开始使用 →';btn2.disabled=false;btn2.style.opacity='';}
+  }
+};
+</script>
+
 </body>
 </html>
