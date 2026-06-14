@@ -3102,60 +3102,58 @@ function parseImportPlan(){
   var ta=document.getElementById('import-plan-text');if(!ta)return;
   var txt=ta.value.trim();if(!txt){toast('请粘贴训练计划');return;}
   if(!S.todayMuscle||S.todayMuscle==='rest'){toast('请先选择今日训练肌群');return;}
-  // 合并多行条目：编号开头的行是动作名，后续行是细节
-  var rawLines=txt.split('\n');
-  var entries=[];var current=null;
-  for(var i=0;i<rawLines.length;i++){
-    var line=rawLines[i].trim();if(!line)continue;
-    // 检测新动作开始：编号开头 或 已知动作关键词
-    if(/^\d{1,2}[\.\)、]\s*/.test(line)){
-      if(current)entries.push(current);
-      current={name:line.replace(/^\d{1,2}[\.\)、]\s*/,'').trim(),detail:''};
-    }else if(current){
-      current.detail+=(current.detail?' ':'')+line;
-    }else{
-      // 无编号的第一行，直接作为动作
-      current={name:line,detail:''};
-    }
-  }
-  if(current)entries.push(current);
 
+  // 先按空行拆成块，每块是一个动作
+  var blocks=txt.split(/
+
++/);
   var exercises=[];
-  for(var i=0;i<entries.length;i++){
-    var e=entries[i];
-    var name=e.name;
-    var detail=e.detail||'';
-    // 去除动作名中的多余编号残渣
-    name=name.replace(/^\d{1,2}[\.\)、]\s*/,'').trim();
-    // 解析组数: × 4组, 4组, ×4组
+
+  for(var b=0;b<blocks.length;b++){
+    var block=blocks[b].trim();if(!block)continue;
+    var lines=block.split('
+');
+    // 第一行去掉编号前缀就是动作名
+    var name=lines[0].replace(/^\d{1,2}[\.\)、\s]+/,'').trim();
+    if(!name||name.length<2)continue;
+    // 合并剩余行为详情
+    var detail=lines.slice(1).join(' ');
+
+    // 解析组数
     var sets=4;
     var sm=detail.match(/[×xX]\s*(\d+)\s*组/);
     if(!sm)sm=detail.match(/(\d+)\s*组/);
     if(sm)sets=parseInt(sm[1]);
-    // 解析次数: 8rep, 10–12rep, 12-15rep, 8-10
+
+    // 解析次数
     var reps='8-12';
-    var rm=detail.match(/(\d+)[–\-~]\s*(\d+)\s*rep/);
-    if(!rm)rm=detail.match(/(\d+)\s*rep/);
-    if(!rm)rm=detail.match(/(\d+)[–\-~]\s*(\d+)/);
+    var rm=detail.match(/(\d+)[–\-~—]\s*(\d+)\s*rep/i);
+    if(!rm)rm=detail.match(/(\d+)\s*rep/i);
+    if(!rm)rm=detail.match(/(\d+)[–\-~—]\s*(\d+)/);
     if(rm){
       if(rm[2])reps=rm[1]+'-'+rm[2];
       else reps=rm[1];
     }
+
     // 解析重量
     var weight_kg=0;
-    var wm=detail.match(/(\d+\.?\d*)\s*kg/);
+    var wm=detail.match(/(\d+\.?\d*)\s*kg/i);
     if(wm)weight_kg=parseFloat(wm[1]);
-    // 重量描述映射（近似值）
-    var weightLabel='';
-    if(weight_kg>0)weightLabel=weight_kg+'kg';
-    else if(/自重|辅助|body|bw/i.test(detail))weightLabel='自重';
-    else if(/中等|中轻/i.test(detail))weightLabel='中等';
-    else if(/轻重量/i.test(detail))weightLabel='轻';
-    // 提取备注（｜之后的内容取第一条）
+
+    // 重量标签
     var notes='';
+    if(weight_kg>0)notes=weight_kg+'kg';
+    else if(/自重|辅助|bodyweight/i.test(detail))notes='自重';
+    else if(/轻重量|小重量/i.test(detail))notes='轻';
+    else if(/中轻/i.test(detail))notes='中轻';
+    else if(/中等重量|中等/i.test(detail))notes='中等';
+
+    // 追加备注
     var nm=detail.match(/[｜|]\s*(.+)/);
-    if(nm)notes=nm[1].split(/[｜|]/)[0].trim().substring(0,40);
-    if(!notes&&weightLabel)notes=weightLabel;
+    if(nm){
+      var extraNote=nm[1].replace(/[｜|].*/,'').trim().substring(0,30);
+      if(extraNote)notes+=(notes?' · ':'')+extraNote;
+    }
 
     exercises.push({
       name:name,sets:sets,reps:reps,weight_kg:weight_kg,
@@ -3164,7 +3162,7 @@ function parseImportPlan(){
     });
   }
 
-  if(!exercises.length){toast('未识别到任何动作');return;}
+  if(!exercises.length){toast('未识别到任何动作，请检查格式');return;}
   S.workout=exercises;
   document.getElementById('total-cnt').textContent=exercises.length;
   document.getElementById('done-cnt').textContent=0;
