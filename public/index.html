@@ -1430,7 +1430,7 @@ function updateDashStatusBar(){
   // 睡眠+训练时间都设了 → 隐藏状态条
   var todaySet=sc&&sc.duration_h&&gymTime;
   if(section)section.style.display=todaySet?'none':'';
-}
+  // 今日训练标签
   var tl=document.getElementById('dash-today-label');
   if(tl){
     var t=(S&&S.todayMuscle?S.todayMuscle:'')||localStorage.getItem('form_today_muscle')||'';
