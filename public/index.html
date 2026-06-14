@@ -3120,15 +3120,12 @@ function parseImportPlan(){
   if(!S.todayMuscle||S.todayMuscle==='rest'){toast('请先选择今日训练肌群');return;}
 
   // 先按空行拆成块，每块是一个动作
-  var blocks=txt.split(/
-
-+/);
+  var blocks=txt.split(/\n\n+/);
   var exercises=[];
 
   for(var b=0;b<blocks.length;b++){
     var block=blocks[b].trim();if(!block)continue;
-    var lines=block.split('
-');
+    var lines=block.split('\n');
     // 第一行去掉编号前缀就是动作名
     var name=lines[0].replace(/^\d{1,2}[\.\)、\s]+/,'').trim();
     if(!name||name.length<2)continue;
