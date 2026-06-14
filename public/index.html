@@ -774,9 +774,9 @@ body{
       <!-- ═══════ 优先级 1：今日状态 + 快捷操作 ═══════ -->
 
       <!-- 今日状态条 -->
-      <div class="s" style="margin-top:8px">
-        <div id="dash-status-bar" style="display:flex;align-items:center;gap:8px;padding:12px 14px;background:linear-gradient(135deg,rgba(255,255,255,.04),rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.08);border-radius:var(--r2);font-family:var(--f1);box-shadow:0 2px 20px rgba(0,0,0,.25)">
-          <button onclick="toggleDashSlot()" id="dash-slot-btn" style="font-size:12px;font-weight:600;border:none;border-radius:16px;padding:6px 12px;cursor:pointer;white-space:nowrap;transition:all .2s">🌅 早间</button>
+      <div class="s" style="margin-top:8px" id="dash-status-section">
+        <div id="dash-status-bar" style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:linear-gradient(135deg,rgba(255,255,255,.04),rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.08);border-radius:var(--r2);font-family:var(--f1);box-shadow:0 2px 20px rgba(0,0,0,.25)">
+          <input type="time" id="dash-gym-time" onchange="saveGymTime()" style="width:90px;background:var(--s3);border:1px solid var(--ln);border-radius:14px;padding:6px 8px;color:var(--ac);font-family:var(--f1);font-size:13px;font-weight:700;outline:none;-webkit-appearance:none" title="今天几点去健身房">
           <div style="width:1px;height:20px;background:rgba(255,255,255,.08);flex-shrink:0"></div>
           <button id="dash-sleep-badge" onclick="toggleDashSleepForm()" style="flex:1;font-size:12px;color:var(--t2);min-width:0;background:none;border:none;cursor:pointer;text-align:left;font-family:var(--f1);padding:2px 0;transition:color .15s">🛌 昨晚 —</button>
           <div style="width:1px;height:20px;background:rgba(255,255,255,.08);flex-shrink:0"></div>
@@ -1462,12 +1462,18 @@ function renderDash(){
 // ── 首页状态条（时段 + 睡眠 + 今日任务）──
 // 首页状态条 —— 直读 localStorage + S 对象，不走间接调用
 function updateDashStatusBar(){
-  // 时段按钮
-  var b=document.getElementById('dash-slot-btn');
-  if(b){var s=(typeof getTrainingSlot==='function'?getTrainingSlot():'')||localStorage.getItem('form_training_slot')||'morning';b.textContent=s==='morning'?'🌅 早间':'🌆 晚间';b.style.background=s==='morning'?'rgba(255,200,100,.12)':'rgba(130,160,255,.12)';b.style.color=s==='morning'?'#ffb444':'#8eb8ff';}
+  // 健身房时间
+  var gt=document.getElementById('dash-gym-time');
+  if(gt){gt.value=localStorage.getItem('form_gym_time')||'';}
+  // 今天是否已完成设置（有睡眠+有训练时间）→ 自动折叠
+  var sc=null;try{sc=JSON.parse(localStorage.getItem('form_last_sleep')||'null');}catch(e){}
+  var gymTime=localStorage.getItem('form_gym_time');
+  var todaySet=sc&&sc.duration_h&&gymTime;
+  var section=document.getElementById('dash-status-section');
+  if(section)section.style.display=todaySet?'none':'';
   // 睡眠
   var sb=document.getElementById('dash-sleep-badge');
-  if(sb){try{var sc=JSON.parse(localStorage.getItem('form_last_sleep')||'null');if(sc&&sc.duration_h){var h=sc.duration_h;sb.innerHTML=(h<6?'😴':h>=8?'👍':'🛌')+' 昨晚 <b style=\"color:'+(h<6?'var(--wa)':h>=8?'var(--ac)':'var(--t1)')+'\">'+h+'h</b>'+(sc.bedtime?' · '+sc.bedtime+'睡':'');}else{sb.innerHTML='🛌 昨晚 <span style=\"color:var(--t3)\">未记录</span>';}}catch(e){sb.innerHTML='🛌 —';}}
+  if(sb){try{var sc=JSON.parse(localStorage.getItem('form_last_sleep')||'null');if(sc&&sc.duration_h){var h=sc.duration_h;sb.innerHTML=(h<6?'😴':h>=8?'👍':'🛌')+' 昨晚 <b style=\"color:'+(h<6?'var(--wa)':h>=8?'var(--ac)':'var(--t1)')+'\">'+h+'h</b>'+(sc.bedtime?' · 入睡 '+sc.bedtime:'');}else{sb.innerHTML='🛌 昨晚 <span style=\"color:var(--t3)\">未记录</span>';}}catch(e){sb.innerHTML='🛌 —';}}
   // 今日训练
   var tl=document.getElementById('dash-today-label');
   if(tl){
@@ -1479,10 +1485,15 @@ function updateDashStatusBar(){
     else{tl.textContent='💪 '+(LBL[t]||t);tl.style.color='var(--ac)';}
   }
 }
-function toggleDashSlot(){
-  const cur=(typeof getTrainingSlot==='function'?getTrainingSlot():'morning')||'morning';
-  const next=cur==='morning'?'evening':'morning';
-  if(typeof setTrainingSlot==='function')setTrainingSlot(next);
+// 保存今日健身时间，同时推导早间/晚间给通知系统
+function saveGymTime(){
+  var gt=document.getElementById('dash-gym-time');if(!gt)return;
+  var v=gt.value;localStorage.setItem('form_gym_time',v);
+  if(v){
+    var h=parseInt(v.split(':')[0]);var slot=h<12?'morning':'evening';
+    localStorage.setItem('form_training_slot',slot);
+    if(typeof setTrainingSlot==='function')setTrainingSlot(slot);
+  }
   updateDashStatusBar();
 }
 
@@ -1529,15 +1540,14 @@ async function saveDashSleep(){
   const b=new Date(`2000-01-01T${bed}:00`);
   const w=new Date(`2000-01-01T${wake}:00`);
   let h=(w-b)/36e5;if(h<0)h+=24;
-  const bedtime=wake; // woke up at wake time
   if(window.db){
     try{
-      await db.addSleepLog({duration_h:Math.round(h*10)/10,bedtime,quality:_dashSleepQ,logged_at:new Date().toISOString()});
+      await db.addSleepLog({duration_h:Math.round(h*10)/10,bedtime:bed,waketime:wake,quality:_dashSleepQ,logged_at:new Date().toISOString()});
       if(typeof loadSleepLog==='function')await loadSleepLog();
     }catch(e){console.warn('saveDashSleep',e);}
   }
   // 更新本地缓存
-  localStorage.setItem('form_last_sleep',JSON.stringify({duration_h:Math.round(h*10)/10,bedtime,ts:Date.now()}));
+  localStorage.setItem('form_last_sleep',JSON.stringify({duration_h:Math.round(h*10)/10,bedtime:bed,waketime:wake,ts:Date.now()}));
   document.getElementById('dash-sleep-form-wrap').style.display='none';
   updateDashStatusBar();
   if(typeof toast==='function')toast('✓ 睡眠已记录');
