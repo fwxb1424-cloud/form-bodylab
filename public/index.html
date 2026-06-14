@@ -3708,7 +3708,7 @@ function _renderCoach(){
     if(_coachMsgs.length===0){
       full.innerHTML='<div style="color:var(--t3);font-size:13px;text-align:center;padding:50px 30px;line-height:1.8">我是你的专属AI教练，叫 <b style="color:var(--ac)">FORM Coach</b>。<br><br>我已读取你的全部数据——体格、训练史、力量记录、营养目标、个人记忆。<br><br>你可以问我：<br>"我减脂进度正常吗"<br>"今天蛋白怎么安排"<br>"为什么我推日力量上不去"<br>"帮我看看这周的薄弱点"</div>';
     }else{
-      full.innerHTML=_coachMsgs.map((m,i)=>`<div style="max-width:88%;padding:10px 14px;border-radius:16px;font-size:13px;line-height:1.6;animation:fi .2s ease;${m.role==='user'?'align-self:flex-end;background:rgba(226,255,92,.1);border:1px solid rgba(226,255,92,.16);color:var(--t1);border-bottom-right-radius:4px':'align-self:flex-start;background:var(--s3);border:1px solid var(--ln);color:var(--t1);border-bottom-left-radius:4px'}"><div>${m.text.replace(/\\n/g,'<br>')}</div>${m.role==='coach'?`<div style="margin-top:6px;font-size:9px;color:var(--t3);display:flex;align-items:center;gap:6px">FORM Coach · <button onclick="_saveCoach(${i})" style="font-size:9px;font-weight:600;color:${m.saved?'var(--t2)':'var(--ac)'};background:none;border:1px solid ${m.saved?'var(--ln)':'rgba(226,255,92,.2)'};border-radius:8px;padding:2px 8px;cursor:pointer">${m.saved?'✓ 已保存':'保存到记忆'}</button></div>`:''}</div>`).join('');
+      full.innerHTML=_coachMsgs.map(function(m,i){var roleClass=m.role==='user'?'user':'assistant';var metaHtml=m.role==='coach'?'<div class=\"coach-bubble-meta\">FORM Coach · <button onclick=\"_saveCoach('+i+')\" class=\"coach-save-btn'+(m.saved?' saved':'')+'\">'+(m.saved?'✓ 已保存':'保存到记忆')+'</button></div>':'';return '<div class=\"coach-bubble '+roleClass+'\"><div>'+m.text.replace(/\\n/g,'<br>')+'</div>'+metaHtml+'</div>';}).join('');
     }
     full.scrollTop=full.scrollHeight;
   }
