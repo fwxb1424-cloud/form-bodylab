@@ -1198,7 +1198,7 @@ function PT(){ return macroTargets().protein; }
 function applyNutritionUI(){} // stub
 function scheduleTrainAutosave(){try{var s=JSON.stringify({muscle:S.todayMuscle,workout:S.workout,volume:S.volume,notes:document.getElementById("session-notes")?.value||""});localStorage.setItem("form_train_draft_"+(S_trainDate||"today"),s);}catch(e){}}
 function clearTrainDraft(dateKey){try{localStorage.removeItem("form_train_draft_"+(dateKey||S_trainDate||"today"));}catch(e){}}
-async function dbOp(label, fn){ try{return await fn();}catch(e){console.warn("dbOp:"+label,e.message);return null;} }
+async function dbOp(label, fn){ try{var r=await fn();localStorage.setItem("form_last_sync_ok",Date.now());return r;}catch(e){console.warn("dbOp:"+label,e.message);return null;} }
 async function loadTodayFood(){if(!db)return;try{var d=await db.getFoodLogsByRange(new Date(new Date().setHours(0,0,0,0)).toISOString(),new Date().toISOString());if(d&&d.length){for(var i=0;i<d.length;i++){var f=d[i];S.foods.push({name:f.name,protein_g:f.protein_g||0,carbs_g:f.carbs_g||0,fat_g:f.fat_g||0,kcal:f.kcal||0,id:f.id||Date.now()+i,time:f.time_tag||'',meal_type:f.time_tag||'早餐',logged_at:f.logged_at,dbId:f.id});S.protein+=f.protein_g||0;S.carbs+=f.carbs_g||0;S.fat+=f.fat_g||0;S.kcal+=f.kcal||0;}renderFoodList();updateBars();renderDash();applyNutritionUI();}}catch(e){console.warn('loadTodayFood',e);}}
 function saveAppStateLocally(){try{var st={protein:S.protein,carbs:S.carbs,fat:S.fat,kcal:S.kcal,foods:S.foods,todayMuscle:S.todayMuscle,isTrain:S.isTrain,volume:S.volume};localStorage.setItem('form_app_state',JSON.stringify(st));}catch(e){}}
 function loadAppStateLocally(){try{var st=JSON.parse(localStorage.getItem('form_app_state')||'null');if(st){S.protein=st.protein||0;S.carbs=st.carbs||0;S.fat=st.fat||0;S.kcal=st.kcal||0;S.foods=st.foods||[];S.todayMuscle=st.todayMuscle||'';S.isTrain=st.isTrain!==false;S.volume=st.volume||0;try{renderFoodList();updateBars();renderDash();}catch(e){}}var w=JSON.parse(localStorage.getItem('form_last_weight')||'null');if(w&&w.weight_kg)S.weight_kg=w.weight_kg;}catch(e){}
@@ -1421,7 +1421,13 @@ function updateDashStatusBar(){
   if(gymTime)parts.push('🏋️ '+gymTime);
   if(sc&&sc.duration_h)parts.push('🛌 '+sc.duration_h+'h');
   else parts.push('🛌 未录');
-  if(meta)meta.textContent=parts.join(' · ');
+  if(meta){
+    var syncStatus='';
+    var lastSync=localStorage.getItem('form_last_sync_ok');
+    if(lastSync&&Date.now()-parseInt(lastSync)<60000)syncStatus=' ●';
+    else if(!window.db&&typeof DB!=='undefined')syncStatus=' ○';
+    meta.textContent=parts.join(' · ')+syncStatus;
+  }
   // 今日训练标签
   var tl=document.getElementById('dash-today-label');
   if(tl){
