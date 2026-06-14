@@ -773,14 +773,15 @@ body{
 
       <!-- ═══════ 优先级 1：今日状态 + 快捷操作 ═══════ -->
 
+      <!-- 隐藏的健身时间选择器 -->
+      <input type="time" id="dash-gym-time" onchange="saveGymTime()" style="position:fixed;top:-100px;left:0;width:100%;opacity:0;font-size:16px" onfocus="this.showPicker&&this.showPicker()">
+
       <!-- 今日状态条 -->
-      <div class="s" style="margin-top:8px">
-        <div id="dash-status-bar" style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:linear-gradient(135deg,rgba(255,255,255,.04),rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.08);border-radius:var(--r2);font-family:var(--f1);box-shadow:0 2px 20px rgba(0,0,0,.25)">
-          <input type="time" id="dash-gym-time" onchange="saveGymTime()" style="width:100px;background:var(--s3);border:1px solid var(--ln);border-radius:18px;padding:6px 8px;color:var(--ac);font-size:13px;font-weight:700;outline:none;flex-shrink:0;text-align:center">
-          <div style="width:1px;height:20px;background:rgba(255,255,255,.08);flex-shrink:0"></div>
-          <button id="dash-sleep-badge" onclick="toggleDashSleepForm()" style="flex:1;font-size:12px;color:var(--t2);min-width:0;background:none;border:none;cursor:pointer;text-align:left;font-family:var(--f1);padding:2px 0;transition:color .15s">🛌 昨晚 —</button>
-          <div style="width:1px;height:20px;background:rgba(255,255,255,.08);flex-shrink:0"></div>
-          <div id="dash-today-label" style="font-size:13px;font-weight:700;color:var(--ac);white-space:nowrap">加载中…</div>
+      <div class="s" style="margin-top:8px" id="dash-status-section">
+        <div id="dash-status-bar" style="display:flex;align-items:center;gap:6px;padding:8px 12px;background:linear-gradient(135deg,rgba(255,255,255,.03),rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.06);border-radius:var(--r2);font-family:var(--f1)">
+          <div id="dash-today-label" style="font-size:14px;font-weight:700;color:var(--ac);white-space:nowrap">加载中…</div>
+          <div style="flex:1"></div>
+          <span id="dash-status-meta" style="font-size:11px;color:var(--t3)"></span>
         </div>
       </div>
 
@@ -1443,15 +1444,30 @@ function renderDash(){
 }
 
 // ── 首页状态条（时段 + 睡眠 + 今日任务）──
-// 首页状态条 —— 直读 localStorage + S 对象，不走间接调用
+// 首页状态条 —— 极简版：只显示今日类型 + 设置状态
 function updateDashStatusBar(){
-  // 健身房时间
-  var gt=document.getElementById('dash-gym-time');
-  if(gt){gt.value=localStorage.getItem('form_gym_time')||'';}
-  // 睡眠
-  var sb=document.getElementById('dash-sleep-badge');
-  if(sb){try{var sc=JSON.parse(localStorage.getItem('form_last_sleep')||'null');if(sc&&sc.duration_h){var h=sc.duration_h;sb.innerHTML=(h<6?'😴':h>=8?'👍':'🛌')+' 昨晚 <b style=\"color:'+(h<6?'var(--wa)':h>=8?'var(--ac)':'var(--t1)')+'\">'+h+'h</b>'+(sc.bedtime?' · 入睡 '+sc.bedtime:'');}else{sb.innerHTML='🛌 昨晚 <span style=\"color:var(--t3)\">未记录</span>';}}catch(e){sb.innerHTML='🛌 —';}}
+  var tl=document.getElementById('dash-today-label');
+  var meta=document.getElementById('dash-status-meta');
+  var section=document.getElementById('dash-status-section');
   // 今日训练
+  var t=(S&&S.todayMuscle?S.todayMuscle:'')||localStorage.getItem('form_today_muscle')||'';
+  if(!t&&typeof getTodayQueueType==='function')t=getTodayQueueType()||'';
+  var LBL=window.TRAIN_LABEL_MAP||{push:'推日',pull:'拉日',cardio:'有氧日',legs:'腿日',shoulder:'肩日',rest:'休息日'};
+  if(!t||t==='rest'){if(tl){tl.textContent='😴 休息日';tl.style.color='var(--pu)';}}
+  else if(t==='cardio'){if(tl){tl.textContent='🚴 有氧日';tl.style.color='var(--info)';}}
+  else{if(tl){tl.textContent='💪 '+(LBL[t]||t);tl.style.color='var(--ac)';}}
+  // 设置状态
+  var sc=null;try{sc=JSON.parse(localStorage.getItem('form_last_sleep')||'null');}catch(e){}
+  var gymTime=localStorage.getItem('form_gym_time');
+  var parts=[];
+  if(gymTime)parts.push('🏋️ '+gymTime);
+  if(sc&&sc.duration_h)parts.push('🛌 '+sc.duration_h+'h');
+  else parts.push('🛌 未录');
+  if(meta)meta.textContent=parts.join(' · ');
+  // 睡眠+训练时间都设了 → 隐藏状态条
+  var todaySet=sc&&sc.duration_h&&gymTime;
+  if(section)section.style.display=todaySet?'none':'';
+}
   var tl=document.getElementById('dash-today-label');
   if(tl){
     var t=(S&&S.todayMuscle?S.todayMuscle:'')||localStorage.getItem('form_today_muscle')||'';
@@ -1462,6 +1478,7 @@ function updateDashStatusBar(){
     else{tl.textContent='💪 '+(LBL[t]||t);tl.style.color='var(--ac)';}
   }
 }
+function pickGymTime(){var gt=document.getElementById('dash-gym-time');if(gt){if(gt.showPicker)gt.showPicker();else gt.focus();}}
 // 保存今日健身时间，同时推导早间/晚间给通知系统
 function saveGymTime(){
   var gt=document.getElementById('dash-gym-time');if(!gt)return;
@@ -1473,7 +1490,8 @@ function saveGymTime(){
     if(typeof syncPlanStateToCloud==='function')try{syncPlanStateToCloud();}catch(e){}
   }
   updateDashStatusBar();
-  if(typeof toast==='function')toast('✓ 今天 '+v+' 去健身房 · 通知已同步');
+  if(typeof renderTodayStatusCard==='function')renderTodayStatusCard();
+  if(typeof toast==='function')toast('✓ 今天 '+v+' 去健身房');
 }
 
 // ── 首页睡眠快录 ──
@@ -3257,20 +3275,26 @@ async function renderTodayStatusCard(){
     else if(h>=18&&h<22) timeHint='🌙 休息日晚上，早点睡，明天'+(tomorrowType?TLBL[tomorrowType]||tomorrowType:'继续训练');
     else                 timeHint='🌙 早点入睡，23:30前最好，好好恢复';
   }
+  // 健身房时间
+  var gymTime=localStorage.getItem('form_gym_time');
+  var gymHtml='';
+  if(gymTime){gymHtml='<div class=\"tc-sleep-row\"><span class=\"tc-sleep-label\">今日训练</span><span style=\"font-family:var(--f1);font-size:13px;font-weight:700;color:var(--ac)\">🏋️ '+gymTime+'</span><button onclick=\"document.getElementById(\'dash-gym-time\').click()\" style=\"font-size:10px;color:var(--t2);background:none;border:none;cursor:pointer\">修改</button></div>';}
+  else{gymHtml='<div class=\"tc-sleep-row\"><span class=\"tc-sleep-label\">今日训练</span><button onclick=\"document.getElementById(\'dash-gym-time\').click()\" style=\"font-size:12px;color:var(--t2);background:rgba(255,255,255,.05);border:1px solid var(--ln);border-radius:10px;padding:4px 12px;cursor:pointer\">+ 几点去健身房？</button></div>';}
   // 睡眠
-  let sleepHtml='';
-  const cachedSleep=localStorage.getItem('form_last_sleep');
+  var sleepHtml='';
+  var cachedSleep=localStorage.getItem('form_last_sleep');
   if(cachedSleep){
     try{
-      const sl=JSON.parse(cachedSleep);
-      const hrs=sl.duration_h||0;const bed=sl.bedtime||'';
-      const isLate=bed&&parseInt(bed.split(':')[0])>=23;
-      const warn=hrs<6.5?' ⚠ 偏少':(isLate?' ⚠ 偏晚':'');
-      const color=(hrs<6.5||isLate)?'var(--wa)':'var(--ac)';
-      sleepHtml=`<div class="tc-sleep-row"><span class="tc-sleep-label">昨晚睡眠</span><span style="font-family:var(--f1);font-size:12px;font-weight:600;color:${color}">${hrs}h${bed?' · ↓'+bed:''}${warn}</span><button onclick="toggleDashSleepForm()" style="font-size:10px;color:var(--t2);background:none;border:none;cursor:pointer">更新</button></div>`;
+      var sl=JSON.parse(cachedSleep);
+      var hrs=sl.duration_h||0;var bed=sl.bedtime||'';
+      var hh=Math.floor(hrs);var mm=Math.round((hrs-hh)*60);
+      var isLate=bed&&parseInt(bed.split(':')[0])>=23;
+      var warn=hrs<6?' ⚠ 偏少':(isLate?' ⚠ 偏晚':'');
+      var color=(hrs<6||isLate)?'var(--wa)':'var(--ac)';
+      sleepHtml='<div class=\"tc-sleep-row\"><span class=\"tc-sleep-label\">昨晚睡眠</span><span style=\"font-family:var(--f1);font-size:13px;font-weight:600;color:'+color+'\">'+hh+'h'+mm+'m'+(bed?' · 入睡 '+bed:'')+warn+'</span><button onclick=\"toggleDashSleepForm()\" style=\"font-size:10px;color:var(--t2);background:none;border:none;cursor:pointer\">更新</button></div>';
     }catch(e){}
   }else{
-    sleepHtml=`<div class="tc-sleep-row"><span class="tc-sleep-label">昨晚睡眠</span><button onclick="toggleDashSleepForm()" style="font-size:11px;color:var(--t2);background:rgba(255,255,255,.05);border:1px solid var(--ln);border-radius:10px;padding:3px 10px;cursor:pointer">+ 记录睡眠</button></div>`;
+    sleepHtml='<div class=\"tc-sleep-row\"><span class=\"tc-sleep-label\">昨晚睡眠</span><button onclick=\"toggleDashSleepForm()\" style=\"font-size:12px;color:var(--t2);background:rgba(255,255,255,.05);border:1px solid var(--ln);border-radius:10px;padding:4px 12px;cursor:pointer\">+ 记录睡眠</button></div>';
   }
   // 体测提醒
   const lastStatTs=localStorage.getItem('form_last_stat_ts');
@@ -3299,8 +3323,9 @@ async function renderTodayStatusCard(){
       <span class="tc-pill" id="tc-weight-pill">${(()=>{const lw=typeof getLastWeightRecord==='function'?getLastWeightRecord():null;return lw&&new Date(lw.ts).toDateString()===new Date().toDateString()?`⚖️ <strong>${lw.weight_kg.toFixed(1)}</strong>kg`:`⚖️ 未录`;})()}</span>
       <span class="tc-pill">💪 近7天 <strong id="dash-7day-train-count">—</strong>/6</span>
     </div>
-    ${timeHint?`<div style="font-size:11px;color:var(--ac);margin-top:7px">${timeHint}</div>`:''}
+    ${gymHtml}
     ${sleepHtml}
+    ${timeHint?`<div style="font-size:11px;color:var(--ac);margin-top:7px">${timeHint}</div>`:''}
     ${weightReminder}
     ${statReminder}
     <div class="tc-quick-btns">
