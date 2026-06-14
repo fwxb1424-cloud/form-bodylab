@@ -2434,12 +2434,13 @@ function completeSet(exIdx, setIdx){
   renderExercises();
   renderCmpList();
   if(typeof scheduleTrainAutosave==='function') scheduleTrainAutosave();
-  // 完成一组后提示组间休息
+  // 完成一组后自动开始组间休息计时
   if(ex.sets_data[setIdx].done && !allDone){
-    const remaining = ex.sets_data.filter(s=>!s.done).length;
-    toast(`✓ 第${setIdx+1}组完成 · 还剩${remaining}组 · 点⏱开始休息计时`);
+    const remaining = ex.sets_data.filter(function(s){return !s.done;}).length;
+    toast('✓ 第'+(setIdx+1)+'组完成 · 还剩'+remaining+'组');
+    if(typeof startRestTimer==='function') startRestTimer(90);
   } else if(allDone){
-    toast(`✅ ${ex.name} 全部完成！`);
+    toast('✅ '+ex.name+' 全部完成！');
   }
 }
 
