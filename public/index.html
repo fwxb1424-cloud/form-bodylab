@@ -3710,19 +3710,6 @@ async function checkStrengthStall(){
     document.getElementById('in-gm').value=gm||'';
     document.getElementById('in-su').value=su;
     document.getElementById('in-sk').value=sk;
-    var attempts=0;
-    function tryConnect(){
-      if(typeof supabase!=='undefined'&&typeof DB!=='undefined'){
-        doSetup();
-      }else if(attempts<3){
-        attempts++;
-        setTimeout(tryConnect,800*attempts);
-      }
-    }
-    tryConnect();
-  }else if(localStorage.getItem('form_connected')){
-    var err2=document.getElementById('s-err');
-    if(err2)err2.textContent='本机 Key 已丢失（常见于换网址/主屏幕）。请重新填写 Supabase 与 DeepSeek。';
   }
 })();
 
