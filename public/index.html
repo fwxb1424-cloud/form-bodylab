@@ -722,7 +722,7 @@ body{
     <input type="password" id="in-sk" placeholder="eyJhbGci…" autocomplete="off" spellcheck="false">
     <div class="sf-hint">Settings → API → anon public key</div>
   </div>
-  <button class="s-btn" id="s-btn" onclick="var b=this;b.textContent='连接中…';b.disabled=true;b.style.opacity='0.6';(function(){var d=document.getElementById('in-ds').value.trim();var g=document.getElementById('in-gm').value.trim();var u=document.getElementById('in-su').value.trim();var k=document.getElementById('in-sk').value.trim();var e=document.getElementById('s-err');var showErr=function(m){if(e)e.textContent=m;b.textContent='开始使用 →';b.disabled=false;b.style.opacity='';};if(!d.startsWith('sk-')){showErr('DS Key 应以 sk- 开头');return;}if(!u||!u.includes('supabase.co')){showErr('SU URL 格式不对');return;}if(!k){showErr('请输入 SK');return;}localStorage.setItem('form_ds',d);localStorage.setItem('form_gm',g||'');localStorage.setItem('form_su',u);localStorage.setItem('form_sk',k);if(typeof supabase==='undefined'){showErr('请用 https 打开');return;}if(typeof DB==='undefined'){showErr('DB未加载');return;}if(typeof AIProvider==='undefined'){showErr('AIProvider未加载');return;}var pdb=new DB(u,k);var pai=new AIProvider(d,g||null);pdb.init().then(function(){window.db=pdb;window.AI=pai;localStorage.setItem('form_connected','1');document.getElementById('setup').classList.add('off');document.getElementById('app').classList.remove('off');if(typeof boot==='function')boot();else if(typeof window.boot==='function')window.boot();}).catch(function(err){showErr('连接失败：'+err.message);});})()">开始使用 →</button>
+  <button class="s-btn" id="s-btn" onclick="doSetup()" ontouchend="event.preventDefault();doSetup()">开始使用 →</button>
   <div class="s-err" id="s-err">请输入上方 API Key 和数据库地址</div>
 </div>
 
@@ -3710,6 +3710,19 @@ async function checkStrengthStall(){
     document.getElementById('in-gm').value=gm||'';
     document.getElementById('in-su').value=su;
     document.getElementById('in-sk').value=sk;
+    var attempts=0;
+    function tryConnect(){
+      if(typeof supabase!=='undefined'&&typeof DB!=='undefined'){
+        doSetup();
+      }else if(attempts<3){
+        attempts++;
+        setTimeout(tryConnect,800*attempts);
+      }
+    }
+    tryConnect();
+  }else if(localStorage.getItem('form_connected')){
+    var err2=document.getElementById('s-err');
+    if(err2)err2.textContent='本机 Key 已丢失（常见于换网址/主屏幕）。请重新填写 Supabase 与 DeepSeek。';
   }
 })();
 
