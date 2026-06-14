@@ -1260,7 +1260,6 @@ function resetSetup(){
 async function boot(){
   document.getElementById('setup').classList.add('off');
   document.getElementById('app').classList.remove('off');
-  window.boot = boot; // 确保独立脚本块也能访问
   var ds=todayStr();
   ['dash-date','train-date','train-badge'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent=ds;});
   // 每个函数独立 try，任一个失败不影响其他
@@ -1309,6 +1308,7 @@ async function boot(){
     };
   }
 }
+window.boot = boot;
 
 // ══ UTILS ══
 function nt(){return new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});}
