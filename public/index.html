@@ -1251,16 +1251,20 @@ const S = window.S;
 
 // ══ SETUP ══
 async function doSetup(){
-  const ds=document.getElementById('in-ds').value.trim();
-  const gm=document.getElementById('in-gm').value.trim();
-  const su=document.getElementById('in-su').value.trim();
-  const sk=document.getElementById('in-sk').value.trim();
-  const err=document.getElementById('s-err');
-  err.textContent='';
-  if(!ds.startsWith('sk-')){err.textContent='DeepSeek Key 格式不对（应以 sk- 开头）';return;}
-  if(!su.includes('supabase.co')){err.textContent='Supabase URL 格式不对';return;}
-  if(!sk){err.textContent='请输入 Supabase anon key';return;}
-  const btn=document.getElementById('s-btn');btn.textContent='连接中…';btn.disabled=true;
+  try{var ds=document.getElementById('in-ds');if(!ds)throw new Error('找不到 DeepSeek 输入框');ds=ds.value.trim();}
+  catch(e){alert('错误：'+e.message);return;}
+  try{var gm=document.getElementById('in-gm');gm=gm?gm.value.trim():'';}catch(e){gm='';}
+  try{var su=document.getElementById('in-su');if(!su)throw new Error('找不到 Supabase URL 输入框');su=su.value.trim();}
+  catch(e){alert('错误：'+e.message);return;}
+  try{var sk=document.getElementById('in-sk');if(!sk)throw new Error('找不到 Supabase Key 输入框');sk=sk.value.trim();}
+  catch(e){alert('错误：'+e.message);return;}
+  var err=document.getElementById('s-err');
+  if(err)err.textContent='';
+  if(!ds.startsWith('sk-')){if(err)err.textContent='DeepSeek Key 格式不对（应以 sk- 开头）';return;}
+  if(!su.includes('supabase.co')){if(err)err.textContent='Supabase URL 格式不对';return;}
+  if(!sk){if(err)err.textContent='请输入 Supabase anon key';return;}
+  var btn=document.getElementById('s-btn');if(!btn){alert('找不到按钮');return;}
+  btn.textContent='连接中…';btn.disabled=true;btn.style.opacity='0.6';
   localStorage.setItem('form_ds',ds);localStorage.setItem('form_gm',gm||'');
   if(err)err.textContent='正在连接 Supabase 和 DeepSeek…';
   localStorage.setItem('form_su',su);localStorage.setItem('form_sk',sk);
