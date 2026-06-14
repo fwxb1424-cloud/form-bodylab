@@ -2444,6 +2444,10 @@ function completeSet(exIdx, setIdx){
   recalcVol();
   renderExercises();
   renderCmpList();
+  var totalDone=S.workout.filter(function(e){return e.done;}).length;
+  if(totalDone===S.workout.length&&S.workout.length>0){
+    setTimeout(function(){toast('🎯 全部动作完成！点击下方按钮记录训练');},500);
+  }
   if(typeof scheduleTrainAutosave==='function') scheduleTrainAutosave();
   // 完成一组后自动弹出全屏休息计时
   if(ex.sets_data[setIdx].done && !allDone){
