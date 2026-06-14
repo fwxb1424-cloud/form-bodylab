@@ -737,7 +737,7 @@ body{
     <input type="password" id="in-sk" placeholder="eyJhbGci…" autocomplete="off" spellcheck="false">
     <div class="sf-hint">Settings → API → anon public key</div>
   </div>
-  <button class="s-btn" id="s-btn" onclick="doSetup()">开始使用 →</button>
+  <button class="s-btn" id="s-btn" onclick="doSetup()" ontouchend="event.preventDefault();doSetup()">开始使用 →</button>
   <div class="s-err" id="s-err">请输入上方 API Key 和数据库地址</div>
 </div>
 
@@ -1260,8 +1260,9 @@ async function doSetup(){
   if(!ds.startsWith('sk-')){err.textContent='DeepSeek Key 格式不对（应以 sk- 开头）';return;}
   if(!su.includes('supabase.co')){err.textContent='Supabase URL 格式不对';return;}
   if(!sk){err.textContent='请输入 Supabase anon key';return;}
-  const btn=document.getElementById('s-btn');btn.textContent='连接中…';
+  const btn=document.getElementById('s-btn');btn.textContent='连接中…';btn.disabled=true;
   localStorage.setItem('form_ds',ds);localStorage.setItem('form_gm',gm||'');
+  if(err)err.textContent='正在连接 Supabase 和 DeepSeek…';
   localStorage.setItem('form_su',su);localStorage.setItem('form_sk',sk);
   try{
     if(typeof supabase==='undefined')throw new Error('Supabase 脚本未加载，请用 https 打开且检查网络');
@@ -1277,7 +1278,7 @@ async function doSetup(){
     window.AI=AI=null;
     console.error('doSetup失败',e.message,e.stack);
     if(err){err.style.display='block';err.textContent='连接失败：'+e.message;}
-    if(btn){btn.textContent='开始使用 →';btn.disabled=false;}
+    if(btn){btn.textContent='开始使用 →';btn.disabled=false;btn.style.opacity='';}
     try{document.getElementById('setup').classList.remove('off');}catch(e2){}
   }
 }
