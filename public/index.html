@@ -1197,6 +1197,13 @@ let AI, db; /* 同时赋值 window.db / window.AI，供 sync-store.js 等模块�
 function PT(){ return macroTargets().protein; }
 function applyNutritionUI(){} // stub
 async function dbOp(label, fn){ try{return await fn();}catch(e){console.warn("dbOp:"+label,e.message);return null;} }
+async function loadTodayFood(){if(!db)return;try{var d=await db.getFoodLogsByRange(new Date(new Date().setHours(0,0,0,0)).toISOString(),new Date().toISOString());if(d&&d.length){for(var i=0;i<d.length;i++){var f=d[i];S.foods.push({name:f.name,protein_g:f.protein_g||0,carbs_g:f.carbs_g||0,fat_g:f.fat_g||0,kcal:f.kcal||0,id:f.id||Date.now()+i,time:f.time_tag||'',meal_type:f.time_tag||'早餐',logged_at:f.logged_at,dbId:f.id});S.protein+=f.protein_g||0;S.carbs+=f.carbs_g||0;S.fat+=f.fat_g||0;S.kcal+=f.kcal||0;}renderFoodList();updateBars();renderDash();applyNutritionUI();}}catch(e){console.warn('loadTodayFood',e);}}
+function saveAppStateLocally(){try{var st={protein:S.protein,carbs:S.carbs,fat:S.fat,kcal:S.kcal,foods:S.foods,todayMuscle:S.todayMuscle,isTrain:S.isTrain,volume:S.volume};localStorage.setItem('form_app_state',JSON.stringify(st));}catch(e){}}
+function loadAppStateLocally(){try{var st=JSON.parse(localStorage.getItem('form_app_state')||'null');if(st){S.protein=st.protein||0;S.carbs=st.carbs||0;S.fat=st.fat||0;S.kcal=st.kcal||0;S.foods=st.foods||[];S.todayMuscle=st.todayMuscle||'';S.isTrain=st.isTrain!==false;S.volume=st.volume||0;}}catch(e){}}
+function refreshAppStatus(){if(typeof updateDashStatusBar==='function')updateDashStatusBar();}
+function backupTodayFoods(){saveAppStateLocally();}
+function pushSettingsToCloud(){}
+
 const CHK = `<svg viewBox="0 0 24 24" fill="none" stroke="#08090A" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>`;
 const DEL = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
 const MEASURES = [{key:'arm',label:'手臂围'},{key:'waist',label:'腰围'},{key:'chest',label:'胸围'},{key:'thigh',label:'大腿围'}];
@@ -3658,19 +3665,28 @@ async function checkStrengthStall(){
 // ══ INIT ══
 (function(){
   try{if(typeof loadAppStateLocally==='function')loadAppStateLocally();}catch(e){}
-  const ds=localStorage.getItem('form_ds');
-  const gm=localStorage.getItem('form_gm');
-  const su=localStorage.getItem('form_su');
-  const sk=localStorage.getItem('form_sk');
+  var ds=localStorage.getItem('form_ds');
+  var gm=localStorage.getItem('form_gm');
+  var su=localStorage.getItem('form_su');
+  var sk=localStorage.getItem('form_sk');
   if(ds&&su&&sk){
     document.getElementById('in-ds').value=ds;
     document.getElementById('in-gm').value=gm||'';
     document.getElementById('in-su').value=su;
     document.getElementById('in-sk').value=sk;
-    doSetup();
+    var attempts=0;
+    function tryConnect(){
+      if(typeof supabase!=='undefined'&&typeof DB!=='undefined'){
+        doSetup();
+      }else if(attempts<3){
+        attempts++;
+        setTimeout(tryConnect,800*attempts);
+      }
+    }
+    tryConnect();
   }else if(localStorage.getItem('form_connected')){
-    const err=document.getElementById('s-err');
-    if(err)err.textContent='本机 Key 已丢失（常见于换网址/主屏幕）。请重新填写 Supabase 与 DeepSeek。';
+    var err2=document.getElementById('s-err');
+    if(err2)err2.textContent='本机 Key 已丢失（常见于换网址/主屏幕）。请重新填写 Supabase 与 DeepSeek。';
   }
 })();
 
