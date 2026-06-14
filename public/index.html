@@ -5034,7 +5034,7 @@ window.doSetup = async function(){
     if(err)err.textContent='正在连接 Supabase 和 DeepSeek…';
     if(typeof supabase==='undefined')throw new Error('Supabase 脚本未加载，请用 https 打开且检查网络');
     window.db=db=new DB(su,sk);
-    await Promise.race([db.init(),new Promise(function(_,rej){setTimeout(function(){rej(new Error('连接超时（请检查 Supabase URL 是否正确）'));},15000);}]);
+    await Promise.race([db.init(),new Promise(function(_,rej){setTimeout(function(){rej(new Error('连接超时'));},15000);})]);
     window.AI=AI=new AIProvider(ds,gm||null);
     localStorage.setItem('form_connected','1');
     await boot();
