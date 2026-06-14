@@ -3738,7 +3738,7 @@ async function _sendCoachMsg(text){
   }
 
   _coachMsgs.push({role:'user',text});
-  _coachMsgs.push({role:'coach',text:'思考中...',saved:false});
+  _coachMsgs.push({role:'coach',text:'<span class="dots"><span></span><span></span><span></span></span>',saved:false});
   _renderCoach();
   try{
     // 确保训练历史已加载，教练能看到真实训练数据
