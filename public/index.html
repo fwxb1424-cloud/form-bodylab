@@ -1282,6 +1282,8 @@ async function boot(){
   safeCall('renderWeekExecBoard',typeof renderWeekExecBoard==='function'?renderWeekExecBoard:null);
   if(typeof loadAllFromCloud==='function'){try{await loadAllFromCloud();}catch(e){console.warn('boot: loadAllFromCloud failed',e.message);}}
   else{await safeAwait('loadMemories',typeof loadMemories==='function'?loadMemories:null);await safeAwait('loadActivePlan',typeof loadActivePlan==='function'?loadActivePlan:null);await safeAwait('loadRecentCmp',typeof loadRecentCmp==='function'?loadRecentCmp:null);await safeAwait('loadStrChart',typeof loadStrChart==='function'?loadStrChart:null);await safeAwait('loadSleepLog',typeof loadSleepLog==='function'?loadSleepLog:null);safeCall('loadTodayFood',typeof loadTodayFood==='function'?loadTodayFood:null);}
+  try{updateDashStatusBar();}catch(e){console.warn('boot: updateDashStatusBar',e.message);}
+  try{renderDailyChecklist();}catch(e){console.warn('boot: renderDailyChecklist',e.message);}
   try{updateGapRec();}catch(e){console.warn('boot: updateGapRec failed',e.message);}
   try{setTimeout(function(){if(typeof runSmartCard==='function')try{runSmartCard();}catch(e){}},600);}catch(e){}
   try{if(typeof autoSelectMealType==='function')autoSelectMealType();}catch(e){}
