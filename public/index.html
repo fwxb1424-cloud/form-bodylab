@@ -722,7 +722,34 @@ body{
     <input type="password" id="in-sk" placeholder="eyJhbGci…" autocomplete="off" spellcheck="false">
     <div class="sf-hint">Settings → API → anon public key</div>
   </div>
-  <button class="s-btn" id="s-btn" onclick="if(typeof doSetup==='function')doSetup();else{alert('setup.js未加载，请刷新')}">开始使用 →</button>
+  <button class="s-btn" id="s-btn" onclick="(async function(){
+    this.textContent='连接中…';this.disabled=true;this.style.opacity='0.6';
+    try{
+      var ds=document.getElementById('in-ds').value.trim();
+      var gm=document.getElementById('in-gm').value.trim();
+      var su=document.getElementById('in-su').value.trim();
+      var sk=document.getElementById('in-sk').value.trim();
+      var err=document.getElementById('s-err');
+      if(!ds.startsWith('sk-')){err.textContent='DS Key 应以 sk- 开头';this.textContent='开始使用 →';this.disabled=false;this.style.opacity='';return;}
+      if(!su.includes('supabase.co')){err.textContent='SU URL 格式不对';this.textContent='开始使用 →';this.disabled=false;this.style.opacity='';return;}
+      if(!sk){err.textContent='请输入 SK';this.textContent='开始使用 →';this.disabled=false;this.style.opacity='';return;}
+      localStorage.setItem('form_ds',ds);localStorage.setItem('form_gm',gm||'');
+      localStorage.setItem('form_su',su);localStorage.setItem('form_sk',sk);
+      if(typeof supabase==='undefined')throw new Error('用 https 打开');
+      window.db=new DB(su,sk);await window.db.init();
+      window.AI=new AIProvider(ds,gm||null);
+      localStorage.setItem('form_connected','1');
+      document.getElementById('setup').classList.add('off');
+      document.getElementById('app').classList.remove('off');
+      if(typeof boot==='function')await boot();
+      else if(typeof window.boot==='function')await window.boot();
+      if(typeof toast==='function')toast('已连接');
+    }catch(e){
+      if(typeof toast==='function')toast('失败:'+e.message);
+      err.textContent='连接失败：'+e.message;
+      this.textContent='开始使用 →';this.disabled=false;this.style.opacity='';
+    }
+  }).call(this)">开始使用 →</button>
   <div class="s-err" id="s-err">请输入上方 API Key 和数据库地址</div>
 </div>
 
