@@ -2450,6 +2450,12 @@ function completeSet(exIdx, setIdx){
     if(typeof autoStartRestTimer==='function') autoStartRestTimer(ex.name, setIdx, ex.sets_data.length);
   } else if(allDone){
     toast('✅ '+ex.name+' 全部完成！');
+    ex._collapsed=true; // 收起来
+    // 自动展开下一个未完成的动作
+    var nextIdx=exIdx+1;
+    while(nextIdx<S.workout.length&&S.workout[nextIdx].done)nextIdx++;
+    if(nextIdx<S.workout.length)S.workout[nextIdx]._collapsed=false;
+    renderExercises();
   }
 }
 
