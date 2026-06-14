@@ -995,9 +995,10 @@ body{
 
       <!-- 导入计划 -->
       <div class="s" style="margin-top:7px">
-        <button class="ghost-btn" onclick="toggleImportPlan()" style="margin-bottom:6px;font-size:11px;padding:8px">
-          📋 导入计划
+        <button class="ghost-btn" onclick="toggleImportPlan()" style="margin-bottom:0;font-size:13px;padding:12px;border-color:rgba(226,255,92,.2);color:var(--ac)">
+          📋 导入我的计划
         </button>
+        <div style="font-size:10px;color:var(--t2);text-align:center;margin-bottom:6px">粘贴自己写的训练方案，自动解析</div>
         <div id="import-plan-panel" style="display:none">
           <textarea id="import-plan-text" rows="5" placeholder="粘贴你的训练计划，每行一个动作：&#10;杠铃卧推 4x8-10 80kg&#10;上斜哑铃卧推 3x10-12 30kg&#10;蝴蝶机夹胸 4x12-15 25kg&#10;双杠臂屈伸 3x8-10 自重&#10;绳索下压 3x12-15 15kg" style="width:100%;background:var(--s2);border:1px solid rgba(255,255,255,.1);border-radius:var(--r);padding:10px 12px;color:var(--t1);font-family:var(--f2);font-size:13px;outline:none;resize:none;line-height:1.6"></textarea>
           <button class="ghost-btn" onclick="parseImportPlan()" style="margin-top:6px;font-size:12px;padding:10px">解析并载入方案</button>
