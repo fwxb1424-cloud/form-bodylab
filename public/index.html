@@ -818,23 +818,7 @@ body{
       <div id="phase-trigger-wrap"></div>
       <div id="sc-wrap"></div>
 
-      <!-- ═══════ 优先级 2：蛋白质 + 今日数据 ═══════ -->
-
-      <!-- 蛋白质进度环 -->
-      <div class="s" style="margin-top:8px"><div class="slbl">蛋白质</div>
-        <div class="pc">
-          <div class="rw">
-            <svg width="76" height="76" viewBox="0 0 76 76"><circle cx="38" cy="38" r="30" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="5"/><circle id="ring-fill" cx="38" cy="38" r="30" fill="none" stroke="#E2FF5C" stroke-width="5" stroke-linecap="round" stroke-dasharray="188" stroke-dashoffset="188" style="transition:stroke-dashoffset .9s ease"/></svg>
-            <div class="rc"><div class="rpct" id="ring-pct">0%</div><div class="rlb">达成</div></div>
-          </div>
-          <div class="pi">
-            <div class="pi-l">蛋白质摄入</div>
-            <div class="pi-v"><span id="dash-p">0</span>g</div>
-            <div class="pi-t">蛋白 <span id="dash-ptgt">—</span>g · 热量 <span id="dash-kcal-tgt">—</span></div>
-            <div class="pi-g" id="dash-gap">⚠ 缺口 170g</div>
-          </div>
-        </div>
-      </div>
+      <!-- ═══════ 优先级 2：今日数据 ═══════ -->
 
       <!-- 热量 + 容量 -->
       <div class="s" style="margin-top:7px">
@@ -1446,17 +1430,16 @@ async function ensureConnections(){
   if((!window.AI||!window.AI.ds)&&typeof AIProvider!=='undefined'){const ds=localStorage.getItem('form_ds');if(ds){try{window.AI=AI=new AIProvider(ds,localStorage.getItem('form_gm')||null);}catch(e){console.warn('AI auto-recover failed');}}}
 }
 function renderDash(){
-  const p=S.protein,pct=Math.min(Math.round(p/PT()*100),100);
-  document.getElementById('ring-fill').style.strokeDashoffset=188-188*pct/100;
-  document.getElementById('ring-pct').textContent=pct+'%';
-  document.getElementById('dash-p').textContent=Math.round(p);
-  document.getElementById('d-muscle').textContent=S.muscle.toFixed(1);
-  document.getElementById('d-fat').textContent=S.fat_pct.toFixed(1);
-  document.getElementById('d-kcal').textContent=Math.round(S.kcal);
-  document.getElementById('d-vol').textContent=Math.round(S.volume);
-  const gap=Math.max(0,PT()-p),el=document.getElementById('dash-gap');
-  if(gap<=0){el.textContent='✓ 今日已达标';el.className='pi-g ok';}
-  else{el.textContent=`⚠ 缺口 ${Math.round(gap)}g`;el.className='pi-g';}
+  var p=S.protein;
+  var rf=document.getElementById('ring-fill');if(rf){var pct=Math.min(Math.round(p/PT()*100),100);rf.style.strokeDashoffset=188-188*pct/100;}
+  var rp=document.getElementById('ring-pct');if(rp)rp.textContent=(pct||0)+'%';
+  var dp=document.getElementById('dash-p');if(dp)dp.textContent=Math.round(p);
+  var dm=document.getElementById('d-muscle');if(dm)dm.textContent=S.muscle.toFixed(1);
+  var df=document.getElementById('d-fat');if(df)df.textContent=S.fat_pct.toFixed(1);
+  var dk=document.getElementById('d-kcal');if(dk)dk.textContent=Math.round(S.kcal);
+  var dv=document.getElementById('d-vol');if(dv)dv.textContent=Math.round(S.volume);
+  var gap=Math.max(0,PT()-p),el=document.getElementById('dash-gap');
+  if(el){if(gap<=0){el.textContent='✓ 今日已达标';el.className='pi-g ok';}else{el.textContent='⚠ 缺口 '+Math.round(gap)+'g';el.className='pi-g';}}
 }
 
 // ── 首页状态条（时段 + 睡眠 + 今日任务）──
