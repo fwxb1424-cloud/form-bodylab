@@ -1429,13 +1429,15 @@ function updateDashStatusBar(){
   if(sc&&sc.duration_h)parts.push('🛌 '+sc.duration_h+'h');
   else parts.push('🛌 未录');
   var pt=(typeof PT==='function'?PT():168)||168;
-  parts.push('🥩 '+Math.round(S.protein||0)+'/'+pt+'g');
+  var proteinPct=pt>0?Math.round((S.protein||0)/pt*100):0;
+  var proteinColor=proteinPct>=100?'var(--ac)':proteinPct>=50?'var(--t1)':proteinPct>=25?'var(--wa)':'var(--da)';
+  parts.push('<span style=\"color:'+proteinColor+'\">🥩 '+Math.round(S.protein||0)+'/'+pt+'g</span>');
   if(meta){
     var syncStatus='';
     var lastSync=localStorage.getItem('form_last_sync_ok');
     if(lastSync&&Date.now()-parseInt(lastSync)<60000)syncStatus=' ●';
     else if(!window.db&&typeof DB!=='undefined')syncStatus=' ○';
-    meta.textContent=parts.join(' · ')+syncStatus;
+    meta.innerHTML=parts.join(' · ')+syncStatus;
   }
   // 今日训练标签
   var tl=document.getElementById('dash-today-label');
