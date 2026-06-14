@@ -3713,7 +3713,7 @@ function _renderCoach(){
   const full=document.getElementById('coach-msgs');
   if(full){
     if(_coachMsgs.length===0){
-      full.innerHTML='<div style="color:var(--t3);font-size:13px;text-align:center;padding:50px 30px;line-height:1.8">我是你的专属AI教练，叫 <b style="color:var(--ac)">FORM Coach</b>。<br><br>我已读取你的全部数据——体格、训练史、力量记录、营养目标、个人记忆。<br><br>你可以问我：<br>"我减脂进度正常吗"<br>"今天蛋白怎么安排"<br>"为什么我推日力量上不去"<br>"帮我看看这周的薄弱点"</div>';
+      var h=new Date().getHours();var greeting=h<9?'早上好':h<12?'上午好':h<18?'下午好':'晚上好';var t=S.todayMuscle||(typeof getTodayQueueType==='function'?getTodayQueueType():'');var tLabel=(window.TRAIN_LABEL_MAP&&window.TRAIN_LABEL_MAP[t])||t||'训练日';var p=S.protein||0;var pt=(typeof PT==='function'?PT():168)||168;full.innerHTML='<div style=\"color:var(--t3);font-size:13px;text-align:center;padding:40px 30px;line-height:1.8\"><b style=\"color:var(--ac);font-size:16px\">'+greeting+'，Cole</b><br><br>今天<span style=\"color:var(--ac)\">'+tLabel+'</span> · 蛋白 '+Math.round(p)+'/'+pt+'g<br><br>有什么想聊的？</div>';
     }else{
       full.innerHTML=_coachMsgs.map(function(m,i){var roleClass=m.role==='user'?'user':'assistant';var metaHtml=m.role==='coach'?'<div class=\"coach-bubble-meta\">FORM Coach · <button onclick=\"_saveCoach('+i+')\" class=\"coach-save-btn'+(m.saved?' saved':'')+'\">'+(m.saved?'✓ 已保存':'保存到记忆')+'</button></div>':'';return '<div class=\"coach-bubble '+roleClass+'\"><div>'+m.text.replace(/\\n/g,'<br>')+'</div>'+metaHtml+'</div>';}).join('');
     }
