@@ -427,6 +427,13 @@ body{
 .pt-body{font-size:11px;color:var(--t2);line-height:1.6;margin-bottom:7px;}
 .pt-actions{display:flex;gap:6px;}
 .pt-btn{font-family:var(--f1);font-size:11px;font-weight:500;padding:4px 11px;border-radius:20px;border:1px solid rgba(180,154,255,.3);background:rgba(180,154,255,.1);color:var(--pu);cursor:pointer;}
+/* 教练聊天气泡 */
+.coach-bubble{max-width:88%;padding:10px 14px;border-radius:16px;font-size:13px;line-height:1.6;animation:fi .2s ease;word-break:break-word;}
+.coach-bubble.user{align-self:flex-end;background:rgba(226,255,92,.08);border:1px solid rgba(226,255,92,.15);border-bottom-right-radius:4px;}
+.coach-bubble.assistant{align-self:flex-start;background:var(--s3);border:1px solid rgba(255,255,255,.06);border-bottom-left-radius:4px;box-shadow:0 1px 8px rgba(0,0,0,.15);}
+.coach-bubble-meta{font-size:9px;color:var(--t3);margin-top:6px;display:flex;align-items:center;gap:6px;}
+.coach-save-btn{font-size:9px;font-weight:600;background:none;border:1px solid rgba(226,255,92,.2);border-radius:8px;padding:2px 8px;cursor:pointer;color:var(--ac);}
+.coach-save-btn.saved{color:var(--t2);border-color:var(--ln);}
 /* 常用食物 */
 .fav-chip{font-family:var(--f1);font-size:11px;padding:5px 10px;border-radius:20px;border:1px solid var(--ln);background:var(--s2);color:var(--t1);cursor:pointer;display:inline-flex;align-items:center;gap:4px;}
 .fav-add-form{background:var(--s2);border:1px solid var(--ln);border-radius:var(--r);padding:10px;margin-top:6px;}
