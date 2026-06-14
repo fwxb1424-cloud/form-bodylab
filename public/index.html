@@ -4030,10 +4030,7 @@ function getDailyChecklistItems() {
       icon: '🛌',
       label: '记录昨晚睡眠',
       done: sleepDone,
-      action: () => {
-        const w = document.getElementById('dash-sleep-quick');
-        if (w) { w.scrollIntoView({ behavior: 'smooth' }); showSleepQuickForm(); }
-      },
+      action: () => { toggleDashSleepForm(); },
     });
   }
 
@@ -4044,11 +4041,7 @@ function getDailyChecklistItems() {
       icon: '⚖️',
       label: weightDone ? '今日体重已记录' : `体重快录${wDays >= 3 ? '（' + wDays + '天未录）' : ''}`,
       done: weightDone,
-      action: () => {
-        const row = document.getElementById('tc-weight-row');
-        if (row) { row.scrollIntoView({ behavior: 'smooth' }); document.getElementById('quick-weight-in')?.focus(); }
-        else if (typeof renderTodayStatusCard === 'function') renderTodayStatusCard();
-      },
+      action: () => { var inp=document.getElementById('dash-quick-weight');if(inp){inp.scrollIntoView({behavior:'smooth'});inp.focus();} },
     });
   }
 
@@ -4094,6 +4087,8 @@ function renderDailyChecklist() {
   if (!wrap) return;
 
   const items = getDailyChecklistItems();
+  // 注册点击处理函数到 window
+  for(var i=0;i<items.length;i++){window['_checklistAction_'+items[i].id]=items[i].action;}
   const doneCount = items.filter(i => i.done).length;
   const total = items.length;
   const allDone = doneCount === total;
