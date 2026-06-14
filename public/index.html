@@ -1260,6 +1260,7 @@ function resetSetup(){
 async function boot(){
   document.getElementById('setup').classList.add('off');
   document.getElementById('app').classList.remove('off');
+  window.boot = boot; // 确保独立脚本块也能访问
   var ds=todayStr();
   ['dash-date','train-date','train-badge'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent=ds;});
   // 每个函数独立 try，任一个失败不影响其他
@@ -5132,7 +5133,9 @@ window.doSetup = async function(){
     await Promise.race([db.init(),new Promise(function(_,rej){setTimeout(function(){rej(new Error('连接超时'));},15000);})]);
     window.AI=AI=new AIProvider(ds,gm||null);
     localStorage.setItem('form_connected','1');
-    await boot();
+    if(typeof boot==='function')await boot();
+    else if(typeof window.boot==='function')await window.boot();
+    else throw new Error('系统未完全加载，请刷新页面');
     if(err){err.textContent='';err.style.display='none';}
     toast('✓ 已连接云端数据库与 DeepSeek');
   }catch(e){
