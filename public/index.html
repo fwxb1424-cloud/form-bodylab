@@ -986,6 +986,17 @@ body{
         <input type="text" id="custom-req" class="ni" style="width:100%" placeholder="例：多加一个飞鸟、不要深蹲用腿举代替…" oninput="scheduleTrainAutosave()">
       </div>
 
+      <!-- 导入计划 -->
+      <div class="s" style="margin-top:7px">
+        <button class="ghost-btn" onclick="toggleImportPlan()" style="margin-bottom:6px;font-size:11px;padding:8px">
+          📋 导入计划
+        </button>
+        <div id="import-plan-panel" style="display:none">
+          <textarea id="import-plan-text" rows="5" placeholder="粘贴你的训练计划，每行一个动作：&#10;杠铃卧推 4x8-10 80kg&#10;上斜哑铃卧推 3x10-12 30kg&#10;蝴蝶机夹胸 4x12-15 25kg&#10;双杠臂屈伸 3x8-10 自重&#10;绳索下压 3x12-15 15kg" style="width:100%;background:var(--s2);border:1px solid rgba(255,255,255,.1);border-radius:var(--r);padding:10px 12px;color:var(--t1);font-family:var(--f2);font-size:13px;outline:none;resize:none;line-height:1.6"></textarea>
+          <button class="ghost-btn" onclick="parseImportPlan()" style="margin-top:6px;font-size:12px;padding:10px">解析并载入方案</button>
+        </div>
+      </div>
+
       <!-- gen button -->
       <div class="s" style="margin-top:7px">
         <button class="ghost-btn" onclick="genWorkout()" id="gen-workout-btn">
@@ -3082,6 +3093,46 @@ function deletePlanTemplate(muscleId){
   const templates=getPlanTemplates();
   delete templates[muscleId];
   localStorage.setItem('form_plan_templates', JSON.stringify(templates));
+}
+function toggleImportPlan(){
+  var p=document.getElementById('import-plan-panel');
+  if(p)p.style.display=p.style.display==='none'?'':'none';
+}
+function parseImportPlan(){
+  var ta=document.getElementById('import-plan-text');if(!ta)return;
+  var txt=ta.value.trim();if(!txt){toast('请粘贴训练计划');return;}
+  if(!S.todayMuscle||S.todayMuscle==='rest'){toast('请先选择今日训练肌群');return;}
+  var lines=txt.split('\n').filter(function(l){return l.trim();});
+  var exercises=[];
+  for(var i=0;i<lines.length;i++){
+    var line=lines[i].trim();
+    // 解析：动作名 组数x次数 重量
+    var match=line.match(/^(.+?)\s+(\d+)\s*[xX×]\s*(\d+[-~]?\d*)\s+(.+)$/);
+    if(!match){match=line.match(/^(.+?)\s+(\d+)\s*[xX×]\s*(\d+[-~]?\d*)$/);}
+    if(match){
+      var name=match[1].trim();
+      var sets=parseInt(match[2])||4;
+      var reps=match[3].trim();
+      var weightStr=(match[4]||'').trim().toLowerCase();
+      var weight_kg=0;
+      var isBodyweight=/自重|辅助|body|bw/.test(weightStr);
+      if(!isBodyweight){var wm=weightStr.match(/(\d+\.?\d*)/);if(wm)weight_kg=parseFloat(wm[1]);}
+      exercises.push({name:name,sets:sets,reps:reps,weight_kg:weight_kg,muscle:S.todayMuscle,is_compound:sets<=5,notes:isBodyweight?'自重':(''+weight_kg+'kg'),done:false,sets_data:[],fromPlan:true,_collapsed:false});
+    }else{
+      // 简单格式：动作名
+      exercises.push({name:line,sets:4,reps:'8-12',weight_kg:0,muscle:S.todayMuscle,is_compound:false,notes:'',done:false,sets_data:[],fromPlan:true,_collapsed:false});
+    }
+  }
+  if(!exercises.length){toast('未识别到任何动作');return;}
+  S.workout=exercises;
+  document.getElementById('total-cnt').textContent=exercises.length;
+  document.getElementById('done-cnt').textContent=0;
+  document.getElementById('sh-title').textContent='今日：'+(window.TRAIN_LABEL_MAP?window.TRAIN_LABEL_MAP[S.todayMuscle]:S.todayMuscle)||S.todayMuscle;
+  document.getElementById('sh-sub').textContent='📋 导入方案 · '+exercises.length+'个动作';
+  renderExercises();
+  renderLockUI();
+  document.getElementById('import-plan-panel').style.display='none';
+  toast('✓ 已导入 '+exercises.length+' 个动作');
 }
 function lockCurrentPlan(){
   if(!S.workout||!S.workout.length){toast('没有可锁定的动作');return;}
