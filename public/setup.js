@@ -31,8 +31,8 @@ async function doSetup(){
     await Promise.race([db.init(),new Promise(function(_,rej){setTimeout(function(){rej(new Error('连接超时'));},15000);})]);
     window.AI=AI=new AIProvider(ds,gm||null);
     localStorage.setItem('form_connected','1');
-    if(typeof boot==='function'){await boot();}
-    else if(typeof window.boot==='function'){await window.boot();}
+    var bootFn = typeof boot==='function' ? boot : (typeof window.boot==='function' ? window.boot : null);
+    if(bootFn){await bootFn();}
     else{throw new Error('系统未完全加载，请刷新页面');}
     if(err){err.textContent='';err.style.display='none';}
     if(typeof toast==='function')toast('已连接云端数据库与 DeepSeek');
