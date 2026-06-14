@@ -2841,7 +2841,7 @@ async function loadSleepLog(){
     if(d.length){
       const last=d[d.length-1];
       const nm=(last.notes||'').match(/入睡(\d+:\d+)/);
-      localStorage.setItem('form_last_sleep',JSON.stringify({duration_h:last.duration_h,bedtime:nm?.[1]||'',ts:Date.now()}));
+      localStorage.setItem('form_last_sleep',JSON.stringify({duration_h:last.duration_h,bedtime:last.bedtime||(nm?nm[1]:'')||'',ts:Date.now()}));
     }
   }catch(e){}
 }
