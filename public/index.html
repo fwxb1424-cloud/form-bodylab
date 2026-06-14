@@ -108,7 +108,7 @@ body{
 
 /* ─ SECTIONS ──────────────────────────────────────── */
 .s{padding:10px 20px 0;}
-.slbl{font-family:var(--f1);font-size:10px;font-weight:500;letter-spacing:.12em;color:var(--t2);text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;opacity:.75;}
+.slbl{font-family:var(--f1);font-size:10px;font-weight:600;letter-spacing:.1em;color:var(--t2);text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;opacity:.85;}
 .slbl-act{font-size:11px;font-weight:500;color:var(--ac);text-transform:none;letter-spacing:0;cursor:pointer;background:none;border:none;padding:0;}
 
 /* ─ CARDS ─────────────────────────────────────────── */
@@ -268,7 +268,7 @@ body{
 
 /* food list */
 .fl{display:flex;flex-direction:column;gap:1px;background:var(--ln);border-radius:var(--r);overflow:hidden;}
-.fi{background:var(--s1);padding:10px 12px;display:flex;align-items:flex-start;gap:8px;animation:fi .18s ease;}
+.fi{background:var(--s1);padding:11px 13px;display:flex;align-items:flex-start;gap:9px;animation:fi .18s ease;}
 @keyframes fi{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
 .fi:first-child{border-radius:var(--r) var(--r) 0 0;}
 .fi:last-child{border-radius:0 0 var(--r) var(--r);}
@@ -353,8 +353,8 @@ body{
 
 /* exercise cards */
 .exlist{display:flex;flex-direction:column;gap:7px;}
-.exc{background:var(--s1);border:1px solid var(--ln);border-radius:var(--r);overflow:hidden;transition:border-color .15s;}
-.exc.done{border-color:rgba(222,255,71,.18);}
+.exc{background:var(--s1);border:1px solid rgba(255,255,255,.06);border-radius:var(--r);overflow:hidden;transition:all .15s;margin-bottom:1px;}
+.exc.done{border-color:rgba(226,255,92,.2);background:rgba(226,255,92,.02);}
 .exc-hdr{display:flex;align-items:center;gap:9px;padding:11px 12px;cursor:pointer;-webkit-user-select:none;}
 .exc-chk{width:19px;height:19px;border-radius:50%;border:1.5px solid var(--t3);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;}
 .exc.done .exc-chk{background:var(--ac);border-color:var(--ac);}
