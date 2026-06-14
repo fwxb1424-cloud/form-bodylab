@@ -2620,6 +2620,11 @@ async function saveSession(){
       const sd=(ex.sets_data||[]).filter(s=>s.done&&s.w>0);if(!sd.length)continue;
       const best=sd.reduce((a,s)=>calcE1RM(s.w,s.r)>calcE1RM(a.w,a.r)?s:a,sd[0]);
       await dbOp('力量记录',()=>db.addStrengthLog({exercise_name:ex.name,weight_kg:best.w,reps:best.r,sets:sd.length,e1rm:calcE1RM(best.w,best.r),logged_at:trainedAt}));
+      // 检查是否打破个人纪录
+      var newE1RM=calcE1RM(best.w,best.r);
+      var prevBest=0;
+      if(S.strengthCache&&S.strengthCache[ex.name]){var prev=S.strengthCache[ex.name];if(prev.length){prevBest=Math.max.apply(null,prev.map(function(p){return p.e1rm||calcE1RM(p.weight_kg,p.reps);}));}}
+      if(newE1RM>prevBest&&prevBest>0){toast('🏆 '+ex.name+' 新纪录！E1RM '+Math.round(prevBest)+'→'+Math.round(newE1RM)+'kg');}
     }
     await loadRecentCmp();
   }
