@@ -183,7 +183,7 @@ function buildProfile(S) {
 常用动作池（不分训练日，实际结构见下方最近训练数据）：杠铃卧推·蝴蝶机夹胸·宽窄下拉+划船·面拉·器械/史密斯肩推·侧平举·倒蹬+臀推+腿弯举
 骨架特点：窄肩小骨架，优先视觉扩宽（侧束+背宽）。下胸和胸外延是薄弱点，推日需针对性加强。
 当前时间：星期${dayNames[now.getDay()]} ${tc.label}（${tc.hint}）
-今日类型：${S.isTrain?'训练日':'休息日'}
+今日训练：${S.todayMuscle||(typeof getTodayQueueType==='function'?getTodayQueueType():'未选择')}${S.isTrain?'（训练日）':'（休息日）'}。训练队列：${typeof PLAN_QUEUE!=='undefined'?PLAN_QUEUE.join('→'):'push→pull→cardio→legs→shoulder→cardio→rest'}
 今日摄入：蛋白质${Math.round(S.protein)}g · 热量${Math.round(S.kcal)}kcal
 ${recentCtx}
 ${strengthCtx}
