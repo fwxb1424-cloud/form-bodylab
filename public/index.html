@@ -3558,6 +3558,10 @@ async function _doAskCoach(text){
           _renderCoach();
           try{if(typeof renderDash==='function')renderDash();}catch(e){}
           try{if(typeof updateDashStatusBar==='function')updateDashStatusBar();}catch(e){}
+          try{if(typeof renderFoodList==='function')renderFoodList();}catch(e){}
+          try{if(typeof updateBars==='function')updateBars();}catch(e){}
+          try{if(typeof updateGapRec==='function')updateGapRec();}catch(e){}
+          try{if(typeof renderDailyChecklist==='function')renderDailyChecklist();}catch(e){}
           return;
         }
       }
@@ -3625,6 +3629,10 @@ async function _doAskCoach(text){
       _renderCoach();
       try{if(typeof renderDash==='function')renderDash();}catch(e){}
       try{if(typeof updateDashStatusBar==='function')updateDashStatusBar();}catch(e){}
+      try{if(typeof renderFoodList==='function')renderFoodList();}catch(e){}
+      try{if(typeof updateBars==='function')updateBars();}catch(e){}
+      try{if(typeof updateGapRec==='function')updateGapRec();}catch(e){}
+      try{if(typeof renderDailyChecklist==='function')renderDailyChecklist();}catch(e){}
       return;
     }
   }
@@ -3652,6 +3660,10 @@ async function _doAskCoach(text){
     if(execMsgs.length){
       try{if(typeof renderDash==='function')renderDash();}catch(e){}
       try{if(typeof updateDashStatusBar==='function')updateDashStatusBar();}catch(e){}
+      try{if(typeof renderFoodList==='function')renderFoodList();}catch(e){}
+      try{if(typeof updateBars==='function')updateBars();}catch(e){}
+      try{if(typeof updateGapRec==='function')updateGapRec();}catch(e){}
+      try{if(typeof renderDailyChecklist==='function')renderDailyChecklist();}catch(e){}
     }
   }catch(e){
     _coachMsgs[_coachMsgs.length-1]={role:'coach',text:'Error: '+e.message,saved:false};
