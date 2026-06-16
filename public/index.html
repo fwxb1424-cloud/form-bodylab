@@ -1015,6 +1015,15 @@ body{
         </button>
       </div>
 
+      <!-- 导入计划 -->
+      <div class="s" style="margin-top:7px">
+        <button class="ghost-btn" onclick="document.getElementById('import-panel').style.display=document.getElementById('import-panel').style.display==='none'?'':'none'" style="font-size:12px;padding:10px">📋 导入/复用计划</button>
+        <div id="import-panel" style="display:none;margin-top:6px">
+          <textarea id="import-plan-text" rows="5" placeholder="粘贴训练计划，空行分隔动作：&#10;杠铃卧推 4x8-10 80kg&#10;&#10;上斜哑铃卧推 3x10-12 30kg&#10;&#10;蝴蝶机夹胸 4x12-15 25kg" style="width:100%;background:var(--s2);border:1px solid rgba(255,255,255,.1);border-radius:var(--r);padding:10px;color:var(--t1);font-family:var(--f2);font-size:13px;outline:none;resize:none;line-height:1.6"></textarea>
+          <button class="ghost-btn" onclick="parseImportPlan()" style="margin-top:6px;font-size:12px;padding:10px">解析并载入</button>
+        </div>
+      </div>
+
       <!-- exercise list -->
       <div class="s" style="margin-top:8px">
         <div class="slbl">动作清单 <button class="slbl-act" onclick="toggleAddEx()">+ 添加动作</button></div>
@@ -1676,6 +1685,11 @@ function selectMuscle(id,label,silent){
     }
   }
   S.todayMuscle=id;
+  // 加载已保存的方案
+  if(id!=='rest'&&id!=='cardio'){
+    var saved=localStorage.getItem('coach_plan_'+id);
+    if(saved){try{var sp=JSON.parse(saved);if(sp&&sp.length){S.workout=sp.map(function(e){return{name:e.name,sets:e.sets,reps:e.reps,weight_kg:e.weight_kg||0,muscle:id,is_compound:e.sets<=5,notes:'',done:false,sets_data:[],fromPlan:true,_collapsed:false};});renderExercises();document.getElementById('total-cnt').textContent=sp.length;document.getElementById('done-cnt').textContent=0;}}catch(e){}}
+  }
   const isRest=id==='rest';
   const isCardio=id==='cardio';
   S.isTrain=!isRest&&!isCardio;
@@ -2184,6 +2198,45 @@ async function genWorkout(){
 }
 
 function toggleAddEx(){document.getElementById('aep').classList.toggle('on');}
+function parseImportPlan(){
+  var ta=document.getElementById('import-plan-text');if(!ta)return;
+  var txt=ta.value.trim();if(!txt){toast('请粘贴训练计划');return;}
+  if(!S.todayMuscle||S.todayMuscle==='rest'){toast('请先在肌群选择器中选一个训练类型');return;}
+  // 按空行分隔
+  var blocks=txt.split(/\n\n+/).filter(function(b){return b.trim();});
+  var exercises=[];
+  for(var i=0;i<blocks.length;i++){
+    var lines=blocks[i].trim().split('\n');
+    var header=lines[0].trim();
+    // 解析：动作名 组x次 重量
+    var m=header.match(/^(.+?)\s+(\d+)\s*[xX×]\s*(\d+[-~\d]*)\s*(.+)?$/);
+    if(m){
+      var name=m[1].trim();
+      var sets=parseInt(m[2])||4;
+      var reps=m[3].trim();
+      var weight=0;
+      var detail=(m[4]||'').trim();
+      var wm=detail.match(/(\d+\.?\d*)\s*kg/);
+      if(wm)weight=parseFloat(wm[1]);
+      if(/自重|body/i.test(detail))weight=0;
+      exercises.push({name:name,sets:sets,reps:reps,weight_kg:weight,muscle:S.todayMuscle,is_compound:sets<=5,notes:detail||'',done:false,sets_data:[],fromPlan:true,_collapsed:false});
+    }else{
+      // 简单格式：只有动作名
+      exercises.push({name:header,sets:4,reps:'8-12',weight_kg:0,muscle:S.todayMuscle,is_compound:false,notes:'',done:false,sets_data:[],fromPlan:true,_collapsed:false});
+    }
+  }
+  if(!exercises.length){toast('未识别到动作');return;}
+  S.workout=exercises;
+  document.getElementById('total-cnt').textContent=exercises.length;
+  document.getElementById('done-cnt').textContent=0;
+  renderExercises();
+  document.getElementById('import-panel').style.display='none';
+  ta.value='';
+  toast('已导入 '+exercises.length+' 个动作');
+  // 自动保存到 localStorage
+  try{localStorage.setItem('coach_plan_'+S.todayMuscle,JSON.stringify(exercises.map(function(e){return {name:e.name,sets:e.sets,reps:e.reps,weight_kg:e.weight_kg};})));}catch(e){}
+}
+
 function addExercise(){
   const name=document.getElementById('aep-name').value.trim();if(!name)return;
   const sets=parseInt(document.getElementById('aep-sets').value)||4;
