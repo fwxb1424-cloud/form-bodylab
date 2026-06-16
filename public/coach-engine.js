@@ -428,9 +428,11 @@ function localQuery(msg) {
   var tgt = typeof PT === 'function' ? PT() : 168;
   // 有氧已完成
   if (/有氧.*过|做过.*有氧|早上.*有氧|已经.*有氧|有氧.*完了|有氧.*结束|跑.*步|爬坡|椭圆机|单车|游泳|快走|hiit/.test(msg) && msg.length < 25) {
+    // 提取时长
+    var duration = msg.match(/(\d+)\s*(?:分钟|min|m)/);
+    var durStr = duration ? duration[1]+'分钟' : '';
     window.S.todayMuscle = 'cardio';
     window.S.workout = window.S.workout || [];
-    // 记录一次有氧训练
     var cardioName = '有氧';
     if (/爬坡/.test(msg)) cardioName = '爬坡';
     else if (/跑步/.test(msg)) cardioName = '跑步';
@@ -438,11 +440,13 @@ function localQuery(msg) {
     else if (/单车/.test(msg)) cardioName = '单车';
     else if (/快走/.test(msg)) cardioName = '快走';
     else if (/hiit/i.test(msg)) cardioName = 'HIIT';
-    window.S.workout.push({name:cardioName+'（有氧）', sets:1, reps:'完成', weight_kg:0, muscle:'cardio', done:true, sets_data:[{w:0, r:1, done:true}], _collapsed:true});
-    window.S.volume = (window.S.volume||0) + 100;
+    var dur = duration ? parseInt(duration[1]) : 35;
+    window.S.workout.push({name:cardioName+'（有氧'+durStr+'）', sets:1, reps:dur+'min', weight_kg:0, muscle:'cardio', done:true, sets_data:[{w:0, r:dur, done:true}], _collapsed:true});
+    window.S.volume = (window.S.volume||0) + dur;
     try { if (typeof setLastTrainType === 'function') setLastTrainType('cardio'); } catch(e) {}
     try { if (typeof updateDashStatusBar === 'function') updateDashStatusBar(); } catch(e) {}
-    return '有氧完成。今天训练结束，好好恢复。';
+    if (!duration) return '有氧完成。练了多久？';
+    return cardioName + ' ' + durStr + ' 完成。今天训练结束。';
   }
   // 训练会话
   if (/开始.*训|准备.*训|去.*练|start/.test(msg)) {
