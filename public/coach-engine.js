@@ -557,6 +557,10 @@ function localQuery(msg) {
   if (/这周.*总结|本周.*总结|这周.*怎么|周报|weekly|月度.*总结|这个月|最近.*怎么/.test(msg) && msg.length < 20) {
     return 'ASYNC_WEEKLY';
   }
+  // 历史查询
+  if (/上次|上回|之前|以前|历史|记录.*多少/.test(msg) && /卧推|深蹲|硬拉|划船|侧平|弯举|下拉|飞鸟|夹胸|臂屈伸|腿举|臀推|肩推|重量|kg/.test(msg)) {
+    return 'ASYNC_HISTORY';
+  }
   if (/schedule|日程|队列/.test(msg)) {
     var queueType = typeof getTodayQueueType === 'function' ? getTodayQueueType() : '';
     var labelMap = {push:'推日', pull:'拉日', legs:'腿日', shoulder:'肩日', cardio:'有氧日', rest:'休息日'};
@@ -584,6 +588,25 @@ function localQuery(msg) {
   return null;
 }
 
+
+// ══ History query ══
+async function historyQuery(msg) {
+  if (!window.db) return null;
+  var exercises = ['卧推','深蹲','硬拉','划船','侧平','弯举','下拉','飞鸟','夹胸','臂屈伸','腿举','臀推','肩推'];
+  var found = null;
+  for (var i=0;i<exercises.length;i++) { if (msg.indexOf(exercises[i])>=0) { found = exercises[i]; break; } }
+  if (!found) return null;
+  try {
+    var rows = await window.db.getStrengthHistory(found, 5);
+    if (!rows || !rows.length) return '还没有' + found + '的记录';
+    var last = rows[rows.length-1];
+    var prev = rows.length>=2 ? rows[rows.length-2] : null;
+    var e1rm = typeof calcE1RM==='function'?calcE1RM(last.weight_kg,last.reps):last.weight_kg;
+    var trend = prev ? (e1rm > (typeof calcE1RM==='function'?calcE1RM(prev.weight_kg,prev.reps):prev.weight_kg) ? ' ↑' : ' ↓') : '';
+    var date = new Date(last.logged_at).toLocaleDateString('zh-CN',{month:'numeric',day:'numeric'});
+    return found + ' 上次(' + date + ')：' + last.weight_kg + 'kg × ' + last.reps + ' × ' + last.sets + '组。E1RM ≈ ' + e1rm + 'kg' + trend;
+  } catch(e) { return null; }
+}
 
 // ══ Weekly report ══
 async function weeklyReport() {

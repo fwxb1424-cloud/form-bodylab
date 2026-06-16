@@ -3518,12 +3518,12 @@ async function _doAskCoach(text){
     if(intent==='query'){
       var localAnswer=CoachEngine.localQuery(text);
       // 异步查询（周报等需要 Supabase 的）
-      if(localAnswer==='ASYNC_WEEKLY'){
+      if(localAnswer==='ASYNC_WEEKLY'||localAnswer==='ASYNC_HISTORY'){
         _coachMsgs.push({role:'user',text});
         _coachMsgs.push({role:'coach',text:'<span class=\"dots\"><span></span><span></span><span></span></span>',saved:false});
         _renderCoach();
-        var report=await weeklyReport();
-        _coachMsgs[_coachMsgs.length-1]={role:'coach',text:report||'周报生成失败',saved:false};
+        var result=localAnswer==='ASYNC_WEEKLY'?await weeklyReport():await historyQuery(text);
+        _coachMsgs[_coachMsgs.length-1]={role:'coach',text:result||'查询失败',saved:false};
         _renderCoach();
         return;
       }
