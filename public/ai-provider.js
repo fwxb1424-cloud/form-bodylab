@@ -459,7 +459,9 @@ estimated=true
 - log_weight: weight_kg
 - log_training_set: exercise weight_kg sets reps done
 - start_training: muscle
-- log_plan: muscle exercises`,
+- log_plan: muscle exercises
+
+【重要】只在用户告诉你新数据时才用 Action。聊天、分析、确认、重复——都不需要 Action。`,
 };
 
 window.AIProvider  = AIProvider;

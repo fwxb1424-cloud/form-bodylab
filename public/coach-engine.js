@@ -391,7 +391,7 @@ function matchFood(name, grams) {
 function classifyIntent(msg) {
   // 训练会话
   if (/开始.*训|准备.*训|去.*练|start.*train|begin/.test(msg) && msg.length < 15) return 'train_start';
-  if (/结束.*训|练完|finish|done.*train|训.*结束/.test(msg) && msg.length < 15) return 'train_end';
+  if (/结束.*训|练完|finish|done.*train|训.*结束|^结束$|^完成$|^完了$|^不练了$/.test(msg) && msg.length < 15) return 'train_end';
 
   // 区3：计划调整（本地处理，不动AI）
   if (/^改|换成|改成|今天.*休|不想.*练|今天.*练(?!.*做|.*卧推|.*深蹲|.*kg)/.test(msg) && msg.length < 20) return 'plan';

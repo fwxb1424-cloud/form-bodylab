@@ -3563,6 +3563,14 @@ async function _doAskCoach(text){
       // 本地提取失败，交给AI处理
     }
 
+    // 训练开始/结束 → 本地处理
+    if(intent==='train_start'||intent==='train_end'){
+      var trainMsg=CoachEngine.localQuery(text);
+      _coachMsgs.push({role:'user',text});
+      _coachMsgs.push({role:'coach',text:trainMsg||'OK',saved:false});
+      _renderCoach();
+      return;
+    }
     // 区3：计划调整 → 本地处理
     if(intent==='plan'){
       var planAnswer=CoachEngine.localQuery(text);
