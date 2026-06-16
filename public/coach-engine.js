@@ -186,6 +186,14 @@ function classifyIntent(msg) {
 function localQuery(msg) {
   var S = window.S || {};
   var tgt = typeof PT === 'function' ? PT() : 168;
+  if (/schedule|日程|today|今天.*练|训练.*安排|今天.*什么|队列/.test(msg)) {
+    var queueType = typeof getTodayQueueType === 'function' ? getTodayQueueType() : '';
+    var labelMap = {push:'推日', pull:'拉日', legs:'腿日', shoulder:'肩日', cardio:'有氧日', rest:'休息日'};
+    var todayLabel = labelMap[queueType] || queueType || '未确定';
+    var queueList = (typeof PLAN_QUEUE !== 'undefined' ? PLAN_QUEUE : ['push','pull','cardio','legs','shoulder','cardio','rest']);
+    var queueStr = queueList.map(function(t){return labelMap[t]||t;}).join(' → ');
+    return '今天：' + todayLabel + '。队列：' + queueStr;
+  }
   if (/protein|蛋白/.test(msg)) {
     var p = Math.round(S.protein || 0);
     return 'Protein ' + p + '/' + tgt + 'g. ' + (p >= tgt ? 'Target hit.' : 'Need ' + Math.round(tgt - p) + 'g more.');
