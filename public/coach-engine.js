@@ -265,6 +265,7 @@ function localQuery(msg) {
   }
   // 重置数据
   if (/重置.*数据|清除.*数据|删.*所有|重新.*开始|清空/.test(msg) && msg.length < 15) {
+    if (/云端|supabase|数据库|线上/.test(msg)) return 'CONFIRM_CLOUD_RESET';
     return 'CONFIRM_RESET';
   }
   // 训练时段
