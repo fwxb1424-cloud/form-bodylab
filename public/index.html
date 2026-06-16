@@ -3679,9 +3679,9 @@ async function _doAskCoach(text){
       execMsgs.push(result.ok?'OK '+result.msg:'FAIL '+result.msg);
     }
 
-    var displayText=(parsed.text||'Done.').replace(/\*\*(.+?)\*\*/g,'$1').replace(/^[-*#]\s+/gm,'');
+    var displayText=(parsed.text||'Done.').replace(/\[ACTION:[\s\S]*?\[\/ACTION\]/g,'').replace(/\*\*(.+?)\*\*/g,'$1').replace(/^[-*#]\s+/gm,'').trim();
     if(execMsgs.length)displayText+='\n\n'+execMsgs.join('\n');
-    _coachMsgs[_coachMsgs.length-1]={role:'coach',text:displayText,saved:false};
+    _coachMsgs[_coachMsgs.length-1]={role:'coach',text:displayText.replace(/\[ACTION:[\s\S]*?\[\/ACTION\]/g,'').trim(),saved:false};
 
     if(execMsgs.length){
       try{if(typeof renderDash==='function')renderDash();}catch(e){}
