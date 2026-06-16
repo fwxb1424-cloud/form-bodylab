@@ -389,6 +389,10 @@ function matchFood(name, grams) {
 
 // ══ 四区意图分类 ══
 function classifyIntent(msg) {
+  // 训练会话
+  if (/开始.*训|准备.*训|去.*练|start.*train|begin/.test(msg) && msg.length < 15) return 'train_start';
+  if (/结束.*训|练完|finish|done.*train|训.*结束/.test(msg) && msg.length < 15) return 'train_end';
+
   // 区3：计划调整（本地处理，不动AI）
   if (/^改|换成|改成|今天.*休|不想.*练|今天.*练(?!.*做|.*卧推|.*深蹲|.*kg)/.test(msg) && msg.length < 20) return 'plan';
   if (/晚上.*去|早上.*去|改为.*早|改为.*晚|训练.*时间|几点.*练/.test(msg) && msg.length < 15) return 'plan';
@@ -420,6 +424,26 @@ function classifyIntent(msg) {
 function localQuery(msg) {
   var S = window.S || {};
   var tgt = typeof PT === 'function' ? PT() : 168;
+  // 训练会话
+  if (/开始.*训|准备.*训|去.*练|start/.test(msg)) {
+    var qt2 = typeof getTodayQueueType === 'function' ? getTodayQueueType() : 'push';
+    var s = window.__session;
+    s.active = 'training'; s.training_muscle = qt2; s.current_set = 0;
+    var plan = null;
+    try { plan = JSON.parse(localStorage.getItem('coach_plan_' + qt2) || 'null'); } catch(e) {}
+    if (plan && plan.length) { s.pending_exercises = plan; }
+    var lbl2 = {push:'推日', pull:'拉日', legs:'腿日', shoulder:'肩日', cardio:'有氧日', rest:'休息日'};
+    var msg2 = '开始训练：' + (lbl2[qt2]||qt2);
+    if (plan && plan.length) {
+      msg2 += '\n' + plan.map(function(e,i){return (i+1)+'. '+e.name+' '+e.sets+'x'+e.reps+(e.weight_kg?' '+e.weight_kg+'kg':'');}).join('\n');
+    }
+    return msg2;
+  }
+  if (/结束.*训|练完|finish/.test(msg)) {
+    window.__session.active = null;
+    window.__session.current_exercise = null;
+    return '训练结束。辛苦了。';
+  }
   if (/今天.*干|今天.*怎么|今天.*什么|今天.*安排|日程|做什么|干嘛|今天.*样/i.test(msg)) {
     var S = window.S || {};
     var queueType = typeof getTodayQueueType === 'function' ? getTodayQueueType() : '';
