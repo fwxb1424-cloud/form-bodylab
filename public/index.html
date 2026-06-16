@@ -1188,6 +1188,24 @@ body{
         <div id="body-supps"></div>
         <div class="add-supp-r"><input class="as-n" type="text" id="as-n" placeholder="补剂名称"><input class="as-d" type="text" id="as-d" placeholder="用量（如 5g）"><button class="as-btn" onclick="addSupp()">添加</button></div>
       </div>
+
+      <!-- 本周执行（从计划页移入） -->
+      <div class="s" style="margin-top:8px">
+        <div class="slbl">本周执行情况</div>
+        <div id="week-exec-board"><div class="empty">连接云端后显示</div></div>
+      </div>
+
+      <!-- 训练队列 -->
+      <div class="s" style="margin-top:8px">
+        <div class="slbl">训练队列</div>
+        <div id="plan-week-grid"></div>
+      </div>
+
+      <!-- 减脂期进度 -->
+      <div class="s" style="margin-top:8px;padding-bottom:4px">
+        <div class="slbl">减脂期进度</div>
+        <div id="plan-phase-progress"></div>
+      </div>
     </div>
 
     <!-- ══ 记忆 ══ -->
@@ -1367,7 +1385,7 @@ async function boot(){
       if(n==='plan'){ renderWeekExecBoard(); renderPlanWeekGrid(); renderPhaseProgress(); refreshTrainingSlotUI(); }
       if(n==='coach'){ _renderCoach(); }
       if(n==='dash'){ renderTodayStatusCard(); renderPhaseTrigger(); setTimeout(renderDashAlerts,30); setTimeout(fillDashTrainCount,200); setTimeout(renderWeeklyMiniCard,100); renderPauseButton(); }
-      if(n==='body'){ if(typeof loadStrChart==='function') loadStrChart(); }
+      if(n==='body'){ if(typeof loadStrChart==='function') loadStrChart(); if(typeof renderWeekExecBoard==='function') renderWeekExecBoard(); if(typeof renderPlanWeekGrid==='function') renderPlanWeekGrid(); if(typeof renderPhaseProgress==='function') renderPhaseProgress(); }
     };
   }
 }
