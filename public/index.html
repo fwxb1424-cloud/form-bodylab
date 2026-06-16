@@ -3579,6 +3579,9 @@ async function _doAskCoach(text){
       _coachMsgs.push({role:'user',text});
       _coachMsgs.push({role:'coach',text:trainMsg||'OK',saved:false});
       _renderCoach();
+      try{if(typeof renderExercises==='function')renderExercises();}catch(e){}
+      try{if(typeof renderDash==='function')renderDash();}catch(e){}
+      try{if(typeof updateDashStatusBar==='function')updateDashStatusBar();}catch(e){}
       return;
     }
     // 方案编辑提示
