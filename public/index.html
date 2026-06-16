@@ -3537,6 +3537,33 @@ async function _doAskCoach(text){
         return;
       }
     }
+    // 区D：纠错 + 追加
+    if(intent==='correct'){
+      var isAdd = /再加|也算|还有|另外|补充/.test(text);
+      if(!isAdd){
+        // 撤回上一条
+        var last = CoachEngine.executeAction({action:'correct',data:{}});
+      }
+      // 重新提取
+      if(typeof extractDataLocally==='function'){
+        var corrActions=extractDataLocally(text);
+        if(corrActions.length){
+          _coachMsgs.push({role:'user',text});
+          var cmsgs=[];
+          for(var i=0;i<corrActions.length;i++){
+            var cr=CoachEngine.executeAction(corrActions[i]);
+            cmsgs.push(cr.ok?'OK '+cr.msg:'FAIL '+cr.msg);
+          }
+          _coachMsgs.push({role:'coach',text:(isAdd?'已追加。':'已更正。')+'\n'+cmsgs.join('\n'),saved:false});
+          _renderCoach();
+          try{if(typeof renderDash==='function')renderDash();}catch(e){}
+          try{if(typeof updateDashStatusBar==='function')updateDashStatusBar();}catch(e){}
+          return;
+        }
+      }
+      // 本地提取失败，交给AI处理
+    }
+
     // 区3：计划调整 → 本地处理
     if(intent==='plan'){
       var planAnswer=CoachEngine.localQuery(text);

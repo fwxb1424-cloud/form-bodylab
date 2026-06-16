@@ -314,8 +314,9 @@ function classifyIntent(msg) {
   // 区4：分析（AI深度处理）
   if (/分析|复盘|趋势|建议|帮我.*看|什么.*问题|为什么|怎么.*改进/.test(msg) && msg.length > 10) return 'analyze';
 
-  // 纠错
-  if (/不对|不是|错了|撤回/.test(msg) && msg.length < 10) return 'correct';
+  // 纠错 + 追加
+  if (/不对|不是|错了|撤回|改成|更正/.test(msg) && msg.length < 30) return 'correct';
+  if (/再加|也算|还有|另外|补充/.test(msg) && msg.length < 30) return 'correct';
 
   // 默认：聊天
   return 'chat';
