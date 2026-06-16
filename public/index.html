@@ -3521,12 +3521,37 @@ async function _doAskCoach(text){
     var intent=CoachEngine.classifyIntent(text);
     if(intent==='query'){
       var localAnswer=CoachEngine.localQuery(text);
+      if(localAnswer==='CONFIRM_RESET'){
+        _coachMsgs.push({role:'user',text});
+        _coachMsgs.push({role:'coach',text:'确定要清除所有数据吗？这个操作不可撤销。回复"确认"执行。',saved:false});
+        window.__coach_pending_reset = true;
+        _renderCoach();
+        return;
+      }
       if(localAnswer){
         _coachMsgs.push({role:'user',text});
         _coachMsgs.push({role:'coach',text:localAnswer,saved:false});
         _renderCoach();
         return;
       }
+    }
+    // 确认重置
+    if(window.__coach_pending_reset && /确认|是的|确定|好/.test(text)){
+      window.__coach_pending_reset = false;
+      // 清除所有 localStorage
+      var keys = Object.keys(localStorage);
+      for(var i=0;i<keys.length;i++){ if(keys[i].startsWith('form_')||keys[i].startsWith('coach_')){ localStorage.removeItem(keys[i]); } }
+      // 重置 S
+      window.S.protein=0;window.S.carbs=0;window.S.fat=0;window.S.kcal=0;
+      window.S.foods=[];window.S.workout=[];window.S.volume=0;
+      window.S.todayMuscle='';window.S.weight_kg=null;
+      _coachMsgs.push({role:'user',text});
+      _coachMsgs.push({role:'coach',text:'已清除所有数据。可以开始正式使用了。',saved:false});
+      _renderCoach();
+      try{if(typeof renderDash==='function')renderDash();}catch(e){}
+      try{if(typeof updateDashStatusBar==='function')updateDashStatusBar();}catch(e){}
+      try{if(typeof renderDailyChecklist==='function')renderDailyChecklist();}catch(e){}
+      return;
     }
   }
 

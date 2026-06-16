@@ -263,6 +263,10 @@ function localQuery(msg) {
     try { if (typeof updateDashStatusBar === 'function') updateDashStatusBar(); } catch(e) {}
     return '好，今天' + (lbl[qType] || qType) + '。';
   }
+  // 重置数据
+  if (/重置.*数据|清除.*数据|删.*所有|重新.*开始|清空/.test(msg) && msg.length < 15) {
+    return 'CONFIRM_RESET';
+  }
   // 训练时段
   if (/晚上.*练|下午.*练|早上.*练|改成.*早|改成.*晚|几点.*去|健身.*时间/.test(msg) && msg.length < 15) {
     var slot = /早/.test(msg) ? 'morning' : 'evening';
