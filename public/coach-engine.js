@@ -185,17 +185,31 @@ function executeAction(action) {
   }
 }
 
-// Intent classifier - runs locally, no AI call needed
+// ══ 四区意图分类 ══
 function classifyIntent(msg) {
-  if (/not right|wrong|correct|undo|撤回|不对|不是|错了/.test(msg)) return 'correct';
-  if (/start.*train|begin.*workout|开始.*练|准备.*练/.test(msg)) return 'train_start';
-  if (/end.*train|finish|done.*all|结束|练完|完成/.test(msg)) return 'train_end';
-  if (/how many|how much|check|query|多少|查|看|达标/.test(msg) && msg.length < 20) return 'query';
-  if (/sleep|slept|bed|wake|睡了|睡眠|失眠/.test(msg)) return 'log';
-  if (/ate|eat|food|meal|chicken|rice|protein|吃了|摄入|吃了|鸡胸|米饭|蛋白/.test(msg)) return 'log';
-  if (/bench|squat|deadlift|curl|press|卧推|深蹲|硬拉|划船|侧平|弯举|下拉|飞鸟/.test(msg)) return 'log';
-  if (/weight.*kg|weigh|scale|体重.*\d|kg/.test(msg)) return 'log';
-  if (/analyze|review|trend|summary|分析|复盘|趋势|总结/i.test(msg) && msg.length > 15) return 'analyze';
+  // 区3：计划调整（本地处理，不动AI）
+  if (/^改|换成|改成|今天.*休|不想.*练|今天.*练(?!.*做|.*卧推|.*深蹲|.*kg)/.test(msg) && msg.length < 20) return 'plan';
+  if (/晚上.*去|早上.*去|改为.*早|改为.*晚|训练.*时间|几点.*练/.test(msg) && msg.length < 15) return 'plan';
+  if (/记住.*方案|保存.*计划|锁定.*方案/.test(msg)) return 'plan';
+
+  // 区1：数据记录（需要AI提取结构化信息）
+  if (/吃了|喝了|摄入|午饭|晚饭|早饭|早餐|午餐|晚餐|加餐|鸡胸|鸡腿|牛肉|虾|鱼|蛋|奶|豆浆|米饭|面包|香蕉|蛋白粉/.test(msg)) return 'log';
+  if (/睡|起床|醒|失眠/.test(msg) && msg.length < 20) return 'log';
+  if (/体重.*\d|kg.*\d|\d.*kg|称了/.test(msg) && msg.length < 20) return 'log';
+  if (/卧推|深蹲|硬拉|划船|侧平|弯举|下拉|飞鸟|夹胸|臂屈伸|腿举|臀推|做完|做了.*组|完成/.test(msg)) return 'log';
+
+  // 区2：查询（本地回答，不调AI）
+  if (/今天.*干|今天.*怎么|今天.*什么|今天.*安排|日程|队列|做什么|干嘛|今天.*样/.test(msg)) return 'query';
+  if (/多少|查|看.*多少|达标|还差|够不够/.test(msg) && msg.length < 20) return 'query';
+  if (/今天.*蛋白|今天.*热量|今天.*碳水|今天.*体重|睡了.*多久|睡眠.*怎么/.test(msg)) return 'query';
+
+  // 区4：分析（AI深度处理）
+  if (/分析|复盘|趋势|建议|帮我.*看|什么.*问题|为什么|怎么.*改进/.test(msg) && msg.length > 10) return 'analyze';
+
+  // 纠错
+  if (/不对|不是|错了|撤回/.test(msg) && msg.length < 10) return 'correct';
+
+  // 默认：聊天
   return 'chat';
 }
 

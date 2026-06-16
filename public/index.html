@@ -3514,11 +3514,12 @@ async function askCoach(){
   await _doAskCoach(text);
 }
 
-// 共用发送逻辑
+// ══ 四区分发 ══
 async function _doAskCoach(text){
-  // 本地查询
   if(typeof CoachEngine!=='undefined'){
     var intent=CoachEngine.classifyIntent(text);
+
+    // 区2：查询 → 本地秒回
     if(intent==='query'){
       var localAnswer=CoachEngine.localQuery(text);
       if(localAnswer==='CONFIRM_RESET'||localAnswer==='CONFIRM_CLOUD_RESET'){
@@ -3535,6 +3536,16 @@ async function _doAskCoach(text){
         _renderCoach();
         return;
       }
+    }
+    // 区3：计划调整 → 本地处理
+    if(intent==='plan'){
+      var planAnswer=CoachEngine.localQuery(text);
+      _coachMsgs.push({role:'user',text});
+      _coachMsgs.push({role:'coach',text:planAnswer||'已更新',saved:false});
+      _renderCoach();
+      try{if(typeof updateDashStatusBar==='function')updateDashStatusBar();}catch(e){}
+      try{if(typeof renderDash==='function')renderDash();}catch(e){}
+      return;
     }
     // 确认重置
     if(window.__coach_pending_reset && /确认|是的|确定|好/.test(text)){
