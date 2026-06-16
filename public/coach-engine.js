@@ -243,6 +243,33 @@ function localQuery(msg) {
 
     return summary;
   }
+  // 休息日切换
+  if (/今天.*休|不想.*练|改.*休息|不.*练了|想.*休息/.test(msg) && msg.length < 15) {
+    window.S.todayMuscle = 'rest';
+    window.S.isTrain = false;
+    localStorage.setItem('form_today_muscle', 'rest');
+    localStorage.setItem('form_today_muscle_date', new Date().toDateString());
+    try { if (typeof updateDashStatusBar === 'function') updateDashStatusBar(); } catch(e) {}
+    return '好，今天休息。拉伸、多喝水、早点睡。';
+  }
+  // 恢复训练
+  if (/今天.*练|恢复.*训练|不.*休|改成.*练/.test(msg) && msg.length < 15) {
+    var qType = typeof getTodayQueueType === 'function' ? getTodayQueueType() : 'push';
+    var lbl = {push:'推日', pull:'拉日', legs:'腿日', shoulder:'肩日', cardio:'有氧日', rest:'休息日'};
+    window.S.todayMuscle = qType;
+    window.S.isTrain = qType !== 'rest' && qType !== 'cardio';
+    localStorage.setItem('form_today_muscle', qType);
+    localStorage.setItem('form_today_muscle_date', new Date().toDateString());
+    try { if (typeof updateDashStatusBar === 'function') updateDashStatusBar(); } catch(e) {}
+    return '好，今天' + (lbl[qType] || qType) + '。';
+  }
+  // 训练时段
+  if (/晚上.*练|下午.*练|早上.*练|改成.*早|改成.*晚|几点.*去|健身.*时间/.test(msg) && msg.length < 15) {
+    var slot = /早/.test(msg) ? 'morning' : 'evening';
+    localStorage.setItem('form_training_slot', slot);
+    if (typeof setTrainingSlot === 'function') setTrainingSlot(slot);
+    return '已设为' + (slot === 'morning' ? '早间训练（7-9点）' : '晚间训练（18-20点）') + '。';
+  }
   if (/schedule|日程|队列/.test(msg)) {
     var queueType = typeof getTodayQueueType === 'function' ? getTodayQueueType() : '';
     var labelMap = {push:'推日', pull:'拉日', legs:'腿日', shoulder:'肩日', cardio:'有氧日', rest:'休息日'};
