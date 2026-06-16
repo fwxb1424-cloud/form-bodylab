@@ -1328,7 +1328,9 @@ async function doSetup(){
     window.db=db=new DB(su,sk);await db.init();
     window.AI=AI=new AIProvider(ds,gm||null);
     localStorage.setItem("form_connected","1");
-    await boot();
+    if(typeof boot==="function")await boot();
+    else if(typeof window.boot==="function")await window.boot();
+    else{document.getElementById("setup").classList.add("off");document.getElementById("app").classList.remove("off");}
     if(err){err.textContent="";err.style.display="none";}
     toast("已连接云端数据库与 DeepSeek");
   }catch(e){
