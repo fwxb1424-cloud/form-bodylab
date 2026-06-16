@@ -84,6 +84,8 @@ function executeAction(action) {
 
       case 'log_food':
         if (!data.name) return { ok: false, msg: 'Need food name' };
+        var logTime = new Date();
+        if (data.date_offset) { logTime.setDate(logTime.getDate() + data.date_offset); }
         var food = {
           name: data.name,
           protein_g: data.protein_g || 0,
@@ -91,9 +93,9 @@ function executeAction(action) {
           fat_g: data.fat_g || 0,
           kcal: data.kcal || (data.protein_g || 0) * 4 + (data.carbs_g || 0) * 4 + (data.fat_g || 0) * 9,
           id: Date.now() + Math.random(),
-          time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
-          meal_type: s.meal_type || 'meal',
-          logged_at: new Date().toISOString()
+          time: logTime.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+          meal_type: data.meal_type || s.meal_type || 'meal',
+          logged_at: logTime.toISOString()
         };
         WS.foods = WS.foods || [];
         WS.foods.push(food);
@@ -310,8 +312,21 @@ function extractDataLocally(msg) {
 
 function extractDataLocally(msg) {
   var actions = [];
-  // 多食物分割："鸡胸肉200g和米饭一碗" / "鸡蛋两个 牛奶一杯"
-  var cleanMsg = msg.replace(/吃了|喝了|摄入|午饭|晚饭|早饭|早餐|午餐|晚餐|加餐/g,'').trim();
+  // 检测时段
+  var mealType = '';
+  if (/早上|早饭|早餐|早晨/.test(msg)) mealType = '早餐';
+  else if (/上午/.test(msg)) mealType = '加餐';
+  else if (/中午|午饭|午餐|午间/.test(msg)) mealType = '午餐';
+  else if (/下午/.test(msg)) mealType = '加餐';
+  else if (/晚上|晚饭|晚餐|晚间/.test(msg)) mealType = '晚餐';
+  else if (/睡前|夜宵|宵夜/.test(msg)) mealType = '加餐';
+  // 检测日期偏移
+  var dateOffset = 0;
+  if (/昨天|昨日/.test(msg)) dateOffset = -1;
+  else if (/前天/.test(msg)) dateOffset = -2;
+  else if (/明天/.test(msg)) dateOffset = 1;
+  // 多食物分割
+  var cleanMsg = msg.replace(/吃了|喝了|摄入|午饭|晚饭|早饭|早餐|午餐|晚餐|加餐|早上|中午|晚上|下午|上午|昨天|前天|明天|刚才|刚刚/g,'').trim();
   // 按数量+食物匹配
   var parts = cleanMsg.split(/[和、，,跟与还再另]/);
   for (var pi=0; pi<parts.length; pi++) {
@@ -333,14 +348,18 @@ function extractDataLocally(msg) {
     }
     name = name.replace(/了|吧|啦|的/g,'').trim();
     var nut = matchFood(name, grams);
-    if (nut) { actions.push({action:'log_food',data:nut}); }
+    if (nut) {
+      if (mealType) nut.meal_type = mealType;
+      if (dateOffset) nut.date_offset = dateOffset;
+      actions.push({action:'log_food',data:nut});
+    }
   }
   // 单个食物fallback
   if (!actions.length) {
     var sfm = cleanMsg.match(/^(.{2,15})$/);
     if (sfm) {
       var nut2 = matchFood(sfm[1].trim(), 200);
-      if (nut2) { nut2.estimated=true; actions.push({action:'log_food',data:nut2}); }
+      if (nut2) { nut2.estimated=true; if (mealType) nut2.meal_type = mealType; if (dateOffset) nut2.date_offset = dateOffset; actions.push({action:'log_food',data:nut2}); }
     }
   }
   // Sleep: \"slept 7 hours\" / \"7h\"
