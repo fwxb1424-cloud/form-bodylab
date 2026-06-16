@@ -14,6 +14,7 @@
 <script src="sync-store.js"></script>
 <script src="macros.js"></script>
 <script src="ai-provider.js"></script>
+<script src="coach-engine.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,400&family=DM+Sans:wght@400;500&display=swap');
 :root{
@@ -3743,41 +3744,66 @@ function _renderCoach(){
 
 // 共用发送逻辑
 async function _sendCoachMsg(text){
-  // 如果 AI 未初始化，静默从 localStorage 恢复
+  // AI 恢复
   if(!AI || typeof AI.call !== 'function'){
-    const ds=localStorage.getItem('form_ds');
-    const gm=localStorage.getItem('form_gm');
+    var ds=localStorage.getItem('form_ds');var gm=localStorage.getItem('form_gm');
     if(ds && typeof AIProvider !== 'undefined'){
-      try{
-        window.AI=AI=new AIProvider(ds,gm||null);
-      }catch(e){
-        _coachMsgs.push({role:'user',text});
-        _coachMsgs.push({role:'coach',text:`AI 初始化失败：${e.message}。请刷新页面重新设置。`,saved:false});
-        _renderCoach();
-        return;
+      try{window.AI=AI=new AIProvider(ds,gm||null);}catch(e){
+        _coachMsgs.push({role:'user',text});_coachMsgs.push({role:'coach',text:'AI init failed',saved:false});_renderCoach();return;
       }
-    }else{
-      _coachMsgs.push({role:'user',text});
-      _coachMsgs.push({role:'coach',text:'未找到 API Key。请在设置页面输入 DeepSeek Key。',saved:false});
+    }else{_coachMsgs.push({role:'user',text});_coachMsgs.push({role:'coach',text:'No API Key',saved:false});_renderCoach();return;}
+  }
+
+  // 先本地判断意图
+  var intent = typeof CoachEngine !== 'undefined' ? CoachEngine.classifyIntent(text) : 'chat';
+
+  // 查询类：本地回答，不调 AI
+  if (intent === 'query') {
+    _coachMsgs.push({role:'user',text});
+    var localAnswer = CoachEngine.localQuery(text);
+    if (localAnswer) {
+      _coachMsgs.push({role:'coach',text:localAnswer,saved:false});
       _renderCoach();
       return;
     }
+    // 本地回答不了，降级为 AI 聊天
+    intent = 'chat';
   }
 
   _coachMsgs.push({role:'user',text});
-  _coachMsgs.push({role:'coach',text:'<span class="dots"><span></span><span></span><span></span></span>',saved:false});
+  _coachMsgs.push({role:'coach',text:'<span class=\"dots\"><span></span><span></span><span></span></span>',saved:false});
   _renderCoach();
+
   try{
-    // 确保训练历史已加载，教练能看到真实训练数据
-    if(!S.recentSessionsCache?.length && typeof loadTrainHistory==='function'){
-      await loadTrainHistory();
+    if(!S.recentSessionsCache?.length && typeof loadTrainHistory==='function'){await loadTrainHistory();}
+    var profile=typeof buildProfile==='function'?buildProfile(window.S):'';
+    var systemPrompt=typeof PROMPTS!=='undefined'&&PROMPTS.coach?PROMPTS.coach(profile):'';
+    // 追加 Action 指令
+    systemPrompt += '\n\nWhen you need to record data, add action blocks at the end:\n[ACTION:log_food]\nname=chicken breast\nprotein_g=45\n[/ACTION]\n\nAvailable actions: log_sleep, log_weight, log_food, log_training_set, start_training, end_training, log_plan, correct.\nFor simple chat or analysis, no action block needed.';
+    var r=await AI.call('coach',{system:systemPrompt,userMsg:text});
+    var raw=r._raw||'';
+
+    // 解析并执行 Action
+    var parsed = typeof CoachEngine !== 'undefined' ? CoachEngine.parseActions(raw) : {text:raw,actions:[]};
+    var execResults = [];
+    for (var i=0; i<parsed.actions.length; i++) {
+      var result = CoachEngine.executeAction(parsed.actions[i]);
+      execResults.push(result.ok ? 'OK '+result.msg : 'FAIL '+result.msg);
     }
-    const profile=typeof buildProfile==='function'?buildProfile(window.S):'';
-    const system=typeof PROMPTS!=='undefined'&&PROMPTS.coach?PROMPTS.coach(profile):'';
-    const r=await AI.call('coach',{system,userMsg:text});
-    _coachMsgs[_coachMsgs.length-1]={role:'coach',text:_cleanCoachText(r._raw||'未收到回复'),saved:false};
+
+    // 显示对话（不含 Action 块）+ 执行结果
+    var displayText = _cleanCoachText(parsed.text || 'Done.');
+    if (execResults.length) displayText += '\n\n' + execResults.join('\n');
+    _coachMsgs[_coachMsgs.length-1]={role:'coach',text:displayText,saved:false};
+
+    // 刷新看板
+    if (execResults.length) {
+      try{if(typeof renderDash==='function')renderDash();}catch(e){}
+      try{if(typeof updateDashStatusBar==='function')updateDashStatusBar();}catch(e){}
+      try{if(typeof renderDailyChecklist==='function')renderDailyChecklist();}catch(e){}
+    }
   }catch(e){
-    _coachMsgs[_coachMsgs.length-1]={role:'coach',text:`错误：${e.message}`,saved:false};
+    _coachMsgs[_coachMsgs.length-1]={role:'coach',text:'Error: '+e.message,saved:false};
   }
   _renderCoach();
 }
