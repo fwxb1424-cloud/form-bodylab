@@ -1378,6 +1378,7 @@ async function boot(){
       _origGoPage(n);
       if(n==='plan'){ renderWeekExecBoard(); renderPlanWeekGrid(); renderPhaseProgress(); refreshTrainingSlotUI(); }
       if(n==='coach'){ _renderCoach(); }
+      if(n==='train'){ renderMuscleSelector();renderLockUI();if(window.S&&window.S.workout&&window.S.workout.length){renderExercises();document.getElementById('total-cnt').textContent=window.S.workout.length;document.getElementById('sh-title').textContent='今日训练';document.getElementById('sh-sub').textContent='教练记录 · '+window.S.workout.length+'个动作';} }
       if(n==='dash'){ renderTodayStatusCard(); renderPhaseTrigger(); setTimeout(renderDashAlerts,30); setTimeout(fillDashTrainCount,200); setTimeout(renderWeeklyMiniCard,100); renderPauseButton(); }
       if(n==='body'){ if(typeof loadStrChart==='function') loadStrChart(); if(typeof renderWeekExecBoard==='function') renderWeekExecBoard(); if(typeof renderPlanWeekGrid==='function') renderPlanWeekGrid(); if(typeof renderPhaseProgress==='function') renderPhaseProgress(); }
     };
@@ -3627,6 +3628,7 @@ async function _doAskCoach(text){
       try{if(typeof updateBars==='function')updateBars();}catch(e){}
       try{if(typeof updateGapRec==='function')updateGapRec();}catch(e){}
       try{if(typeof renderDailyChecklist==='function')renderDailyChecklist();}catch(e){}
+      try{if(typeof renderExercises==='function')renderExercises();}catch(e){}
       return;
     }
   }
