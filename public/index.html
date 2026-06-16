@@ -80,6 +80,7 @@ body{
 .pages{flex:1;overflow:hidden;position:relative;}
 .page{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:78px;display:none;overscroll-behavior:none;}
 .page.on{display:block;}
+.page.coach-page.on{display:flex;flex-direction:column;}
 
 /* ─ NAV ───────────────────────────────────────────── */
 .nav{
@@ -758,7 +759,7 @@ body{
   <div class="pages">
 
     <!-- ══ 教练 ══ -->
-    <div class="page on" id="pg-coach" style="display:flex;flex-direction:column">
+    <div class="page on coach-page" id="pg-coach">
       <div class="ph" style="flex-shrink:0">
         <div class="ph-ey">FORM Coach</div>
         <div class="ph-h1">教练</div>
