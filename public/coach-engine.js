@@ -310,23 +310,36 @@ function extractDataLocally(msg) {
 
 function extractDataLocally(msg) {
   var actions = [];
-  // Extract food: \"300g chicken\" or \"two eggs\"
-  var fm = msg.match(/(\d+)\s*g\s*(.+)/);
-  if (!fm) fm = msg.match(/([一二两三四五六七八九十]+)\s*(?:个|碗|杯|勺|份)\s*(.+)/);
-  if (fm) {
-    var grams = parseInt(fm[1]);
-    if (isNaN(grams)) { var map={一:1,二:2,两:2,三:3,四:4,五:5,六:6,七:7,八:8,九:9,十:10}; grams = map[fm[1]]||1; }
-    var name = fm[2].trim();
+  // 多食物分割："鸡胸肉200g和米饭一碗" / "鸡蛋两个 牛奶一杯"
+  var cleanMsg = msg.replace(/吃了|喝了|摄入|午饭|晚饭|早饭|早餐|午餐|晚餐|加餐/g,'').trim();
+  // 按数量+食物匹配
+  var parts = cleanMsg.split(/[和、，,跟与还再另]/);
+  for (var pi=0; pi<parts.length; pi++) {
+    var part = parts[pi].trim();
+    if (!part) continue;
+    var grams = 200; // default
+    var name = part;
+    // \"300g鸡胸肉\" or \"鸡胸肉300g\"
+    var fm = part.match(/(\d+)\s*g\s*(.+)/);
+    if (fm) { grams = parseInt(fm[1]); name = fm[2].trim(); }
+    else {
+      fm = part.match(/(.+?)\s*(\d+)\s*g/);
+      if (fm) { name = fm[1].trim(); grams = parseInt(fm[2]); }
+    }
+    // \"两个鸡蛋\" / \"一碗米饭\"
+    if (isNaN(grams)||grams<5) {
+      fm = part.match(/([一二两三四五六七八九十]+)\s*(?:个|碗|杯|勺|份)\s*(.+)/);
+      if (fm) { var map={一:1,二:2,两:2,三:3,四:4,五:5,六:6,七:7,八:8,九:9,十:10}; grams = (map[fm[1]]||1)*(part.indexOf('碗')>0?300:part.indexOf('杯')>0?250:50); name = fm[2].trim(); }
+    }
+    name = name.replace(/了|吧|啦|的/g,'').trim();
     var nut = matchFood(name, grams);
     if (nut) { actions.push({action:'log_food',data:nut}); }
   }
-  // Simple: \"ate chicken\" / \"an egg\"
+  // 单个食物fallback
   if (!actions.length) {
-    var sfm = msg.match(/^(.{2,15})(?:了|吧|啦|的)?$/);
-    if (!sfm) sfm = msg.match(/([一二两三四五]\s*(?:个|碗|杯|勺)\s*.{2,10})/);
+    var sfm = cleanMsg.match(/^(.{2,15})$/);
     if (sfm) {
-      var n2 = (sfm[1]||'').replace(/了|吧|啦|的/g,'').trim();
-      var nut2 = matchFood(n2, 200); // default 200g
+      var nut2 = matchFood(sfm[1].trim(), 200);
       if (nut2) { nut2.estimated=true; actions.push({action:'log_food',data:nut2}); }
     }
   }
