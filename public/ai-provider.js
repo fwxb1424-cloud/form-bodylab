@@ -449,6 +449,7 @@ protein_g=45
 - log_food: name=食物名 protein_g=45 carbs_g=30 fat_g=10 kcal=400
 - log_training_set: exercise=杠铃卧推 weight_kg=80 sets=4 reps=8 done=true
 - start_training: muscle=推
+- log_plan: muscle=推 exercises=杠铃卧推,4,8-10,80|上斜哑铃,3,10-12,30
 
 Action 块放在回复的最后面，用户看不到它。如果只是聊天或分析，不需要 Action 块。`,
 };

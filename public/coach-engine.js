@@ -138,12 +138,29 @@ function executeAction(action) {
         s.history.push({ ts: Date.now(), action: 'log_training_set', data: data });
         return { ok: true, msg: exName + ' set ' + found.sets_data.length + ' done' };
 
+      case 'log_plan':
+        // 记住训练方案（通过对话输入）
+        if (!data.muscle) return { ok: false, msg: 'Which muscle group?' };
+        var exList = [];
+        if (data.exercises) {
+          if (typeof data.exercises === 'string') {
+            exList = data.exercises.split(',').map(function(e){ var parts=e.trim().split(/\s+/); return {name:parts[0]||'', sets:parseInt(parts[1])||4, reps:parts[2]||'8-12', weight_kg:parseFloat(parts[3])||0}; });
+          } else { exList = data.exercises; }
+        }
+        s.pending_exercises = exList;
+        try { localStorage.setItem('coach_plan_' + data.muscle, JSON.stringify(exList)); } catch(e) {}
+        return { ok: true, msg: 'Plan saved: ' + exList.length + ' exercises for ' + data.muscle };
+
       case 'start_training':
         s.active = 'training';
         s.training_muscle = data.muscle || WS.todayMuscle || '';
         s.current_exercise = null;
         s.current_set = 0;
-        return { ok: true, msg: 'Training started' };
+        // 加载方案
+        var loadPlan = null;
+        try { loadPlan = JSON.parse(localStorage.getItem('coach_plan_' + s.training_muscle) || 'null'); } catch(e) {}
+        if (loadPlan && loadPlan.length) { s.pending_exercises = loadPlan; }
+        return { ok: true, msg: 'Training: ' + s.training_muscle + (loadPlan && loadPlan.length ? ' (' + loadPlan.length + ' exercises loaded)' : '') };
 
       case 'end_training':
         s.active = null;
@@ -186,13 +203,16 @@ function classifyIntent(msg) {
 function localQuery(msg) {
   var S = window.S || {};
   var tgt = typeof PT === 'function' ? PT() : 168;
-  if (/schedule|日程|today|今天.*练|训练.*安排|今天.*什么|队列/.test(msg)) {
+  if (/schedule|日程|today|今天.*练|训练.*安排|今天.*什么|队列|做什么|计划/.test(msg)) {
     var queueType = typeof getTodayQueueType === 'function' ? getTodayQueueType() : '';
     var labelMap = {push:'推日', pull:'拉日', legs:'腿日', shoulder:'肩日', cardio:'有氧日', rest:'休息日'};
     var todayLabel = labelMap[queueType] || queueType || '未确定';
+    // 尝试加载保存的方案
+    var planStr = '';
+    try { var savedPlan = JSON.parse(localStorage.getItem('coach_plan_' + queueType) || 'null'); if (savedPlan && savedPlan.length) { planStr = '。方案：' + savedPlan.map(function(e){return e.name + ' ' + e.sets + 'x' + e.reps + (e.weight_kg ? ' ' + e.weight_kg + 'kg' : '');}).join(' | '); } } catch(e) {}
     var queueList = (typeof PLAN_QUEUE !== 'undefined' ? PLAN_QUEUE : ['push','pull','cardio','legs','shoulder','cardio','rest']);
     var queueStr = queueList.map(function(t){return labelMap[t]||t;}).join(' → ');
-    return '今天：' + todayLabel + '。队列：' + queueStr;
+    return '今天：' + todayLabel + planStr + '。队列：' + queueStr;
   }
   if (/protein|蛋白/.test(msg)) {
     var p = Math.round(S.protein || 0);
