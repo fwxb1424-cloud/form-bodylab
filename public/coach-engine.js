@@ -162,7 +162,7 @@ function executeAction(action) {
         var loadPlan = null;
         try { loadPlan = JSON.parse(localStorage.getItem('coach_plan_' + s.training_muscle) || 'null'); } catch(e) {}
         if (loadPlan && loadPlan.length) { s.pending_exercises = loadPlan; }
-        return { ok: true, msg: 'Training: ' + s.training_muscle + (loadPlan && loadPlan.length ? ' (' + loadPlan.length + ' exercises loaded)' : '') };
+        return { ok: true, msg: 'Training: ' + s.training_muscle + (loadPlan && loadPlan.length ? ' · ' + loadPlan.length + ' movements from plan' : '') };
 
       case 'end_training':
         s.active = null;

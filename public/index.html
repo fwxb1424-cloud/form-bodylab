@@ -2232,9 +2232,10 @@ function parseImportPlan(){
   renderExercises();
   document.getElementById('import-panel').style.display='none';
   ta.value='';
-  toast('已导入 '+exercises.length+' 个动作');
-  // 自动保存到 localStorage
+  toast('已导入 '+exercises.length+' 个动作 · 方案已同步到教练');
   try{localStorage.setItem('coach_plan_'+S.todayMuscle,JSON.stringify(exercises.map(function(e){return {name:e.name,sets:e.sets,reps:e.reps,weight_kg:e.weight_kg};})));}catch(e){}
+  // 同步到教练会话
+  if(window.__session){window.__session.pending_exercises=exercises.map(function(e){return{name:e.name,sets:e.sets,reps:e.reps,weight_kg:e.weight_kg};});}
 }
 
 function addExercise(){
