@@ -3573,8 +3573,8 @@ async function _doAskCoach(text){
       // 本地提取失败，交给AI处理
     }
 
-    // 训练开始/结束 → 本地处理
-    if(intent==='train_start'||intent==='train_end'){
+    // 训练开始/结束/有氧完成 → 本地处理
+    if(intent==='train_start'||intent==='train_end'||intent==='cardio_done'){
       var trainMsg=CoachEngine.localQuery(text);
       _coachMsgs.push({role:'user',text});
       _coachMsgs.push({role:'coach',text:trainMsg||'OK',saved:false});
