@@ -728,7 +728,7 @@ body{
 
 <div class="toast" id="toast"></div>
 
-<div class="app off" id="app"><div id="js-test" style="position:fixed;top:0;left:0;z-index:9999;background:red;color:white;padding:4px 8px;font-size:10px">JS:T0</div>
+<div class="app off" id="app">
   <div class="pages">
 
     <!-- ══ 概况 ══ -->
@@ -1258,7 +1258,7 @@ function resetSetup(){
 }
 
 async function boot(){
-  document.getElementById('js-test').textContent='JS:T2-boot';document.getElementById('setup').classList.add('off');
+  document.getElementById('setup').classList.add('off');
   document.getElementById('app').classList.remove('off');
   var ds=todayStr();
   ['dash-date','train-date','train-badge'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent=ds;});
