@@ -185,6 +185,114 @@ function executeAction(action) {
   }
 }
 
+// ══ Zone 1: Local extraction (no AI) ══
+var FOOD_DB = {
+  '鸡胸肉':{p:31,c:0,f:3,k:150},'鸡胸':{p:31,c:0,f:3,k:150},
+  '鸡腿肉':{p:25,c:0,f:10,k:190},'鸡腿':{p:25,c:0,f:10,k:190},
+  '鸡翅':{p:18,c:0,f:16,k:220},'鸡翅根':{p:18,c:0,f:16,k:220},
+  '去皮鸡腿':{p:28,c:0,f:5,k:160},'去皮鸡胸':{p:31,c:0,f:3,k:150},
+  '牛肉':{p:26,c:0,f:15,k:240},'牛腩':{p:17,c:0,f:30,k:330},
+  '牛排':{p:25,c:0,f:15,k:240},'牛腱':{p:27,c:0,f:8,k:180},
+  '猪肉':{p:20,c:0,f:25,k:300},'排骨':{p:17,c:0,f:23,k:270},
+  '羊肉':{p:19,c:0,f:19,k:250},
+  '虾':{p:20,c:0,f:1,k:90},'虾仁':{p:20,c:0,f:1,k:90},
+  '鱼':{p:20,c:0,f:5,k:125},'三文鱼':{p:20,c:0,f:13,k:208},
+  '龙利鱼':{p:15,c:0,f:1,k:70},'鳕鱼':{p:18,c:0,f:1,k:80},
+  '金枪鱼':{p:26,c:0,f:1,k:116},
+  '鸡蛋':{p:13,c:1,f:9,k:140},'蛋清':{p:11,c:1,f:0,k:48},
+  '蛋黄':{p:16,c:1,f:27,k:322},'茶叶蛋':{p:13,c:1,f:9,k:140},
+  '鹌鹑蛋':{p:13,c:1,f:11,k:160},
+  '蛋白粉':{p:80,c:5,f:2,k:370},'乳清蛋白':{p:80,c:5,f:2,k:370},
+  '增肌粉':{p:30,c:55,f:5,k:380},
+  '牛奶':{p:3,c:5,f:3,k:60},'脱脂牛奶':{p:3,c:5,f:0,k:35},
+  '豆浆':{p:3,c:1,f:2,k:30},'无糖豆浆':{p:3,c:1,f:1,k:25},
+  '酸奶':{p:5,c:10,f:3,k:80},'希腊酸奶':{p:10,c:4,f:0,k:56},
+  '奶酪':{p:25,c:1,f:33,k:400},'芝士':{p:25,c:1,f:33,k:400},
+  '米饭':{p:3,c:28,f:0,k:116},'糙米饭':{p:3,c:23,f:1,k:110},
+  '馒头':{p:7,c:44,f:1,k:220},'花卷':{p:6,c:45,f:1,k:210},
+  '面条':{p:4,c:25,f:0,k:110},'意面':{p:5,c:25,f:1,k:130},
+  '面包':{p:9,c:49,f:3,k:265},'全麦面包':{p:9,c:43,f:4,k:240},
+  '吐司':{p:9,c:49,f:3,k:265},'贝果':{p:10,c:52,f:2,k:270},
+  '燕麦':{p:13,c:66,f:7,k:380},'燕麦片':{p:13,c:66,f:7,k:380},
+  '红薯':{p:2,c:20,f:0,k:86},'紫薯':{p:2,c:22,f:0,k:92},
+  '土豆':{p:2,c:17,f:0,k:76},'玉米':{p:4,c:22,f:1,k:110},
+  '山药':{p:2,c:12,f:0,k:56},
+  '香蕉':{p:1,c:23,f:0,k:89},'苹果':{p:0,c:14,f:0,k:52},
+  '橙子':{p:1,c:12,f:0,k:48},'橘子':{p:1,c:13,f:0,k:53},
+  '蓝莓':{p:1,c:15,f:0,k:57},'草莓':{p:1,c:8,f:0,k:32},
+  '西瓜':{p:1,c:8,f:0,k:30},'葡萄':{p:1,c:18,f:0,k:70},
+  '芒果':{p:1,c:15,f:0,k:60},
+  '西兰花':{p:3,c:4,f:0,k:28},'花菜':{p:2,c:3,f:0,k:20},
+  '菠菜':{p:3,c:1,f:0,k:20},'生菜':{p:1,c:1,f:0,k:12},
+  '黄瓜':{p:1,c:2,f:0,k:12},'番茄':{p:1,c:4,f:0,k:18},
+  '胡萝卜':{p:1,c:10,f:0,k:41},'芹菜':{p:1,c:2,f:0,k:12},
+  '豆腐':{p:8,c:2,f:4,k:72},'豆皮':{p:30,c:5,f:18,k:300},
+  '腐竹':{p:50,c:5,f:25,k:440},
+  '坚果':{p:15,c:15,f:60,k:600},'核桃':{p:15,c:14,f:65,k:650},
+  '杏仁':{p:21,c:20,f:50,k:580},'腰果':{p:18,c:30,f:44,k:580},
+  '花生':{p:26,c:16,f:49,k:570},'花生酱':{p:25,c:20,f:50,k:590},
+  '橄榄油':{p:0,c:0,f:100,k:900},'黄油':{p:1,c:0,f:82,k:740},
+  '牛油果':{p:2,c:2,f:15,k:160},
+  '蜂蜜':{p:0,c:80,f:0,k:320},'糖':{p:0,c:100,f:0,k:400},
+  '黑巧克力':{p:5,c:45,f:30,k:500},
+  '蛋白棒':{p:20,c:35,f:10,k:300},'能量棒':{p:10,c:55,f:15,k:380},
+  '饺子':{p:8,c:25,f:10,k:220},'馄饨':{p:7,c:23,f:9,k:200},
+  '包子':{p:8,c:28,f:10,k:230},'肉包子':{p:10,c:30,f:12,k:260},
+  '寿司':{p:5,c:20,f:1,k:110},'饭团':{p:4,c:30,f:1,k:140},
+  '披萨':{p:12,c:30,f:13,k:280},'汉堡':{p:15,c:30,f:15,k:310},
+  '三明治':{p:12,c:30,f:10,k:250},
+  '火锅':{p:30,c:40,f:35,k:600},'麻辣烫':{p:25,c:35,f:30,k:500},
+  '烧烤':{p:35,c:20,f:40,k:580},'炸鸡':{p:20,c:15,f:25,k:370},
+  '炒饭':{p:10,c:45,f:15,k:350},'炒面':{p:8,c:40,f:14,k:320},
+  '咖喱':{p:20,c:18,f:22,k:340},'红烧肉':{p:17,c:8,f:45,k:500},
+  '黄焖鸡':{p:25,c:9,f:12,k:240},'卤肉饭':{p:20,c:40,f:20,k:410},
+  '盖浇饭':{p:18,c:45,f:15,k:380},'便当':{p:25,c:40,f:18,k:410},
+  '麻辣香锅':{p:30,c:30,f:35,k:550},
+};
+
+function extractDataLocally(msg) {
+  var actions = [];
+  // Extract food: \"300g chicken\" or \"two eggs\"
+  var fm = msg.match(/(\d+)\s*g\s*(.+)/);
+  if (!fm) fm = msg.match(/([一二两三四五六七八九十]+)\s*(?:个|碗|杯|勺|份)\s*(.+)/);
+  if (fm) {
+    var grams = parseInt(fm[1]);
+    if (isNaN(grams)) { var map={一:1,二:2,两:2,三:3,四:4,五:5,六:6,七:7,八:8,九:9,十:10}; grams = map[fm[1]]||1; }
+    var name = fm[2].trim();
+    var nut = matchFood(name, grams);
+    if (nut) { actions.push({action:'log_food',data:nut}); }
+  }
+  // Simple: \"ate chicken\" / \"an egg\"
+  if (!actions.length) {
+    var sfm = msg.match(/^(.{2,15})(?:了|吧|啦|的)?$/);
+    if (!sfm) sfm = msg.match(/([一二两三四五]\s*(?:个|碗|杯|勺)\s*.{2,10})/);
+    if (sfm) {
+      var n2 = (sfm[1]||'').replace(/了|吧|啦|的/g,'').trim();
+      var nut2 = matchFood(n2, 200); // default 200g
+      if (nut2) { nut2.estimated=true; actions.push({action:'log_food',data:nut2}); }
+    }
+  }
+  // Sleep: \"slept 7 hours\" / \"7h\"
+  var sm = msg.match(/(\d+\.?\d*)\s*(?:小时|h|H)/);
+  if (sm) { var h = parseFloat(sm[1]); if (h>0&&h<24) actions.push({action:'log_sleep',data:{duration_h:h}}); }
+  // Weight: \"85kg\" / \"weight 85\"
+  var wm = msg.match(/体重\s*(\d+\.?\d*)|^(\d+\.?\d*)\s*kg$/);
+  if (wm) { var w = parseFloat(wm[1]||wm[2]); if (w>30&&w<300) actions.push({action:'log_weight',data:{weight_kg:w}}); }
+  // Training: \"bench 80kg 4x8\"
+  var tm = msg.match(/(\S{2,6})\s+(\d+\.?\d*)\s*kg.*?(\d+).*?[xX×]\s*(\d+)/);
+  if (tm) actions.push({action:'log_training_set',data:{exercise:tm[1],weight_kg:parseFloat(tm[2]),sets:parseInt(tm[3]),reps:tm[4],done:true}});
+  return actions;
+}
+function matchFood(name, grams) {
+  for (var key in FOOD_DB) {
+    if (name.indexOf(key)>=0) {
+      var v=FOOD_DB[key]; var r=grams>50?grams/100:grams;
+      return {name:name,protein_g:Math.round(v.p*r),carbs_g:Math.round(v.c*r),fat_g:Math.round(v.f*r),kcal:Math.round(v.k*r),estimated:true};
+    }
+  }
+  return null;
+}
+
 // ══ 四区意图分类 ══
 function classifyIntent(msg) {
   // 区3：计划调整（本地处理，不动AI）

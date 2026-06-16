@@ -3584,6 +3584,24 @@ async function _doAskCoach(text){
     }
   }
 
+  // 区1：先本地提取
+  if(intent==='log'&&typeof extractDataLocally==='function'){
+    var localActions=extractDataLocally(text);
+    if(localActions.length){
+      _coachMsgs.push({role:'user',text});
+      var msgs=[];
+      for(var i=0;i<localActions.length;i++){
+        var r2=CoachEngine.executeAction(localActions[i]);
+        msgs.push(r2.ok?'OK '+r2.msg:'FAIL '+r2.msg);
+      }
+      _coachMsgs.push({role:'coach',text:msgs.join('\n'),saved:false});
+      _renderCoach();
+      try{if(typeof renderDash==='function')renderDash();}catch(e){}
+      try{if(typeof updateDashStatusBar==='function')updateDashStatusBar();}catch(e){}
+      return;
+    }
+  }
+
   _coachMsgs.push({role:'user',text});
   _coachMsgs.push({role:'coach',text:'<span class=\"dots\"><span></span><span></span><span></span></span>',saved:false});
   _renderCoach();
