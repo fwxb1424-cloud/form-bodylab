@@ -3447,22 +3447,56 @@ function _renderCoach(){
 }
 
 async function askCoach(){
-  const input=document.getElementById('dash-coach-input');
+  var input=document.getElementById('dash-coach-input');
   if(!input)return;
-  const text=input.value.trim();
+  var text=input.value.trim();
   if(!text)return;
-
   input.value='';
+
+  // 本地查询：不调AI，直接回答
+  if(typeof CoachEngine!=='undefined'){
+    var intent=CoachEngine.classifyIntent(text);
+    if(intent==='query'){
+      var localAnswer=CoachEngine.localQuery(text);
+      if(localAnswer){
+        _coachMsgs.push({role:'user',text});
+        _coachMsgs.push({role:'coach',text:localAnswer,saved:false});
+        _renderCoach();
+        return;
+      }
+    }
+  }
+
   _coachMsgs.push({role:'user',text});
-  _coachMsgs.push({role:'coach',text:'思考中...',saved:false});
+  _coachMsgs.push({role:'coach',text:'<span class=\"dots\"><span></span><span></span><span></span></span>',saved:false});
   _renderCoach();
   try{
-    const profile=typeof buildProfile==='function'?buildProfile(window.S):'';
-    const system=typeof PROMPTS!=='undefined'&&PROMPTS.coach?PROMPTS.coach(profile):'';
-    const r=await AI.call('coach',{system,userMsg:text});
-    _coachMsgs[_coachMsgs.length-1]={role:'coach',text:r._err?`错误：${(r._raw||'').slice(0,100)}`:(r._raw||'未收到回复'),saved:false};
+    var profile=typeof buildProfile==='function'?buildProfile(window.S):'';
+    var system=typeof PROMPTS!=='undefined'&&PROMPTS.coach?PROMPTS.coach(profile):'';
+    // 追加 Action 指令
+    system+='\n\nWhen you need to record data, add an action block:\n[ACTION:log_food]\nname=food name\nprotein_g=45\n[/ACTION]\n\nAvailable actions: log_sleep(duration_h,bedtime,waketime), log_weight(weight_kg), log_food(name,protein_g,carbs_g,fat_g,kcal), log_training_set(exercise,weight_kg,sets,reps,done), start_training(muscle), end_training, log_plan(muscle,exercises), correct.\nFor chat/analysis, no action block needed.';
+    var r=await AI.call('coach',{system:system,userMsg:text});
+    var raw=r._raw||'';
+
+    // 解析并执行 Action
+    var parsed=typeof CoachEngine!=='undefined'?CoachEngine.parseActions(raw):{text:raw,actions:[]};
+    var execMsgs=[];
+    for(var i=0;i<parsed.actions.length;i++){
+      var result=CoachEngine.executeAction(parsed.actions[i]);
+      execMsgs.push(result.ok?'✓ '+result.msg:'⚠ '+result.msg);
+    }
+
+    var displayText=(parsed.text||'Done.').replace(/\*\*(.+?)\*\*/g,'$1').replace(/^[-*#]\s+/gm,'');
+    if(execMsgs.length)displayText+='\n\n'+execMsgs.join('\n');
+    _coachMsgs[_coachMsgs.length-1]={role:'coach',text:displayText,saved:false};
+
+    // 刷新看板
+    if(execMsgs.length){
+      try{if(typeof renderDash==='function')renderDash();}catch(e){}
+      try{if(typeof updateDashStatusBar==='function')updateDashStatusBar();}catch(e){}
+    }
   }catch(e){
-    _coachMsgs[_coachMsgs.length-1]={role:'coach',text:`错误：${e.message}`,saved:false};
+    _coachMsgs[_coachMsgs.length-1]={role:'coach',text:'Error: '+e.message,saved:false};
   }
   _renderCoach();
 }
