@@ -231,7 +231,12 @@ function localQuery(msg) {
     var planStr = '';
     try { var sp = JSON.parse(localStorage.getItem('coach_plan_' + queueType) || 'null'); if (sp && sp.length) { planStr = '\n今日方案（' + sp.length + '个动作）：' + sp.map(function(e){return e.name + ' ' + e.sets + 'x' + e.reps + (e.weight_kg ? ' ' + e.weight_kg + 'kg' : '');}).join(' | '); } } catch(e) {}
 
-    var summary = timeStr + '好 Cole。今天是' + dayStr + '，' + todayLabel + '。\n睡眠：' + sleepStr + ' | 体重：' + weightStr + ' | 蛋白：' + proteinStr;
+    // 今日已吃
+    var ateStr = '';
+    var foods = S.foods || [];
+    if (foods.length) { var recentFoods = foods.slice(-3).map(function(f){return f.name;}).join('、'); ateStr = '\n已吃：' + recentFoods; }
+
+    var summary = timeStr + '好 Cole。今天是' + dayStr + '，' + todayLabel + '。\n睡眠：' + sleepStr + ' | 体重：' + weightStr + ' | 蛋白：' + proteinStr + ateStr;
     if (isRest) summary += '\n今天是休息日——轻度拉伸、多喝水、早睡。';
     else if (isCardio) summary += '\n有氧日——稳态有氧35min，心率130-140bpm。';
     else summary += planStr;
