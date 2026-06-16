@@ -203,7 +203,42 @@ function classifyIntent(msg) {
 function localQuery(msg) {
   var S = window.S || {};
   var tgt = typeof PT === 'function' ? PT() : 168;
-  if (/schedule|日程|today|今天.*练|训练.*安排|今天.*什么|队列|做什么|计划/.test(msg)) {
+  if (/今天.*干|今天.*怎么|今天.*什么|今天.*安排|日程|做什么|干嘛|今天.*样/i.test(msg)) {
+    var S = window.S || {};
+    var queueType = typeof getTodayQueueType === 'function' ? getTodayQueueType() : '';
+    var labelMap = {push:'推日', pull:'拉日', legs:'腿日', shoulder:'肩日', cardio:'有氧日', rest:'休息日'};
+    var todayLabel = labelMap[queueType] || '训练日';
+    var isRest = queueType === 'rest';
+    var isCardio = queueType === 'cardio';
+    var dayNames = ['日','一','二','三','四','五','六'];
+    var today = new Date();
+    var dayStr = '周' + dayNames[today.getDay()];
+    var h = today.getHours();
+    var timeStr = h < 9 ? '早上' : h < 12 ? '上午' : h < 18 ? '下午' : '晚上';
+
+    // 睡眠
+    var sleepStr = '未记录';
+    try { var sl = JSON.parse(localStorage.getItem('form_last_sleep') || 'null'); if (sl && sl.duration_h) sleepStr = sl.duration_h + 'h' + (sl.bedtime ? ' ' + sl.bedtime + '睡' : ''); } catch(e) {}
+
+    // 体重
+    var weightStr = S.weight_kg ? S.weight_kg + 'kg' : '未称';
+
+    // 蛋白
+    var tgt = typeof PT === 'function' ? PT() : 168;
+    var proteinStr = Math.round(S.protein || 0) + '/' + tgt + 'g';
+
+    // 方案
+    var planStr = '';
+    try { var sp = JSON.parse(localStorage.getItem('coach_plan_' + queueType) || 'null'); if (sp && sp.length) { planStr = '\n今日方案（' + sp.length + '个动作）：' + sp.map(function(e){return e.name + ' ' + e.sets + 'x' + e.reps + (e.weight_kg ? ' ' + e.weight_kg + 'kg' : '');}).join(' | '); } } catch(e) {}
+
+    var summary = timeStr + '好 Cole。今天是' + dayStr + '，' + todayLabel + '。\n睡眠：' + sleepStr + ' | 体重：' + weightStr + ' | 蛋白：' + proteinStr;
+    if (isRest) summary += '\n今天是休息日——轻度拉伸、多喝水、早睡。';
+    else if (isCardio) summary += '\n有氧日——稳态有氧35min，心率130-140bpm。';
+    else summary += planStr;
+
+    return summary;
+  }
+  if (/schedule|日程|队列/.test(msg)) {
     var queueType = typeof getTodayQueueType === 'function' ? getTodayQueueType() : '';
     var labelMap = {push:'推日', pull:'拉日', legs:'腿日', shoulder:'肩日', cardio:'有氧日', rest:'休息日'};
     var todayLabel = labelMap[queueType] || queueType || '未确定';
