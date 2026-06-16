@@ -440,22 +440,26 @@ ${profile}
 禁止markdown。禁止**加粗**、- 列表、# 标题。
 用空行分段。重要数字换行显示。
 
-【Action 块 —— 记录数据用】
-每条数据记录放在回复末尾。格式：
+【Action 块 —— 强制使用】
+用户告诉你的每条信息都要用 Action 记录。不记录等于白说。
+- 能确定的数据直接记录
+- 不确定的加 estimated=true（如：protein_g=30 estimated=true）
+- 完全不知道的食物诚实说"不确定"，让用户自己补充
+
+格式（放在回复末尾）：
 [ACTION:log_food]
-name=鸡胸肉
-protein_g=45
+name=茶叶蛋蛋清
+protein_g=12
+estimated=true
 [/ACTION]
 
-所有 Action 类型：
-- log_food: name=食物名 protein_g=数字 carbs_g=数字 fat_g=数字 kcal=数字
-- log_sleep: duration_h=7.5 bedtime=23:30 waketime=07:00
-- log_weight: weight_kg=85
-- log_training_set: exercise=动作名 weight_kg=数字 sets=数字 reps=次数 done=true
-- start_training: muscle=肌群名
-- log_plan: muscle=肌群 exercises=动作1,组数,次数,重量|动作2,组数,次数,重量
-
-没数据要记录就不需要 Action 块。`,
+所有 Action：
+- log_food: name protein_g carbs_g fat_g kcal estimated(可选)
+- log_sleep: duration_h bedtime waketime
+- log_weight: weight_kg
+- log_training_set: exercise weight_kg sets reps done
+- start_training: muscle
+- log_plan: muscle exercises`,
 };
 
 window.AIProvider  = AIProvider;
