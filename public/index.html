@@ -757,8 +757,22 @@ body{
 <div class="app off" id="app">
   <div class="pages">
 
+    <!-- ══ 教练 ══ -->
+    <div class="page on" id="pg-coach" style="display:flex;flex-direction:column">
+      <div class="ph" style="flex-shrink:0">
+        <div class="ph-ey">FORM Coach</div>
+        <div class="ph-h1">教练</div>
+        <div class="ph-sub">对话记录所有数据 · 问任何问题</div>
+      </div>
+      <div id="coach-msgs-full" style="flex:1;overflow-y:auto;padding:0 16px;display:flex;flex-direction:column;gap:10px;-webkit-overflow-scrolling:touch"></div>
+      <div id="coach-input-bar" style="flex-shrink:0;display:flex;gap:6px;padding:10px 14px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0));border-top:1px solid var(--ln2);background:rgba(5,5,6,.9)">
+        <input id="coach-input-main" placeholder="说点什么..." style="flex:1;background:var(--s2);border:1px solid var(--ln2);border-radius:22px;padding:11px 16px;color:var(--t1);font-family:var(--f1);font-size:13px;outline:none" onkeydown="if(event.key==='Enter')askCoachMain()">
+        <button onclick="askCoachMain()" style="background:var(--ac);color:#08090A;border:none;border-radius:22px;padding:11px 18px;font-family:var(--f1);font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0">发送</button>
+      </div>
+    </div>
+
     <!-- ══ 概况 ══ -->
-    <div class="page on" id="pg-dash">
+    <div class="page" id="pg-dash">
       <div class="ph"><div class="ph-ey">FORM · Body Lab</div><div class="ph-h1" style="display:flex;align-items:center;justify-content:space-between"><span>今日概况</span><div style="display:flex;gap:4px;align-items:center"><button onclick="toggleCoach()" style="background:linear-gradient(135deg,rgba(226,255,92,.12),rgba(180,154,255,.08));border:1px solid rgba(226,255,92,.2);color:var(--ac);cursor:pointer;padding:5px 12px;border-radius:20px;font-family:var(--f1);font-size:11px;font-weight:600;white-space:nowrap" title="AI教练">🧠 问教练</button><button onclick="toggleMoreMenu()" style="background:none;border:none;color:var(--t2);cursor:pointer;padding:4px 10px;border-radius:8px;font-size:20px;letter-spacing:3px;line-height:1" title="更多">⋯</button></div></div><div class="ph-sub" id="dash-date"></div>
         <div id="more-menu" style="display:none;margin-top:8px;padding:2px 0;flex-wrap:wrap;gap:5px">
           <button class="tc-pill" onclick="goPage('plan');hideMoreMenu()" style="cursor:pointer;border:1px solid var(--ln2);background:var(--s3);padding:3px 10px;font-size:11px;font-family:var(--f1);color:var(--t1);border-radius:10px">📋 计划</button>
@@ -1212,7 +1226,8 @@ body{
 
   <!-- NAV -->
   <nav class="nav">
-    <button class="nb on" data-p="dash" onclick="goPage('dash')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>概况</button>
+    <button class="nb on" data-p="coach" onclick="goPage('coach')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M8 14c-3 0-5.5 2-5.5 5v1h19v-1c0-3-2.5-5-5.5-5H8z"/></svg>教练</button>
+    <button class="nb" data-p="dash" onclick="goPage('dash')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>概况</button>
     <button class="nb" data-p="diet" onclick="goPage('diet')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>饮食</button>
     <button class="nb" data-p="train" onclick="goPage('train')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M6 4v16M18 4v16M6 12h12M2 8h4M18 8h4M2 16h4M18 16h4"/></svg>训练</button>
     <button class="nb" data-p="body" onclick="goPage('body')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="12" cy="5" r="2"/><path d="M12 7v8M9 10l3-1 3 1M9 21l3-5 3 5"/></svg>形体</button>
@@ -1349,6 +1364,7 @@ async function boot(){
     window.goPage=function(n){
       _origGoPage(n);
       if(n==='plan'){ renderWeekExecBoard(); renderPlanWeekGrid(); renderPhaseProgress(); refreshTrainingSlotUI(); }
+      if(n==='coach'){ _renderCoach(); }
       if(n==='dash'){ renderTodayStatusCard(); renderPhaseTrigger(); setTimeout(renderDashAlerts,30); setTimeout(fillDashTrainCount,200); setTimeout(renderWeeklyMiniCard,100); renderPauseButton(); }
       if(n==='body'){ if(typeof loadStrChart==='function') loadStrChart(); }
     };
@@ -3390,6 +3406,7 @@ async function checkStrengthStall(){
     window.goPage=function(n){
       orig(n);
       if(n==='plan'){renderWeekExecBoard();renderPlanWeekGrid();renderPhaseProgress();renderPlanCheckpoint();}
+      if(n==='coach'){ _renderCoach(); }
       if(n==='dash'){renderTodayStatusCard();renderPhaseTrigger();}
       if(n==='body'){loadStrChart();}
       // v4.3: 打开复盘页自动运行上次选定的周期
@@ -3440,20 +3457,47 @@ function toggleCoach(){
 }
 
 function _renderCoach(){
-  const el=document.getElementById('dash-coach-msgs');
-  if(!el||_coachMsgs.length===0)return;
-  el.innerHTML=_coachMsgs.map((m,i)=>`<div style="margin-bottom:8px;padding:8px 11px;border-radius:10px;font-size:12px;line-height:1.55;${m.role==='user'?'background:rgba(226,255,92,.06);border:1px solid rgba(226,255,92,.12)':'background:var(--s3);border:1px solid var(--ln)'}"><div>${m.text.replace(/\n/g,'<br>')}</div>${m.role==='coach'?`<div style="margin-top:5px;font-size:9px;color:var(--t3)">FORM Coach · <button onclick="_saveCoach(${i})" style="font-size:9px;color:${m.saved?'var(--t2)':'var(--ac)'};background:none;border:1px solid ${m.saved?'var(--ln)':'rgba(226,255,92,.2)'};border-radius:6px;padding:1px 7px;cursor:pointer">${m.saved?'✓ 已保存':'保存到记忆'}</button></div>`:''}</div>`).join('');
-  el.scrollTop=el.scrollHeight;
+  // 渲染到教练页
+  var full=document.getElementById('coach-msgs-full');
+  if(full){
+    if(_coachMsgs.length===0){
+      full.innerHTML='<div style="color:var(--t3);font-size:13px;text-align:center;padding:50px 30px;line-height:1.8">我是你的专属AI教练。<br><br>试试说：<br>"吃了鸡胸肉300克"<br>"睡了7小时"<br>"体重85公斤"<br>"今天蛋白多少"</div>';
+    }else{
+      full.innerHTML=_coachMsgs.map(function(m,i){var cls=m.role==='user'?'user':'coach';return'<div class=\"coach-msg '+cls+'\"><div>'+m.text.replace(/\n/g,'<br>')+'</div>'+ (m.role==='coach'?'<div style=\"margin-top:5px;font-size:9px;color:var(--t3)\">FORM Coach · <button onclick=\"_saveCoach('+i+')\" style=\"font-size:9px;color:'+(m.saved?'var(--t2)':'var(--ac)')+';background:none;border:1px solid '+(m.saved?'var(--ln)':'rgba(226,255,92,.2)')+';border-radius:6px;padding:1px 7px;cursor:pointer\">'+(m.saved?'已保存':'保存到记忆')+'</button></div>':'')+'</div>';}).join('');
+    }
+    full.scrollTop=full.scrollHeight;
+  }
+  // 渲染到迷你面板
+  var mini=document.getElementById('dash-coach-msgs');
+  if(mini&&_coachMsgs.length>0){
+    mini.innerHTML=_coachMsgs.map(function(m,i){return'<div style=\"margin-bottom:8px;padding:8px 11px;border-radius:10px;font-size:12px;line-height:1.55;'+(m.role==='user'?'background:rgba(226,255,92,.06);border:1px solid rgba(226,255,92,.12)':'background:var(--s3);border:1px solid var(--ln)')+'\"><div>'+m.text.replace(/\n/g,'<br>')+'</div>'+ (m.role==='coach'?'<div style=\"margin-top:5px;font-size:9px;color:var(--t3)\">FORM Coach · <button onclick=\"_saveCoach('+i+')\" style=\"font-size:9px;color:'+(m.saved?'var(--t2)':'var(--ac)')+';background:none;border:1px solid '+(m.saved?'var(--ln)':'rgba(226,255,92,.2)')+';border-radius:6px;padding:1px 7px;cursor:pointer\">'+(m.saved?'已保存':'保存到记忆')+'</button></div>':'')+'</div>';}).join('');
+    mini.scrollTop=mini.scrollHeight;
+  }
 }
 
+// 教练页发送
+async function askCoachMain(){
+  var input=document.getElementById('coach-input-main');
+  if(!input)return;
+  var text=input.value.trim();
+  if(!text)return;
+  input.value='';
+  await _doAskCoach(text);
+}
+
+// 迷你面板发送（概况页）
 async function askCoach(){
   var input=document.getElementById('dash-coach-input');
   if(!input)return;
   var text=input.value.trim();
   if(!text)return;
   input.value='';
+  await _doAskCoach(text);
+}
 
-  // 本地查询：不调AI，直接回答
+// 共用发送逻辑
+async function _doAskCoach(text){
+  // 本地查询
   if(typeof CoachEngine!=='undefined'){
     var intent=CoachEngine.classifyIntent(text);
     if(intent==='query'){
@@ -3476,19 +3520,17 @@ async function askCoach(){
     var r=await AI.call('coach',{system:system,userMsg:text});
     var raw=r._raw||'';
 
-    // 解析并执行 Action
     var parsed=typeof CoachEngine!=='undefined'?CoachEngine.parseActions(raw):{text:raw,actions:[]};
     var execMsgs=[];
     for(var i=0;i<parsed.actions.length;i++){
       var result=CoachEngine.executeAction(parsed.actions[i]);
-      execMsgs.push(result.ok?'✓ '+result.msg:'⚠ '+result.msg);
+      execMsgs.push(result.ok?'OK '+result.msg:'FAIL '+result.msg);
     }
 
     var displayText=(parsed.text||'Done.').replace(/\*\*(.+?)\*\*/g,'$1').replace(/^[-*#]\s+/gm,'');
     if(execMsgs.length)displayText+='\n\n'+execMsgs.join('\n');
     _coachMsgs[_coachMsgs.length-1]={role:'coach',text:displayText,saved:false};
 
-    // 刷新看板
     if(execMsgs.length){
       try{if(typeof renderDash==='function')renderDash();}catch(e){}
       try{if(typeof updateDashStatusBar==='function')updateDashStatusBar();}catch(e){}
