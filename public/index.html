@@ -3581,6 +3581,18 @@ async function _doAskCoach(text){
       _renderCoach();
       return;
     }
+    // 方案编辑提示
+    if(intent==='query'){
+      var localA=CoachEngine.localQuery(text);
+      if(localA&&typeof localA==='string'&&localA.indexOf('EDIT_PLAN:')===0){
+        var muscle=localA.split(':')[1];
+        _coachMsgs.push({role:'user',text});
+        _coachMsgs.push({role:'coach',text:'要编辑「'+muscle+'」方案。告诉我具体怎么改——比如"加杠铃卧推 4x8 80kg"或"删掉飞鸟"',saved:false});
+        _renderCoach();
+        return;
+      }
+    }
+
     // 区3：计划调整 → 本地处理
     if(intent==='plan'){
       var planAnswer=CoachEngine.localQuery(text);

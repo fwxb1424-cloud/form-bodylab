@@ -561,6 +561,24 @@ function localQuery(msg) {
   if (/上次|上回|之前|以前|历史|记录.*多少/.test(msg) && /卧推|深蹲|硬拉|划船|侧平|弯举|下拉|飞鸟|夹胸|臂屈伸|腿举|臀推|肩推|重量|kg/.test(msg)) {
     return 'ASYNC_HISTORY';
   }
+  // 食物查询
+  if (/多少.*蛋白|多少.*碳水|多少.*热量|多少.*卡路里|营养成分|营养.*多少/.test(msg)) {
+    var foodName = msg.replace(/多少.*蛋白|多少.*碳水|多少.*热量|多少.*卡路里|营养成分|营养.*多少/g,'').replace(/的|了|吗/g,'').trim();
+    if (!foodName) return '想查什么食物？';
+    var nut3 = matchFood(foodName, 100);
+    if (nut3) return foodName + '（每100g）：蛋白 ' + nut3.protein_g + 'g，碳水 ' + nut3.carbs_g + 'g，脂肪 ' + nut3.fat_g + 'g，热量 ' + nut3.kcal + 'kcal';
+    return '还没收录「' + foodName + '」的营养数据。试试在对话里告诉教练，AI 会估算。';
+  }
+  // 休息日建议
+  if (/休息.*做|休息.*怎么|休息.*什么|不练.*做什么/.test(msg)) {
+    return '休息日建议：1. 轻度拉伸15-20min 2. 蛋白照常补充168g 3. 碳水适当减少 4. 多喝水 5. 早点睡。可以出门散步，别久坐。';
+  }
+  // 方案编辑
+  if (/加.*动作|新增|添加.*动作|换掉|删.*动作|去掉|替换/.test(msg) && msg.length < 25) {
+    var muscle2 = window.__session.training_muscle || window.S.todayMuscle || '';
+    if (!muscle2) return '先告诉我你在编辑哪个肌群的方案？比如"编辑推日方案"';
+    return 'EDIT_PLAN:' + muscle2;
+  }
   if (/schedule|日程|队列/.test(msg)) {
     var queueType = typeof getTodayQueueType === 'function' ? getTodayQueueType() : '';
     var labelMap = {push:'推日', pull:'拉日', legs:'腿日', shoulder:'肩日', cardio:'有氧日', rest:'休息日'};
