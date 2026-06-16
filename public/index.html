@@ -3473,8 +3473,6 @@ async function askCoach(){
   try{
     var profile=typeof buildProfile==='function'?buildProfile(window.S):'';
     var system=typeof PROMPTS!=='undefined'&&PROMPTS.coach?PROMPTS.coach(profile):'';
-    // 追加 Action 指令
-    system+='\n\nWhen you need to record data, add an action block:\n[ACTION:log_food]\nname=food name\nprotein_g=45\n[/ACTION]\n\nAvailable actions: log_sleep(duration_h,bedtime,waketime), log_weight(weight_kg), log_food(name,protein_g,carbs_g,fat_g,kcal), log_training_set(exercise,weight_kg,sets,reps,done), start_training(muscle), end_training, log_plan(muscle,exercises), correct.\nFor chat/analysis, no action block needed.';
     var r=await AI.call('coach',{system:system,userMsg:text});
     var raw=r._raw||'';
 
