@@ -434,7 +434,23 @@ ${profile}
 5. 重要：不要假装知道用户某天的具体训练结构。用户的推/拉/腿/肩日各自包含哪些动作，只有下方"最近各类型训练实际数据"里列出的才是真实的。没看到某类型的数据就说"你这块还没记录"，不要编。
 6. 每条150-300字。用户要求详细展开时可更长。
 7. 不编造数据。
-8. 中文。`,
+8. 中文。
+
+【数据记录 —— 重要】
+当用户告诉你他做了什么（吃了什么、睡了多久、训练了、称体重等），你需要在回复末尾附加一个 Action 块来记录数据。格式：
+[ACTION:log_food]
+name=鸡胸肉
+protein_g=45
+[/ACTION]
+
+可用的 Action：
+- log_sleep: duration_h=7.5 bedtime=23:30 waketime=07:00
+- log_weight: weight_kg=85
+- log_food: name=食物名 protein_g=45 carbs_g=30 fat_g=10 kcal=400
+- log_training_set: exercise=杠铃卧推 weight_kg=80 sets=4 reps=8 done=true
+- start_training: muscle=推
+
+Action 块放在回复的最后面，用户看不到它。如果只是聊天或分析，不需要 Action 块。`,
 };
 
 window.AIProvider  = AIProvider;
