@@ -444,6 +444,43 @@ function localQuery(msg) {
     window.__session.current_exercise = null;
     return '训练结束。辛苦了。';
   }
+  // 日总结
+  if (/今天.*整体|今天.*总结|今天.*回顾|今天.*怎么.*样|今日.*总结|今天.*复盘|今天.*报告|一天.*下来|今天.*过.*怎么/.test(msg)) {
+    var qts = typeof getTodayQueueType === 'function' ? getTodayQueueType() : '';
+    var lb = {push:'推日', pull:'拉日', legs:'腿日', shoulder:'肩日', cardio:'有氧日', rest:'休息日'};
+    var tl = lb[qts] || qts || '训练日';
+    var sleepStr2 = '未记录';
+    try { var sl2 = JSON.parse(localStorage.getItem('form_last_sleep')||'null'); if (sl2 && sl2.duration_h) sleepStr2 = sl2.duration_h + 'h' + (sl2.bedtime ? ' ' + sl2.bedtime + '入睡' : ''); } catch(e) {}
+    var wtStr = S.weight_kg ? S.weight_kg + 'kg' : '未称';
+    var pt2 = typeof PT === 'function' ? PT() : 168;
+    var pDone = Math.round(S.protein || 0);
+    var proteinLine = '蛋白 ' + pDone + '/' + pt2 + 'g' + (pDone >= pt2 ? ' ✅达标' : ' ⚠还差' + Math.round(pt2-pDone) + 'g');
+    var calLine = '热量 ' + Math.round(S.kcal || 0) + ' kcal';
+    var trainLine = '';
+    if (S.workout && S.workout.length) {
+      var doneEx = S.workout.filter(function(e){return e.done;});
+      trainLine = '训练：' + doneEx.length + '/' + S.workout.length + '个动作完成，容量 ' + Math.round(S.volume || 0) + ' kg·r';
+      if (doneEx.length === S.workout.length) trainLine += ' ✅全部完成';
+      else if (doneEx.length > 0) trainLine += ' ⚡进行中';
+    } else { trainLine = '训练：今日未训练'; }
+    var foodLine = '';
+    var fds = S.foods || [];
+    if (fds.length) {
+      var byMeal = {};
+      for (var fi=0; fi<fds.length; fi++) { var mt = fds[fi].meal_type || '其他'; byMeal[mt] = (byMeal[mt]||0) + 1; }
+      var mealStrs = []; for (var mk2 in byMeal) { mealStrs.push(mk2 + '×' + byMeal[mk2]); }
+      foodLine = '饮食：' + fds.length + '笔记录（' + mealStrs.join(' ') + '）';
+    } else { foodLine = '饮食：今日未记录'; }
+    var summary = '📊 今日总结\n' + tl + ' | 睡眠 ' + sleepStr2 + ' | 体重 ' + wtStr + '\n' + proteinLine + ' | ' + calLine + '\n' + trainLine + '\n' + foodLine;
+    var remaining = [];
+    if (!S.weight_kg) remaining.push('称体重');
+    if (pDone < pt2) remaining.push('补蛋白');
+    if (!(S.workout && S.workout.length && S.workout.filter(function(e){return e.done;}).length === S.workout.length) && qts !== 'rest') remaining.push('完成训练');
+    try { var sl3 = JSON.parse(localStorage.getItem('form_last_sleep')||'null'); if (!sl3 || !sl3.duration_h) remaining.push('记录睡眠'); } catch(e) { remaining.push('记录睡眠'); }
+    if (remaining.length) summary += '\n\n待完成：' + remaining.join(' · ');
+    else summary += '\n\n🎯 今日任务全部完成！';
+    return summary;
+  }
   if (/今天.*干|今天.*怎么|今天.*什么|今天.*安排|日程|做什么|干嘛|今天.*样/i.test(msg)) {
     var S = window.S || {};
     var queueType = typeof getTodayQueueType === 'function' ? getTodayQueueType() : '';
