@@ -775,11 +775,6 @@ body{
     <!-- ══ 概况 ══ -->
     <div class="page" id="pg-dash">
       <div class="ph"><div class="ph-ey">FORM · Body Lab</div><div class="ph-h1" style="display:flex;align-items:center;justify-content:space-between"><span>今日概况</span><div style="display:flex;gap:4px;align-items:center"><button onclick="toggleCoach()" style="background:linear-gradient(135deg,rgba(226,255,92,.12),rgba(180,154,255,.08));border:1px solid rgba(226,255,92,.2);color:var(--ac);cursor:pointer;padding:5px 12px;border-radius:20px;font-family:var(--f1);font-size:11px;font-weight:600;white-space:nowrap" title="AI教练">🧠 问教练</button><button onclick="toggleMoreMenu()" style="background:none;border:none;color:var(--t2);cursor:pointer;padding:4px 10px;border-radius:8px;font-size:20px;letter-spacing:3px;line-height:1" title="更多">⋯</button></div></div><div class="ph-sub" id="dash-date"></div>
-        <div id="more-menu" style="display:none;margin-top:8px;padding:2px 0;flex-wrap:wrap;gap:5px">
-          <button class="tc-pill" onclick="goPage('plan');hideMoreMenu()" style="cursor:pointer;border:1px solid var(--ln2);background:var(--s3);padding:3px 10px;font-size:11px;font-family:var(--f1);color:var(--t1);border-radius:10px">📋 计划</button>
-          <button class="tc-pill" onclick="goPage('mem');hideMoreMenu()" style="cursor:pointer;border:1px solid var(--ln2);background:var(--s3);padding:3px 10px;font-size:11px;font-family:var(--f1);color:var(--t1);border-radius:10px">🧠 记忆</button>
-          <button class="tc-pill" onclick="goPage('rev');hideMoreMenu()" style="cursor:pointer;border:1px solid var(--ln2);background:var(--s3);padding:3px 10px;font-size:11px;font-family:var(--f1);color:var(--t1);border-radius:10px">📊 复盘</button>
-        </div>
       </div>
       <!-- 微复盘提醒 -->
       <div id="dash-alerts-wrap"></div>
@@ -834,8 +829,7 @@ body{
       <div class="s" style="margin-top:7px"><div class="slbl">补剂打卡</div><div id="dash-supps"></div></div>
       <!-- 每周看板 -->
       <div class="s" style="margin-top:6px"><div class="slbl">本周看板</div><div id="dash-weekly-card"></div></div>
-      <div class="s" style="margin-top:6px;padding-bottom:2px"><div style="display:flex;gap:5px;justify-content:center;flex-wrap:wrap"><button class="adj-btn" onclick="goPage('plan')" style="font-size:10px;padding:3px 9px;border-radius:12px;border:1px solid var(--ln);background:var(--s2);color:var(--t2);cursor:pointer;font-family:var(--f1)">📋 计划</button><button class="adj-btn" onclick="goPage('mem')" style="font-size:10px;padding:3px 9px;border-radius:12px;border:1px solid var(--ln);background:var(--s2);color:var(--t2);cursor:pointer;font-family:var(--f1)">🧠 记忆</button><button class="adj-btn" onclick="goPage('rev')" style="font-size:10px;padding:3px 9px;border-radius:12px;border:1px solid var(--ln);background:var(--s2);color:var(--t2);cursor:pointer;font-family:var(--f1)">📊 复盘</button></div></div>
-      <div class="s" style="margin-top:8px;padding-bottom:4px;text-align:center"><button class="rl" onclick="resetSetup()">重设 API Keys</button></div>
+            <div class="s" style="margin-top:8px;padding-bottom:4px;text-align:center"><button class="rl" onclick="resetSetup()">重设 API Keys</button></div>
     </div>
 
     <!-- ══ 饮食 ══ -->
