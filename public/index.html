@@ -3517,6 +3517,16 @@ async function _doAskCoach(text){
     // 区2：查询 → 本地秒回
     if(intent==='query'){
       var localAnswer=CoachEngine.localQuery(text);
+      // 异步查询（周报等需要 Supabase 的）
+      if(localAnswer==='ASYNC_WEEKLY'){
+        _coachMsgs.push({role:'user',text});
+        _coachMsgs.push({role:'coach',text:'<span class=\"dots\"><span></span><span></span><span></span></span>',saved:false});
+        _renderCoach();
+        var report=await weeklyReport();
+        _coachMsgs[_coachMsgs.length-1]={role:'coach',text:report||'周报生成失败',saved:false};
+        _renderCoach();
+        return;
+      }
       if(localAnswer==='CONFIRM_RESET'||localAnswer==='CONFIRM_CLOUD_RESET'){
         var isCloud = localAnswer==='CONFIRM_CLOUD_RESET';
         _coachMsgs.push({role:'user',text});

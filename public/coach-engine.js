@@ -553,6 +553,10 @@ function localQuery(msg) {
     if (typeof setTrainingSlot === 'function') setTrainingSlot(slot);
     return '已设为' + (slot === 'morning' ? '早间训练（7-9点）' : '晚间训练（18-20点）') + '。';
   }
+  // 周报/月报 → 异步查询
+  if (/这周.*总结|本周.*总结|这周.*怎么|周报|weekly|月度.*总结|这个月|最近.*怎么/.test(msg) && msg.length < 20) {
+    return 'ASYNC_WEEKLY';
+  }
   if (/schedule|日程|队列/.test(msg)) {
     var queueType = typeof getTodayQueueType === 'function' ? getTodayQueueType() : '';
     var labelMap = {push:'推日', pull:'拉日', legs:'腿日', shoulder:'肩日', cardio:'有氧日', rest:'休息日'};
@@ -579,6 +583,32 @@ function localQuery(msg) {
   }
   return null;
 }
+
+
+// ══ Weekly report ══
+async function weeklyReport() {
+  if (!window.db) return null;
+  try {
+    var now = new Date();
+    var dow = now.getDay();
+    var mon = new Date(now); mon.setDate(now.getDate()-(dow===0?6:dow-1)); mon.setHours(0,0,0,0);
+    var sun = new Date(mon); sun.setDate(mon.getDate()+6); sun.setHours(23,59,59,999);
+    var [ss, sl, fl] = await Promise.all([
+      window.db.getSessionsByRange(mon.toISOString(),sun.toISOString()).catch(function(){return[];}),
+      window.db.getSleepByRange(mon.toISOString(),sun.toISOString()).catch(function(){return[];}),
+      window.db.getFoodLogsByRange(mon.toISOString(),sun.toISOString()).catch(function(){return[];})
+    ]);
+    var trainDays = ss.length; var types={}; for (var i=0;i<ss.length;i++){var t=ss[i].muscle_groups||'other';types[t]=(types[t]||0)+1;}
+    var lb={push:'推',pull:'拉',legs:'腿',shoulder:'肩',cardio:'有氧',rest:'休'}; var ts=[]; for (var k in types){ts.push((lb[k]||k)+'x'+types[k]);}
+    var vol=ss.reduce(function(s,se){return s+(se.volume||0);},0);
+    var avgSl=sl.length?(sl.reduce(function(s,x){return s+(x.duration_h||0);},0)/sl.length).toFixed(1):'?';
+    var tp=fl.reduce(function(s,f){return s+(f.protein_g||0);},0); var ap=fl.length?Math.round(tp/fl.length):0;
+    var pt=typeof PT==='function'?PT():168; var pd=fl.filter(function(f){return(f.protein_g||0)>=pt;}).length;
+    var planned=6; var er=Math.round(trainDays/planned*100);
+    return 'Weekly: '+trainDays+'/'+planned+' days ('+er+'%). Types: '+(ts.join(' ')||'none')+'. Volume: '+Math.round(vol)+'kg. Sleep avg: '+avgSl+'h. Protein avg: '+ap+'g ('+pd+'/'+(fl.length||1)+' days hit).';
+  } catch(e) { return null; }
+}
+
 
 window.CoachEngine = {
   parseActions: parseActions,
